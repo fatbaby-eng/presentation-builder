@@ -26,6 +26,8 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
 .brand .dot { width: 18px; height: 18px; border-radius: 5px; background: var(--accent); display: inline-block; }
 .brand small { font-weight: 500; color: var(--muted); font-size: .72rem; }
+.credit-link { color: var(--muted); text-decoration: none; font-weight: 600; }
+.credit-link:hover { color: var(--accent); text-decoration: underline; }
 .title-input { border: 1px solid transparent; background: transparent; padding: .35rem .5rem; border-radius: 7px;
   font-size: .95rem; font-weight: 600; width: 220px; color: var(--ink); }
 .title-input:hover { border-color: var(--line); }
@@ -207,7 +209,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 <div class="app">
   <!-- ── Top bar ── -->
   <div class="topbar">
-    <div class="brand"><span class="dot"></span> Presentation Builder <small>free &middot; runs in your browser</small></div>
+    <div class="brand"><span class="dot"></span> Presentation Builder <small>free &middot; by <a class="credit-link" href="https://toddboswell.com" target="_blank" rel="noopener noreferrer">toddboswell.com</a></small></div>
     <input class="title-input" id="projTitle" value="Untitled Presentation" maxlength="120" aria-label="Presentation title">
     <label class="accent-pick">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
     <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
@@ -1014,6 +1016,9 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .end h2 { margin: 0 0 1rem; }
 .cta-btn { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; padding: .7rem 1.3rem; border-radius: 8px; font-size: .95rem; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
 .restart { background: rgba(255,255,255,.12); color: #fff; }
+.made { margin-top: 1.6rem; font-size: .78rem; color: #8b92a3; }
+.made a { color: #aeb4c2; text-decoration: none; font-weight: 600; }
+.made a:hover { color: #fff; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -1123,6 +1128,10 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     var br = document.createElement("div"); br.style.marginTop = "1rem";
     var rb = document.createElement("button"); rb.className = "cta-btn restart"; rb.textContent = "↺ Restart";
     rb.onclick = function () { i = 0; active = 0; draw(); }; br.appendChild(rb); end.appendChild(br);
+    var md = document.createElement("div"); md.className = "made";
+    md.appendChild(document.createTextNode("Made with Presentation Builder · by "));
+    var ml = document.createElement("a"); ml.href = "https://toddboswell.com"; ml.target = "_blank"; ml.rel = "noopener noreferrer"; ml.textContent = "toddboswell.com";
+    md.appendChild(ml); end.appendChild(md);
     stage.appendChild(end);
   }
 

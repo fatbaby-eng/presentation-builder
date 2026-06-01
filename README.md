@@ -1,11 +1,22 @@
 # Presentation Builder
 
 A free, self-hostable tool for building **interactive presentations** — the
-click-through, guided-tour kind (think Arcade / Storylane). Upload screenshots
-or slides, add hotspots with tooltips, blur out anything sensitive, and export a
-single standalone HTML file you can share with anyone.
+click-through, guided-tour kind (think Arcade / Storylane). Build slides
+**from scratch** with your own brand look, or upload screenshots and add
+hotspots with tooltips. Blur out anything sensitive, then export a single
+standalone HTML file you can share with anyone.
 
 No accounts. No backend. No data ever leaves the browser.
+
+## What you can build
+
+- **From-scratch content slides** — Title, Section divider, Bulleted list, and
+  Statement/quote layouts, plus plain text slides. No screenshot required.
+- **Screenshot slides** — drop in images and overlay clickable hotspots and
+  redactions for guided product tours.
+- **One brand kit, applied everywhere** — import your brand standards (colours,
+  fonts, logo) and every slide *and* the exported presentation pick up your look
+  and feel automatically.
 
 ## Use it
 
@@ -17,16 +28,25 @@ else.
 
 ## Build a presentation
 
-1. **Add slides** — drag-and-drop images or click *+ Screenshots*; each image
-   becomes a slide. Or add a **+ Text slide** (heading + body) for intros and
-   section breaks.
-2. **Place hotspots** — with the **Hotspot** tool, click anywhere on a slide to
-   drop a pulsing hotspot. Add as many as you like; each gets its own tooltip.
-3. **Write tooltips** — select a hotspot, type its text, and choose where the
+1. **Set up your brand** (recommended first step) — click **🎨 Brand kit** to
+   set your primary/secondary colours, slide background & text colours, heading
+   and body fonts, and logo. **Import** an existing `.brandkit.json` to apply a
+   saved look instantly, **Export** to reuse it across presentations, or click
+   *Pick brand colour from logo* to sample your logo's dominant colour.
+2. **Add slides** — click **＋ New slide** to add a from-scratch layout:
+   - 🏷️ **Title slide** — big title + subtitle (great as a cover)
+   - § **Section divider** — section heading in your brand colour
+   - ≣ **Bulleted list** — heading + bullet points (one per line)
+   - ❝ **Statement / quote** — a large centred statement with attribution
+   - 📝 **Plain text** — simple heading + body
+
+   …or click **+ Screenshots** (or drag-and-drop images) to add image slides.
+3. **Place hotspots** (image slides) — with the **Hotspot** tool, click anywhere
+   on a slide to drop a pulsing hotspot. Each gets its own tooltip.
+4. **Write tooltips** — select a hotspot, type its text, and choose where the
    tooltip sits (top / bottom / left / right).
-4. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
+5. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
    names, or numbers. Choose **Black out** (solid) or **Blur** per region.
-5. **Brand it** — set an accent color and upload a logo to show in the viewer bar.
 6. **Organize** — drag slides to reorder (or use the ↑/↓ buttons), duplicate, or
    delete.
 7. **Add a final CTA** (optional) — a button shown at the end, e.g.
@@ -37,7 +57,20 @@ else.
 
 Use **Save** / **Open** to keep working later — it downloads a
 `.presentation.json` you can reload into the editor. (Older project files are
-loaded and upgraded automatically.)
+loaded and upgraded automatically — a legacy accent colour becomes your brand's
+primary colour.)
+
+## Brand kit
+
+The brand kit is the single source of truth for your presentation's look and
+feel, applied live in the editor and baked into every export:
+
+- **Colours** — primary (accent), secondary, slide background, and slide text.
+- **Fonts** — heading and body, chosen from a set of **web-safe font stacks**, so
+  exported presentations stay 100% offline (no font CDN, no network requests).
+- **Logo** — shown in the viewer bar and on content slides.
+- **Import / Export** — share a `.brandkit.json` across decks, or hand it to a
+  teammate so every presentation matches your standards.
 
 ## The three canvas tools
 
@@ -65,10 +98,11 @@ HTML files that companies hand to their own customers:
   `innerHTML`.
 - **Link allow-list.** CTA links are restricted to `http`, `https`, and `mailto`
   at both export and render time, so `javascript:`/`data:` links can't sneak in.
-- **Untrusted project files are sanitized.** Loading a `.presentation.json`
-  validates every field: images and logos must be `data:image/…`, the brand
-  color must match a hex pattern (blocks CSS injection), coordinates are clamped,
-  and URLs re-checked.
+- **Untrusted project & brand-kit files are sanitized.** Loading a
+  `.presentation.json` or `.brandkit.json` validates every field: images and
+  logos must be `data:image/…`, every brand colour must match a hex pattern
+  (blocks CSS injection), fonts are restricted to a fixed web-safe allow-list,
+  coordinates are clamped, and URLs re-checked.
 - **No script-tag breakout.** Presentation data is embedded as inert
   `<script type="application/json">` with `<` escaped.
 - **Locked-down exports.** Each exported file ships a strict

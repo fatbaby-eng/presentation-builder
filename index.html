@@ -96,7 +96,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .rd.blur { backdrop-filter: blur(10px); background: rgba(120,120,130,.18); }
 .rd.sel { outline: 2px dashed var(--accent); cursor: pointer; }
 .rd-draw { position: absolute; z-index: 4; border: 2px dashed var(--accent); background: rgba(108,92,231,.12); }
-.text-preview { width: 560px; max-width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+.text-preview { position: relative; width: 560px; max-width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 12px;
   box-shadow: var(--shadow); padding: 3rem 2.5rem; text-align: center; }
 .text-preview h1 { font-size: 1.8rem; margin: 0 0 1rem; }
 .text-preview p { color: var(--muted); line-height: 1.6; white-space: pre-wrap; margin: 0; }
@@ -186,6 +186,23 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .bp-s { margin: .55rem 0 0; font-size: .9rem; opacity: .82; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.3rem; }
 
+/* ── Asset library + stage overlays ── */
+.asset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45rem; }
+.asset-cell { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; aspect-ratio: 1;
+  background: #f3f4f7; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.asset-cell:hover { border-color: var(--accent); }
+.asset-cell img { max-width: 86%; max-height: 86%; object-fit: contain; pointer-events: none; }
+.asset-cell .x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none;
+  background: rgba(12,14,20,.6); color: #fff; cursor: pointer; font-size: .72rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.asset-cell .x:hover { background: var(--danger); }
+.ov { position: absolute; z-index: 5; cursor: move; touch-action: none; }
+.ov img { display: block; width: 100%; height: auto; pointer-events: none; -webkit-user-drag: none; user-select: none; }
+.ov.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ov .oh { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: #fff; border: 2px solid var(--accent);
+  border-radius: 3px; cursor: nwse-resize; z-index: 2; }
+.ov .ox { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
+  border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2; }
+
 /* ── Preview overlay ───────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(12,14,20,.72); z-index: 50; display: none; flex-direction: column; }
 .overlay.open { display: flex; }
@@ -254,7 +271,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <div class="empty-canvas" id="emptyState">
           <div class="big">🎤</div>
           <p><strong>Build a presentation — from scratch or from screenshots.</strong></p>
-          <p>Design title, section, bulleted and statement slides with your own brand colours and fonts, or drop in screenshots with clickable hotspots and redactions. Export one shareable HTML file. No accounts, no uploads — everything stays in your browser.</p>
+          <p>Design title, section, bulleted and statement slides with your own brand colours and fonts, or drop in screenshots with clickable hotspots and redactions. Add logos and images from a reusable asset library, then export one shareable HTML file. No accounts, no uploads — everything stays in your browser.</p>
           <p>
             <button class="btn primary" id="emptyScratchBtn" style="margin-top:.5rem">✎ Start from scratch</button>
             <button class="btn" id="emptyAddBtn" style="margin-top:.5rem">+ Add screenshots</button>
@@ -327,6 +344,14 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <label>Redactions <span class="hint" style="font-weight:400">(use the Redact tool, drag on the image)</span></label>
           <div id="redactList"></div>
         </div>
+      </div>
+
+      <div class="divider"></div>
+      <h2>Asset library</h2>
+      <div class="field">
+        <div class="asset-grid" id="assetGrid"></div>
+        <button class="btn sm" id="addAssetBtn" style="margin-top:.55rem">＋ Upload asset</button>
+        <div class="hint">Click an asset to drop it on the current slide. Drag to move, use the corner handle to scale. Deleting an asset from the library removes it from every slide.</div>
       </div>
 
       <div class="divider"></div>
@@ -410,6 +435,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 
 <input type="file" id="imgInput" class="hidden-file" accept="image/*" multiple>
 <input type="file" id="logoInput" class="hidden-file" accept="image/*">
+<input type="file" id="assetInput" class="hidden-file" accept="image/*" multiple>
 <input type="file" id="projInput" class="hidden-file" accept="application/json,.json">
 <input type="file" id="brandInput" class="hidden-file" accept="application/json,.json">
 <div class="toast" id="toast"></div>
@@ -446,13 +472,15 @@ const DEFAULT_BRAND = { primary: "#6c5ce7", secondary: "#0ea5e9", bg: "#0c0e14",
 let project = newProject();
 let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
+let selAsset = -1;       // selected placed-asset (overlay) index within the slide
 let tool = "hotspot";    // hotspot | redact | select
 
 function newProject() {
-  return { v: 3, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
-    brand: Object.assign({}, DEFAULT_BRAND),
+  return { v: 4, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
+    brand: Object.assign({}, DEFAULT_BRAND), assets: [],
     steps: [], cta: { enabled: false, text: "Get started", url: "" } };
 }
+function assetById(id) { return project.assets.find(a => a.id === id); }
 function uid() { return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 // Starter content for each from-scratch layout.
@@ -466,7 +494,7 @@ function newContentSlide(layout) {
   layout = LAYOUTS.includes(layout) ? layout : "bullets";
   const pr = presets[layout];
   return { id: uid(), type: "content", layout, name: "",
-    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice() };
+    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice(), overlays: [] };
 }
 
 /* ───────────────────────── Security helpers ─────────────────────────
@@ -495,6 +523,26 @@ function sanitizeBrand(b) {
     fontBody:    safeFont(b.fontBody)
   };
 }
+function sanitizeAssets(raw) {
+  const out = []; if (!Array.isArray(raw)) return out;
+  for (const a of raw) {
+    if (!a || typeof a !== "object") continue;
+    const img = safeImage(a.image); if (!img) continue;
+    out.push({ id: str(a.id, 40) || uid(), name: str(a.name, 80), image: img });
+  }
+  return out;
+}
+// Placed-asset overlays: position (top-left %) + width (%); a touch of off-stage bleed is allowed.
+function sanitizeOverlays(raw) {
+  const out = []; if (!Array.isArray(raw)) return out;
+  for (const o of raw) {
+    if (!o || typeof o !== "object") continue;
+    const aid = str(o.assetId, 40); if (!aid) continue;
+    out.push({ id: str(o.id, 40) || uid(), assetId: aid,
+      x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200) });
+  }
+  return out;
+}
 // Map an imported brand-kit file (or another project) into a clean brand object + optional logo.
 function brandFromImport(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -512,19 +560,20 @@ function brandFromImport(raw) {
 
 function sanitizeStep(s) {
   if (!s || typeof s !== "object") return null;
+  const overlays = sanitizeOverlays(s.overlays);
   if (s.type === "text") {
-    return { id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000) };
+    return { id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000), overlays };
   }
   if (s.type === "content") {
     const bullets = Array.isArray(s.bullets) ? s.bullets.map(b => str(b, 200)).filter(x => x.trim()).slice(0, 12) : [];
     return { id: uid(), type: "content",
       layout: LAYOUTS.includes(s.layout) ? s.layout : "bullets",
       name: str(s.name, 80), heading: str(s.heading, 160), subhead: str(s.subhead, 200),
-      body: str(s.body, 1200), bullets };
+      body: str(s.body, 1200), bullets, overlays };
   }
   const img = safeImage(s.image);
   if (!img) return null; // image slide with no valid image is meaningless
-  const step = { id: uid(), type: "image", name: str(s.name, 80), image: img, hotspots: [], redactions: [] };
+  const step = { id: uid(), type: "image", name: str(s.name, 80), image: img, hotspots: [], redactions: [], overlays };
   if (Array.isArray(s.hotspots)) {
     for (const h of s.hotspots) {
       if (!h || typeof h !== "object") continue;
@@ -555,7 +604,11 @@ function sanitizeProject(raw) {
   p.brand = sanitizeBrand(raw.brand || { primary: safeColor(raw.accent, DEFAULT_BRAND.primary) });
   p.accent = p.brand.primary; // kept in sync for back-compat
   p.logo = safeImage(raw.logo);
+  p.assets = sanitizeAssets(raw.assets);
   if (Array.isArray(raw.steps)) for (const s of raw.steps) { const st = sanitizeStep(s); if (st) p.steps.push(st); }
+  // Drop overlays that point at assets which no longer exist.
+  const assetIds = new Set(p.assets.map(a => a.id));
+  for (const s of p.steps) if (s.overlays) s.overlays = s.overlays.filter(o => assetIds.has(o.assetId));
   const cta = raw.cta || {};
   p.cta = { enabled: !!cta.enabled, text: str(cta.text, 60) || "Get started", url: safeUrl(cta.url) };
   return p;
@@ -599,13 +652,66 @@ function buildContentSlideEl(step) {
   return d;
 }
 
+// Render placed assets onto a stage element and make them drag-to-move / handle-to-scale.
+// stageEl must be position:relative; overlay coords are % of the stage box.
+function attachOverlays(stageEl, step) {
+  (step.overlays || []).forEach((o, oi) => {
+    const a = assetById(o.assetId); if (!a) return;
+    const ov = document.createElement("div");
+    ov.className = "ov" + (oi === selAsset ? " sel" : "");
+    ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
+    const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false; ov.appendChild(img);
+    ov.addEventListener("click", e => e.stopPropagation());
+
+    // drag to move
+    ov.addEventListener("pointerdown", e => {
+      if (e.target.classList.contains("oh") || e.target.classList.contains("ox")) return;
+      e.stopPropagation(); e.preventDefault();
+      if (selAsset !== oi) { selAsset = oi; selHotspot = -1; selAsset = -1; render(); return; }
+      const rect = stageEl.getBoundingClientRect();
+      const sx = e.clientX, sy = e.clientY, ox = o.x, oy = o.y;
+      ov.setPointerCapture(e.pointerId);
+      const move = ev => {
+        o.x = clamp(ox + (ev.clientX - sx) / rect.width * 100, -50, 150);
+        o.y = clamp(oy + (ev.clientY - sy) / rect.height * 100, -50, 150);
+        ov.style.left = o.x + "%"; ov.style.top = o.y + "%";
+      };
+      const up = () => { ov.removeEventListener("pointermove", move); ov.removeEventListener("pointerup", up); };
+      ov.addEventListener("pointermove", move); ov.addEventListener("pointerup", up);
+    });
+
+    if (oi === selAsset) {
+      const h = document.createElement("div"); h.className = "oh"; h.title = "Drag to resize";
+      h.addEventListener("pointerdown", e => {
+        e.stopPropagation(); e.preventDefault();
+        const rect = stageEl.getBoundingClientRect(), ovRect = ov.getBoundingClientRect();
+        h.setPointerCapture(e.pointerId);
+        const move = ev => {
+          const wpx = Math.max(8, ev.clientX - ovRect.left);
+          o.w = clamp(wpx / rect.width * 100, 1, 200);
+          ov.style.width = o.w + "%";
+        };
+        const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); };
+        h.addEventListener("pointermove", move); h.addEventListener("pointerup", up);
+      });
+      ov.appendChild(h);
+
+      const x = document.createElement("div"); x.className = "ox"; x.textContent = "×"; x.title = "Remove from this slide";
+      x.addEventListener("pointerdown", e => e.stopPropagation());
+      x.onclick = e => { e.stopPropagation(); step.overlays.splice(oi, 1); selAsset = -1; render(); };
+      ov.appendChild(x);
+    }
+    stageEl.appendChild(ov);
+  });
+}
+
 function renderSteps() {
   stepList.innerHTML = "";
   project.steps.forEach((s, i) => {
     const row = document.createElement("div");
     row.className = "step-item" + (i === selected ? " active" : "");
     row.draggable = true;
-    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; selHotspot = -1; render(); } };
+    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; selHotspot = -1; selAsset = -1; render(); } };
     // drag-to-reorder
     row.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", i); row.style.opacity = ".4"; });
     row.addEventListener("dragend", () => { row.style.opacity = "1"; });
@@ -662,13 +768,17 @@ function renderCanvas() {
     const card = document.createElement("div"); card.className = "text-preview";
     const h = document.createElement("h1"); h.textContent = step.heading || "Heading";
     const p = document.createElement("p"); p.textContent = step.body || "Body text appears here.";
-    card.appendChild(h); card.appendChild(p); canvasWrap.appendChild(card);
+    card.appendChild(h); card.appendChild(p);
+    card.addEventListener("click", () => { if (selAsset !== -1) { selAsset = -1; render(); } });
+    attachOverlays(card, step); canvasWrap.appendChild(card);
     return;
   }
 
   if (step.type === "content") {
     canvasTools.style.display = "none";
-    canvasWrap.appendChild(buildContentSlideEl(step));
+    const el = buildContentSlideEl(step);
+    el.addEventListener("click", () => { if (selAsset !== -1) { selAsset = -1; render(); } });
+    attachOverlays(el, step); canvasWrap.appendChild(el);
     return;
   }
 
@@ -730,9 +840,10 @@ function renderCanvas() {
       drawState = null; render();
     });
   } else { // select: click empty space clears hotspot selection
-    frame.onclick = () => { selHotspot = -1; render(); };
+    frame.onclick = () => { selHotspot = -1; selAsset = -1; render(); };
   }
 
+  attachOverlays(frame, step);
   canvasWrap.appendChild(frame);
 }
 
@@ -779,6 +890,8 @@ function renderInspector() {
     if (!step.redactions.length) { const e = document.createElement("div"); e.className = "hint"; e.textContent = "None yet."; rl.appendChild(e); }
   }
 
+  renderAssetLibrary();
+
   // branding
   const lp = $("logoPrev");
   if (project.logo) { lp.innerHTML = ""; const im = document.createElement("img"); im.src = project.logo; im.alt = "logo"; lp.appendChild(im); $("logoClear").style.display = ""; }
@@ -818,17 +931,17 @@ function render() {
 function reorder(from, to) {
   if (from === to || isNaN(from)) return;
   const [m] = project.steps.splice(from, 1); project.steps.splice(to, 0, m);
-  selected = to; selHotspot = -1; render();
+  selected = to; selHotspot = -1; selAsset = -1; render();
 }
 function moveStep(i, d) {
   const j = i + d; if (j < 0 || j >= project.steps.length) return;
   [project.steps[i], project.steps[j]] = [project.steps[j], project.steps[i]];
   if (selected === i) selected = j; else if (selected === j) selected = i; render();
 }
-function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; render(); }
-function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; render(); }
-function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "" }); selected = project.steps.length - 1; selHotspot = -1; render(); }
-function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; render(); }
+function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; selAsset = -1; render(); }
+function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; selAsset = -1; render(); }
+function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [] }); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); }
+function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); }
 // "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
 function addSlideByKind(kind) { if (kind === "text") addTextSlide(); else addContentSlide(kind); }
 
@@ -841,8 +954,8 @@ function addImages(fileList) {
     const reader = new FileReader();
     reader.onload = () => {
       const data = safeImage(reader.result);
-      if (data) project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [] });
-      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; render(); toast(files.length + " slide(s) added"); }
+      if (data) project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [], overlays: [] });
+      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); toast(files.length + " slide(s) added"); }
     };
     reader.onerror = () => { if (--pending === 0) render(); };
     reader.readAsDataURL(file);
@@ -852,6 +965,52 @@ function setLogo(file) {
   const reader = new FileReader();
   reader.onload = () => { const d = safeImage(reader.result); if (d) { project.logo = d; render(); toast("Logo set"); } else toast("Invalid image", true); };
   reader.readAsDataURL(file);
+}
+
+/* ───────────────────────── Asset library ───────────────────────── */
+function addAssets(fileList) {
+  const files = [...fileList].filter(f => f.type.startsWith("image/"));
+  if (!files.length) { toast("Please choose image files", true); return; }
+  let pending = files.length, added = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = safeImage(reader.result);
+      if (data) { project.assets.push({ id: uid(), name: file.name.replace(/\.[^.]+$/, ""), image: data }); added++; }
+      if (--pending === 0) { render(); toast(added + " asset(s) added to library"); }
+    };
+    reader.onerror = () => { if (--pending === 0) render(); };
+    reader.readAsDataURL(file);
+  });
+}
+function placeAsset(assetId) {
+  const s = curSlide();
+  if (!s) { toast("Add a slide first", true); return; }
+  if (!s.overlays) s.overlays = [];
+  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24 });
+  selHotspot = -1; selAsset = s.overlays.length - 1; render();
+  toast("Asset placed — drag to move, corner handle to scale");
+}
+function deleteAsset(assetId) {
+  if (!confirm("Delete this asset from the library? It will be removed from every slide.")) return;
+  project.assets = project.assets.filter(a => a.id !== assetId);
+  for (const s of project.steps) if (s.overlays) s.overlays = s.overlays.filter(o => o.assetId !== assetId);
+  selAsset = -1; render(); toast("Asset deleted");
+}
+function renderAssetLibrary() {
+  const g = $("assetGrid"); g.innerHTML = "";
+  if (!project.assets.length) {
+    const e = document.createElement("div"); e.className = "hint"; e.style.gridColumn = "1 / -1";
+    e.textContent = "No assets yet. Upload logos, icons or images to reuse across slides."; g.appendChild(e); return;
+  }
+  project.assets.forEach(a => {
+    const cell = document.createElement("div"); cell.className = "asset-cell"; cell.title = a.name || "asset";
+    const im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; cell.appendChild(im);
+    cell.onclick = () => placeAsset(a.id);
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete from library";
+    x.onclick = e => { e.stopPropagation(); deleteAsset(a.id); };
+    cell.appendChild(x); g.appendChild(cell);
+  });
 }
 
 /* ───────────────────────── Brand kit ───────────────────────── */
@@ -947,7 +1106,7 @@ function slug(s) { return (s || "presentation").toLowerCase().replace(/[^a-z0-9]
 function saveProject() { download(slug(project.title) + ".presentation.json", new Blob([JSON.stringify(project, null, 2)], { type: "application/json" })); toast("Project saved"); }
 function loadProject(file) {
   const reader = new FileReader();
-  reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
+  reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
   reader.readAsText(file);
 }
 
@@ -990,7 +1149,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .tip { position: absolute; max-width: 260px; background: #fff; color: #1b1f2a; padding: .7rem .85rem; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: .85rem; line-height: 1.45; z-index: 6; }
 .tip .acts { margin-top: .6rem; display: flex; gap: .5rem; }
 .tip button { border: none; cursor: pointer; font-weight: 600; border-radius: 7px; padding: .45rem .8rem; font-size: .8rem; font-family: inherit; background: var(--accent); color: #fff; }
-.text-slide { max-width: 720px; text-align: center; padding: 1rem 2rem; }
+.text-slide { position: relative; max-width: 720px; text-align: center; padding: 1rem 2rem; }
 .text-slide h1 { font-size: 2.2rem; margin: 0 0 1rem; }
 .text-slide p { font-size: 1.05rem; line-height: 1.7; color: #c8cdd8; white-space: pre-wrap; margin: 0; }
 .content-slide { width: min(960px, 92vw); aspect-ratio: 16 / 9; max-height: calc(100vh - 150px); background: var(--b-bg); color: var(--b-text);
@@ -1009,6 +1168,8 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .content-slide.layout-section h1 { color: var(--accent); }
 .content-slide .logo-mini { position: absolute; top: 1.5rem; left: clamp(1.5rem, 4vw, 3.4rem); height: 26px; max-width: 130px; }
 .content-slide.center .logo-mini { left: 50%; transform: translateX(-50%); }
+.ov { position: absolute; z-index: 3; pointer-events: none; }
+.ov img { display: block; width: 100%; height: auto; }
 .nav { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .5rem 1rem 1rem; }
 .nav button { background: rgba(255,255,255,.1); color: #fff; border: none; border-radius: 8px; padding: .5rem .9rem; cursor: pointer; font-family: inherit; font-size: .82rem; }
 .nav button:disabled { opacity: .35; cursor: default; }
@@ -1053,10 +1214,22 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     else { drawImage(step); }
   }
 
+  function vAsset(id) { var as = DATA.assets || []; for (var k = 0; k < as.length; k++) { if (as[k].id === id) return as[k]; } return null; }
+  function drawOverlays(box, step) {
+    (step.overlays || []).forEach(function (o) {
+      var a = vAsset(o.assetId); if (!a) return;
+      var d = document.createElement("div"); d.className = "ov";
+      d.style.left = o.x + "%"; d.style.top = o.y + "%"; d.style.width = o.w + "%";
+      var im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; d.appendChild(im);
+      box.appendChild(d);
+    });
+  }
+
   function drawText(step) {
     var d = document.createElement("div"); d.className = "text-slide";
     var h = document.createElement("h1"); h.textContent = step.heading || ""; d.appendChild(h);
     if (step.body) { var p = document.createElement("p"); p.textContent = step.body; d.appendChild(p); }
+    drawOverlays(d, step);
     stage.appendChild(d);
   }
 
@@ -1075,6 +1248,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       d.appendChild(ul);
     }
     if (step.body) { var p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
+    drawOverlays(d, step);
     stage.appendChild(d);
   }
 
@@ -1092,6 +1266,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       m.onclick = function () { if (h.text) { active = hi; draw2(frame, step); } else next(); };
       frame.appendChild(m);
     });
+    drawOverlays(frame, step);
     stage.appendChild(frame);
     draw2(frame, step);
   }
@@ -1194,6 +1369,8 @@ $("bReset").onclick = resetBrand;
 $("brandInput").addEventListener("change", e => { if (e.target.files[0]) importBrand(e.target.files[0]); e.target.value = ""; });
 $("logoBtn").onclick = () => $("logoInput").click();
 $("logoInput").addEventListener("change", e => { if (e.target.files[0]) setLogo(e.target.files[0]); e.target.value = ""; });
+$("addAssetBtn").onclick = () => $("assetInput").click();
+$("assetInput").addEventListener("change", e => { addAssets(e.target.files); e.target.value = ""; });
 $("logoClear").onclick = () => { project.logo = null; render(); };
 $("loadBtn").onclick = () => $("projInput").click();
 $("projInput").addEventListener("change", e => { if (e.target.files[0]) loadProject(e.target.files[0]); e.target.value = ""; });
@@ -1213,7 +1390,7 @@ $("txtBody").addEventListener("input", e => { const s = curSlide(); if (s && s.t
 // hotspot editing
 $("tipText").addEventListener("input", e => { const s = curSlide(); if (s && s.hotspots && s.hotspots[selHotspot]) { s.hotspots[selHotspot].text = e.target.value; renderSteps(); } });
 $("posGrid").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots[selHotspot].pos = b.dataset.pos; renderInspector(); } });
-$("delHotspot").onclick = () => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots.splice(selHotspot, 1); selHotspot = -1; render(); } };
+$("delHotspot").onclick = () => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots.splice(selHotspot, 1); selHotspot = -1; selAsset = -1; render(); } };
 
 // CTA
 $("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); });
@@ -1223,6 +1400,15 @@ $("ctaUrl").addEventListener("input", e => project.cta.url = e.target.value);
 // drag-and-drop images onto canvas
 canvasWrap.addEventListener("dragover", e => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); });
 canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.preventDefault(); addImages(e.dataTransfer.files); } });
+
+// Delete the selected stage asset with Delete/Backspace (unless typing in a field)
+document.addEventListener("keydown", e => {
+  if (e.key !== "Delete" && e.key !== "Backspace") return;
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  const s = curSlide();
+  if (s && selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
+});
 
 window.addEventListener("beforeunload", e => { if (project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
 

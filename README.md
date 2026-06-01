@@ -17,6 +17,9 @@ No accounts. No backend. No data ever leaves the browser.
 - **One brand kit, applied everywhere** — import your brand standards (colours,
   fonts, logo) and every slide *and* the exported presentation pick up your look
   and feel automatically.
+- **Reusable asset library** — upload logos, icons or images once, then drop them
+  onto any slide and drag/scale them into place. Deleting an asset from the
+  library removes it from every slide it appears on.
 
 ## Use it
 

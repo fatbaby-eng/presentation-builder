@@ -202,6 +202,19 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   border-radius: 3px; cursor: nwse-resize; z-index: 2; }
 .ov .ox { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
   border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.shape { position: absolute; z-index: 4; box-sizing: border-box; }
+.shape.draggable { cursor: move; }
+.shape.passive { pointer-events: none; }
+.shape.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.shape .msg-text { width: 100%; height: 100%; overflow: hidden; }
+.sh { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: #fff; border: 2px solid var(--accent);
+  border-radius: 3px; cursor: nwse-resize; z-index: 3; }
+.shx { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
+  border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 3; }
+.tool-draw, .tool-draw * { cursor: crosshair; }
+.marker.passive, .ov.passive, .rd.passive { pointer-events: none; }
+.marker.draggable { cursor: move; }
 
 /* ── Preview overlay ───────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(12,14,20,.72); z-index: 50; display: none; flex-direction: column; }
@@ -261,10 +274,15 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <!-- Canvas -->
     <div class="canvas-col">
       <div class="canvas-tools" id="canvasTools" style="display:none">
-        <span class="tlabel">Tool</span>
-        <button class="tool" data-tool="hotspot" id="toolHotspot">＋ Hotspot</button>
-        <button class="tool" data-tool="redact" id="toolRedact">▦ Redact</button>
+        <span class="tlabel">Tools</span>
         <button class="tool" data-tool="select" id="toolSelect">↖ Select</button>
+        <button class="tool img-tool" data-tool="hotspot" id="toolHotspot">＋ Hotspot</button>
+        <button class="tool img-tool" data-tool="redact" id="toolRedact">▦ Redact</button>
+        <button class="tool" data-tool="box">▭ Box</button>
+        <button class="tool" data-tool="ellipse">◯ Ellipse</button>
+        <button class="tool" data-tool="arrow">➶ Arrow</button>
+        <button class="tool" data-tool="highlight">▨ Highlight</button>
+        <button class="tool" data-tool="message">💬 Message</button>
         <span class="tlabel" id="toolHint" style="margin-left:auto"></span>
       </div>
       <div class="col canvas-wrap" id="canvasWrap">
@@ -337,13 +355,53 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
                 <button data-pos="right">Right</button>
               </div>
             </div>
-            <button class="btn ghost sm" id="delHotspot" style="width:100%">Remove this hotspot</button>
+            <div class="field" style="margin:.6rem 0 0">
+              <label>Marker style</label>
+              <div style="display:flex;gap:.5rem;align-items:center">
+                <input type="color" id="hsColor" title="Hotspot colour" style="width:34px;height:34px;border:1px solid var(--line);border-radius:7px;padding:0;background:none;cursor:pointer">
+                <input type="range" id="hsSize" min="14" max="80" step="1" style="flex:1">
+                <span class="hint" id="hsSizeVal" style="font-weight:400;width:42px"></span>
+              </div>
+            </div>
+            <button class="btn ghost sm" id="delHotspot" style="width:100%;margin-top:.6rem">Remove this hotspot</button>
           </div>
         </div>
         <div class="field">
           <label>Redactions <span class="hint" style="font-weight:400">(use the Redact tool, drag on the image)</span></label>
           <div id="redactList"></div>
         </div>
+      </div>
+
+      <!-- Shape style (shown when an annotation shape is selected) -->
+      <div id="shapeFields" style="display:none">
+        <div class="divider"></div>
+        <h2 id="shapeTitle">Shape style</h2>
+        <div class="field" id="sfTextWrap">
+          <label for="sfText">Message text</label>
+          <textarea id="sfText" maxlength="300" placeholder="Type your message…"></textarea>
+        </div>
+        <div class="field">
+          <div class="color-grid">
+            <label class="color-cell" for="sfFill" id="sfFillCell"><input type="color" id="sfFill"><span class="cl">Fill</span></label>
+            <label class="color-cell" for="sfStroke"><input type="color" id="sfStroke"><span class="cl" id="sfStrokeLbl">Border</span></label>
+          </div>
+        </div>
+        <div class="field" id="sfTextColorWrap">
+          <label class="color-cell" for="sfTextColor" style="width:100%"><input type="color" id="sfTextColor"><span class="cl">Text colour</span></label>
+        </div>
+        <div class="field" id="sfOpacityWrap">
+          <label for="sfOpacity">Fill opacity <span id="sfOpacityVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="sfOpacity" min="0" max="100" step="5" style="width:100%">
+        </div>
+        <div class="field">
+          <label for="sfStrokeW" id="sfStrokeWLbl">Border width <span id="sfStrokeWVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="sfStrokeW" min="0" max="20" step="1" style="width:100%">
+        </div>
+        <div class="field" id="sfRadiusWrap">
+          <label for="sfRadius">Corner radius <span id="sfRadiusVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="sfRadius" min="0" max="60" step="1" style="width:100%">
+        </div>
+        <button class="btn ghost sm" id="sfDelete" style="width:100%">Delete shape</button>
       </div>
 
       <div class="divider"></div>
@@ -466,6 +524,20 @@ const LAYOUTS = ["title", "section", "bullets", "statement"];
 const LAYOUT_LABELS = { title: "Title", section: "Section", bullets: "Bullets", statement: "Statement" };
 const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statement: "❝" };
 
+// Vector annotation / drawing tools (work on every slide type)
+const SHAPE_TOOLS = ["box", "ellipse", "arrow", "highlight", "message"];
+const SHAPE_TYPES = SHAPE_TOOLS.slice();
+function newShape(type, x, y, w, h) {
+  const b = { id: uid(), type, x, y, w, h, flipX: false, flipY: false };
+  if (type === "box")       return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
+  if (type === "ellipse")   return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
+  if (type === "highlight") return Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
+  if (type === "arrow")     return Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a" });
+  if (type === "message")   return Object.assign(b, { fill: "#ffffff", stroke: "#1b1f2a", strokeWidth: 1, opacity: 1, radius: 8, text: "Your message", textColor: "#1b1f2a" });
+  return b;
+}
+function hexA(hex, a) { const n = parseInt(safeColor(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + clamp(a, 0, 1) + ")"; }
+
 const DEFAULT_BRAND = { primary: "#6c5ce7", secondary: "#0ea5e9", bg: "#0c0e14", text: "#ffffff",
   fontHeading: "system", fontBody: "system" };
 
@@ -473,7 +545,8 @@ let project = newProject();
 let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
 let selAsset = -1;       // selected placed-asset (overlay) index within the slide
-let tool = "hotspot";    // hotspot | redact | select
+let selShape = -1;       // selected annotation shape index within the slide
+let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | highlight | message
 
 function newProject() {
   return { v: 4, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
@@ -494,7 +567,7 @@ function newContentSlide(layout) {
   layout = LAYOUTS.includes(layout) ? layout : "bullets";
   const pr = presets[layout];
   return { id: uid(), type: "content", layout, name: "",
-    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice(), overlays: [] };
+    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice(), overlays: [], shapes: [] };
 }
 
 /* ───────────────────────── Security helpers ─────────────────────────
@@ -543,6 +616,19 @@ function sanitizeOverlays(raw) {
   }
   return out;
 }
+function sanitizeShapes(raw) {
+  const out = []; if (!Array.isArray(raw)) return out;
+  for (const sh of raw) {
+    if (!sh || typeof sh !== "object" || !SHAPE_TYPES.includes(sh.type)) continue;
+    out.push({ id: str(sh.id, 40) || uid(), type: sh.type,
+      x: clamp(sh.x, -50, 150), y: clamp(sh.y, -50, 150), w: clamp(sh.w, 0, 200), h: clamp(sh.h, 0, 200),
+      flipX: !!sh.flipX, flipY: !!sh.flipY,
+      fill: safeColor(sh.fill, "#6c5ce7"), stroke: safeColor(sh.stroke, "#6c5ce7"),
+      strokeWidth: clamp(sh.strokeWidth, 0, 40), opacity: clamp(sh.opacity, 0, 1), radius: clamp(sh.radius, 0, 200),
+      text: str(sh.text, 300), textColor: safeColor(sh.textColor, "#1b1f2a") });
+  }
+  return out;
+}
 // Map an imported brand-kit file (or another project) into a clean brand object + optional logo.
 function brandFromImport(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -561,31 +647,34 @@ function brandFromImport(raw) {
 function sanitizeStep(s) {
   if (!s || typeof s !== "object") return null;
   const overlays = sanitizeOverlays(s.overlays);
+  const shapes = sanitizeShapes(s.shapes);
   if (s.type === "text") {
-    return { id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000), overlays };
+    return { id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000), overlays, shapes };
   }
   if (s.type === "content") {
     const bullets = Array.isArray(s.bullets) ? s.bullets.map(b => str(b, 200)).filter(x => x.trim()).slice(0, 12) : [];
     return { id: uid(), type: "content",
       layout: LAYOUTS.includes(s.layout) ? s.layout : "bullets",
       name: str(s.name, 80), heading: str(s.heading, 160), subhead: str(s.subhead, 200),
-      body: str(s.body, 1200), bullets, overlays };
+      body: str(s.body, 1200), bullets, overlays, shapes };
   }
   const img = safeImage(s.image);
   if (!img) return null; // image slide with no valid image is meaningless
-  const step = { id: uid(), type: "image", name: str(s.name, 80), image: img, hotspots: [], redactions: [], overlays };
+  const step = { id: uid(), type: "image", name: str(s.name, 80), image: img, hotspots: [], redactions: [], overlays, shapes };
   if (Array.isArray(s.hotspots)) {
     for (const h of s.hotspots) {
       if (!h || typeof h !== "object") continue;
       step.hotspots.push({ x: clamp(h.x, 0, 100), y: clamp(h.y, 0, 100),
-        text: str(h.text, 500), pos: POSITIONS.includes(h.pos) ? h.pos : "bottom" });
+        text: str(h.text, 500), pos: POSITIONS.includes(h.pos) ? h.pos : "bottom",
+        color: safeColor(h.color, "#6c5ce7"), size: clamp(h.size == null ? 30 : h.size, 14, 80) });
     }
   }
   // Back-compat: v1 single hotspot + tooltip
   if (!step.hotspots.length && s.hotspot && typeof s.hotspot === "object") {
     step.hotspots.push({ x: clamp(s.hotspot.x, 0, 100), y: clamp(s.hotspot.y, 0, 100),
       text: str(s.tooltip && s.tooltip.text, 500),
-      pos: POSITIONS.includes(s.tooltip && s.tooltip.pos) ? s.tooltip.pos : "bottom" });
+      pos: POSITIONS.includes(s.tooltip && s.tooltip.pos) ? s.tooltip.pos : "bottom",
+      color: "#6c5ce7", size: 30 });
   }
   if (Array.isArray(s.redactions)) {
     for (const r of s.redactions) {
@@ -652,25 +741,26 @@ function buildContentSlideEl(step) {
   return d;
 }
 
-// Render placed assets onto a stage element and make them drag-to-move / handle-to-scale.
+// Render placed assets onto a stage element; drag-to-move / handle-to-scale (Select tool only).
 // stageEl must be position:relative; overlay coords are % of the stage box.
-function attachOverlays(stageEl, step) {
+function attachOverlays(stageEl, step, sel) {
   (step.overlays || []).forEach((o, oi) => {
     const a = assetById(o.assetId); if (!a) return;
     const ov = document.createElement("div");
-    ov.className = "ov" + (oi === selAsset ? " sel" : "");
+    ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
     const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false; ov.appendChild(img);
+    if (!sel) { stageEl.appendChild(ov); return; }
     ov.addEventListener("click", e => e.stopPropagation());
 
     // drag to move
     ov.addEventListener("pointerdown", e => {
       if (e.target.classList.contains("oh") || e.target.classList.contains("ox")) return;
       e.stopPropagation(); e.preventDefault();
-      if (selAsset !== oi) { selAsset = oi; selHotspot = -1; selAsset = -1; render(); return; }
+      if (selAsset !== oi) { selAsset = oi; selHotspot = -1; selShape = -1; render(); return; }
       const rect = stageEl.getBoundingClientRect();
       const sx = e.clientX, sy = e.clientY, ox = o.x, oy = o.y;
-      ov.setPointerCapture(e.pointerId);
+      try { ov.setPointerCapture(e.pointerId); } catch (err) {}
       const move = ev => {
         o.x = clamp(ox + (ev.clientX - sx) / rect.width * 100, -50, 150);
         o.y = clamp(oy + (ev.clientY - sy) / rect.height * 100, -50, 150);
@@ -685,7 +775,7 @@ function attachOverlays(stageEl, step) {
       h.addEventListener("pointerdown", e => {
         e.stopPropagation(); e.preventDefault();
         const rect = stageEl.getBoundingClientRect(), ovRect = ov.getBoundingClientRect();
-        h.setPointerCapture(e.pointerId);
+        try { h.setPointerCapture(e.pointerId); } catch (err) {}
         const move = ev => {
           const wpx = Math.max(8, ev.clientX - ovRect.left);
           o.w = clamp(wpx / rect.width * 100, 1, 200);
@@ -711,7 +801,7 @@ function renderSteps() {
     const row = document.createElement("div");
     row.className = "step-item" + (i === selected ? " active" : "");
     row.draggable = true;
-    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; selHotspot = -1; selAsset = -1; render(); } };
+    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; selHotspot = -1; selAsset = -1; selShape = -1; render(); } };
     // drag-to-reorder
     row.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", i); row.style.opacity = ".4"; });
     row.addEventListener("dragend", () => { row.style.opacity = "1"; });
@@ -756,95 +846,206 @@ function toolBtn(label, title, fn) {
   b.onclick = (e) => { e.stopPropagation(); fn(); }; return b;
 }
 
-let drawState = null;
 function renderCanvas() {
   [...canvasWrap.children].forEach(c => { if (c !== emptyState) c.remove(); });
   const step = curSlide();
   if (!step) { emptyState.style.display = ""; inspector.style.display = "none"; canvasTools.style.display = "none"; return; }
   emptyState.style.display = "none"; inspector.style.display = "";
 
+  const isImage = step.type === "image";
+  if (!isImage && (tool === "hotspot" || tool === "redact")) tool = "select";   // image-only tools
+  const sel = tool === "select";
+  const drawing = SHAPE_TOOLS.includes(tool) || tool === "hotspot" || tool === "redact";
+
+  // toolbar (shown for every slide type now; hotspot/redact only for image slides)
+  canvasTools.style.display = "flex";
+  [...canvasTools.querySelectorAll(".img-tool")].forEach(b => b.style.display = isImage ? "" : "none");
+  [...canvasTools.querySelectorAll(".tool")].forEach(b => b.classList.toggle("on", b.dataset.tool === tool));
+  $("toolHint").textContent =
+      tool === "hotspot"  ? "Click to add a hotspot"
+    : tool === "redact"   ? "Drag to cover an area"
+    : tool === "message"  ? "Drag to draw a message box"
+    : SHAPE_TOOLS.includes(tool) ? "Drag to draw a " + tool
+    : "Click an item to select, move, resize or restyle it";
+
+  // ── build the stage element for this slide type ──
+  let stage;
   if (step.type === "text") {
-    canvasTools.style.display = "none";
-    const card = document.createElement("div"); card.className = "text-preview";
+    stage = document.createElement("div"); stage.className = "text-preview";
     const h = document.createElement("h1"); h.textContent = step.heading || "Heading";
     const p = document.createElement("p"); p.textContent = step.body || "Body text appears here.";
-    card.appendChild(h); card.appendChild(p);
-    card.addEventListener("click", () => { if (selAsset !== -1) { selAsset = -1; render(); } });
-    attachOverlays(card, step); canvasWrap.appendChild(card);
-    return;
+    stage.appendChild(h); stage.appendChild(p);
+  } else if (step.type === "content") {
+    stage = buildContentSlideEl(step);
+  } else {
+    stage = document.createElement("div"); stage.className = "frame";
+    const img = document.createElement("img"); img.src = step.image; img.alt = step.name || ""; img.draggable = false; stage.appendChild(img);
+    step.redactions.forEach((r, ri) => {
+      const box = document.createElement("div");
+      box.className = "rd " + r.mode + (sel ? " sel" : " passive");
+      box.style.left = r.x + "%"; box.style.top = r.y + "%"; box.style.width = r.w + "%"; box.style.height = r.h + "%";
+      if (sel) box.onclick = (e) => { e.stopPropagation(); if (confirm("Remove this redaction?")) { step.redactions.splice(ri, 1); render(); } };
+      stage.appendChild(box);
+    });
+    step.hotspots.forEach((h, hi) => attachHotspot(stage, step, h, hi, sel));
   }
+  if (drawing) stage.classList.add("tool-draw");
 
-  if (step.type === "content") {
-    canvasTools.style.display = "none";
-    const el = buildContentSlideEl(step);
-    el.addEventListener("click", () => { if (selAsset !== -1) { selAsset = -1; render(); } });
-    attachOverlays(el, step); canvasWrap.appendChild(el);
-    return;
-  }
+  attachShapes(stage, step, sel);
+  attachOverlays(stage, step, sel);
 
-  // image slide
-  canvasTools.style.display = "flex";
-  [...canvasTools.querySelectorAll(".tool")].forEach(b => b.classList.toggle("on", b.dataset.tool === tool));
-  $("toolHint").textContent = tool === "hotspot" ? "Click the image to add a hotspot"
-    : tool === "redact" ? "Drag on the image to cover an area" : "Click a hotspot or box to edit it";
-
-  const frame = document.createElement("div"); frame.className = "frame tool-" + tool;
-  const img = document.createElement("img"); img.src = step.image; img.alt = step.name || ""; img.draggable = false;
-  frame.appendChild(img);
-
-  // redactions
-  step.redactions.forEach((r, ri) => {
-    const box = document.createElement("div");
-    box.className = "rd " + r.mode + (tool === "select" ? " sel" : "");
-    box.style.left = r.x + "%"; box.style.top = r.y + "%"; box.style.width = r.w + "%"; box.style.height = r.h + "%";
-    if (tool === "select") box.onclick = (e) => { e.stopPropagation(); if (confirm("Remove this redaction?")) { step.redactions.splice(ri, 1); render(); } };
-    frame.appendChild(box);
-  });
-
-  // hotspots
-  step.hotspots.forEach((h, hi) => {
-    const m = document.createElement("div"); m.className = "marker" + (hi === selHotspot ? " sel" : "");
-    m.style.left = h.x + "%"; m.style.top = h.y + "%"; m.textContent = (hi + 1);
-    m.onclick = (e) => { e.stopPropagation(); selHotspot = hi; tool = "select"; render(); };
-    frame.appendChild(m);
-  });
-
-  // tool interactions
-  if (tool === "hotspot") {
-    frame.onclick = (e) => {
-      const r = frame.getBoundingClientRect();
-      step.hotspots.push({ x: clamp((e.clientX - r.left) / r.width * 100, 0, 100),
-        y: clamp((e.clientY - r.top) / r.height * 100, 0, 100), text: "", pos: "bottom" });
-      selHotspot = step.hotspots.length - 1; render();
+  // ── tool behaviour ──
+  if (isImage && tool === "hotspot") {
+    stage.onclick = (e) => {
+      const r = stage.getBoundingClientRect();
+      step.hotspots.push({ x: clamp((e.clientX - r.left) / r.width * 100, 0, 100), y: clamp((e.clientY - r.top) / r.height * 100, 0, 100),
+        text: "", pos: "bottom", color: project.brand.primary, size: 30 });
+      selHotspot = step.hotspots.length - 1; selShape = -1; selAsset = -1; render();
     };
-  } else if (tool === "redact") {
-    frame.addEventListener("pointerdown", e => {
-      const r = frame.getBoundingClientRect();
-      drawState = { r, x0: (e.clientX - r.left) / r.width * 100, y0: (e.clientY - r.top) / r.height * 100, el: null };
-      frame.setPointerCapture(e.pointerId);
-    });
-    frame.addEventListener("pointermove", e => {
-      if (!drawState) return;
-      const x1 = clamp((e.clientX - drawState.r.left) / drawState.r.width * 100, 0, 100);
-      const y1 = clamp((e.clientY - drawState.r.top) / drawState.r.height * 100, 0, 100);
-      if (!drawState.el) { drawState.el = document.createElement("div"); drawState.el.className = "rd-draw"; frame.appendChild(drawState.el); }
-      drawState.el.style.left = Math.min(drawState.x0, x1) + "%"; drawState.el.style.top = Math.min(drawState.y0, y1) + "%";
-      drawState.el.style.width = Math.abs(x1 - drawState.x0) + "%"; drawState.el.style.height = Math.abs(y1 - drawState.y0) + "%";
-    });
-    frame.addEventListener("pointerup", e => {
-      if (!drawState) return;
-      const x1 = clamp((e.clientX - drawState.r.left) / drawState.r.width * 100, 0, 100);
-      const y1 = clamp((e.clientY - drawState.r.top) / drawState.r.height * 100, 0, 100);
-      const w = Math.abs(x1 - drawState.x0), h = Math.abs(y1 - drawState.y0);
-      if (w > 1 && h > 1) step.redactions.push({ x: Math.min(drawState.x0, x1), y: Math.min(drawState.y0, y1), w, h, mode: "block" });
-      drawState = null; render();
-    });
-  } else { // select: click empty space clears hotspot selection
-    frame.onclick = () => { selHotspot = -1; selAsset = -1; render(); };
+  } else if (isImage && tool === "redact") {
+    setupBoxDraw(stage, (x, y, w, h) => { step.redactions.push({ x, y, w, h, mode: "block" }); render(); });
+  } else if (SHAPE_TOOLS.includes(tool)) {
+    setupBoxDraw(stage, (x, y, w, h, fx, fy) => {
+      const sh = newShape(tool, x, y, w, h); sh.flipX = fx; sh.flipY = fy;
+      step.shapes.push(sh); selShape = step.shapes.length - 1; selHotspot = -1; selAsset = -1; tool = "select"; render();
+    }, tool === "arrow");
   }
 
-  attachOverlays(frame, step);
-  canvasWrap.appendChild(frame);
+  canvasWrap.appendChild(stage);
+}
+
+// Generic drag-to-draw a rectangle on a stage; onDone gets (x,y,w,h,flipX,flipY) in %.
+function setupBoxDraw(stage, onDone, allowThin) {
+  let ds = null;
+  stage.addEventListener("pointerdown", e => {
+    if (e.target.closest(".shape, .ov, .marker, .rd")) return; // don't start over an existing item
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    ds = { r, x0: clamp((e.clientX - r.left) / r.width * 100, 0, 100), y0: clamp((e.clientY - r.top) / r.height * 100, 0, 100), el: null, fx: false, fy: false };
+    try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  stage.addEventListener("pointermove", e => {
+    if (!ds) return;
+    const x1 = clamp((e.clientX - ds.r.left) / ds.r.width * 100, 0, 100), y1 = clamp((e.clientY - ds.r.top) / ds.r.height * 100, 0, 100);
+    ds.fx = x1 < ds.x0; ds.fy = y1 < ds.y0;
+    if (!ds.el) { ds.el = document.createElement("div"); ds.el.className = "rd-draw"; stage.appendChild(ds.el); }
+    ds.el.style.left = Math.min(ds.x0, x1) + "%"; ds.el.style.top = Math.min(ds.y0, y1) + "%";
+    ds.el.style.width = Math.abs(x1 - ds.x0) + "%"; ds.el.style.height = Math.abs(y1 - ds.y0) + "%";
+  });
+  stage.addEventListener("pointerup", e => {
+    if (!ds) return;
+    const x1 = clamp((e.clientX - ds.r.left) / ds.r.width * 100, 0, 100), y1 = clamp((e.clientY - ds.r.top) / ds.r.height * 100, 0, 100);
+    const x = Math.min(ds.x0, x1), y = Math.min(ds.y0, y1), w = Math.abs(x1 - ds.x0), h = Math.abs(y1 - ds.y0), fx = ds.fx, fy = ds.fy;
+    ds = null;
+    const ok = allowThin ? Math.hypot(w, h) > 2 : (w > 1 && h > 1);
+    if (ok) onDone(x, y, w, h, fx, fy); else render();   // render() clears the dashed preview
+  });
+}
+
+// One hotspot marker (customizable colour & size; draggable in Select).
+function attachHotspot(stage, step, h, hi, sel) {
+  const m = document.createElement("div");
+  m.className = "marker" + (sel ? " draggable" : " passive") + (hi === selHotspot ? " sel" : "");
+  m.style.left = h.x + "%"; m.style.top = h.y + "%";
+  m.style.width = m.style.height = (h.size || 30) + "px";
+  m.style.background = h.color || project.brand.primary;
+  m.textContent = (hi + 1);
+  if (sel) {
+    m.addEventListener("click", e => e.stopPropagation());
+    m.addEventListener("pointerdown", e => {
+      e.stopPropagation(); e.preventDefault();
+      if (selHotspot !== hi) { selHotspot = hi; selShape = -1; selAsset = -1; render(); return; }
+      const r = stage.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = h.x, oy = h.y;
+      try { m.setPointerCapture(e.pointerId); } catch (err) {}
+      const mv = ev => { h.x = clamp(ox + (ev.clientX - sx) / r.width * 100, 0, 100); h.y = clamp(oy + (ev.clientY - sy) / r.height * 100, 0, 100); m.style.left = h.x + "%"; m.style.top = h.y + "%"; };
+      const up = () => { m.removeEventListener("pointermove", mv); m.removeEventListener("pointerup", up); };
+      m.addEventListener("pointermove", mv); m.addEventListener("pointerup", up);
+    });
+  }
+  stage.appendChild(m);
+}
+
+// Visual element for a shape (no editing handles).
+function buildShapeEl(sh) {
+  const el = document.createElement("div");
+  el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+  if (sh.type === "arrow") {
+    el.appendChild(arrowSVG(sh));
+  } else if (sh.type === "message") {
+    el.style.background = hexA(sh.fill, sh.opacity);
+    el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
+    el.style.borderRadius = sh.radius + "px"; el.style.color = sh.textColor;
+    const t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
+    t.style.cssText = "padding:.5rem .6rem;font-size:.85rem;line-height:1.4;font-family:var(--font)";
+    el.appendChild(t);
+  } else { // box | ellipse | highlight
+    el.style.background = hexA(sh.fill, sh.opacity);
+    el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
+    el.style.borderRadius = sh.type === "ellipse" ? "50%" : sh.radius + "px";
+    if (sh.type === "highlight") el.style.mixBlendMode = "multiply";
+  }
+  return el;
+}
+function arrowSVG(sh) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
+  const x1 = sh.flipX ? 92 : 8, x2 = sh.flipX ? 8 : 92, y1 = sh.flipY ? 92 : 8, y2 = sh.flipY ? 8 : 92;
+  const sw = sh.strokeWidth || 3;
+  const line = document.createElementNS(NS, "line");
+  line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+  line.setAttribute("stroke", sh.stroke); line.setAttribute("stroke-width", sw);
+  line.setAttribute("vector-effect", "non-scaling-stroke"); line.setAttribute("stroke-linecap", "round");
+  svg.appendChild(line);
+  const ang = Math.atan2(y2 - y1, x2 - x1), len = 16, a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82;
+  const head = document.createElementNS(NS, "polyline");
+  head.setAttribute("points", (x2 + len * Math.cos(a1)) + "," + (y2 + len * Math.sin(a1)) + " " + x2 + "," + y2 + " " + (x2 + len * Math.cos(a2)) + "," + (y2 + len * Math.sin(a2)));
+  head.setAttribute("fill", "none"); head.setAttribute("stroke", sh.stroke); head.setAttribute("stroke-width", sw);
+  head.setAttribute("vector-effect", "non-scaling-stroke"); head.setAttribute("stroke-linecap", "round"); head.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(head);
+  return svg;
+}
+
+// Render shapes onto a stage; interactive (select / move / resize / delete) only in Select.
+function attachShapes(stage, step, sel) {
+  (step.shapes || []).forEach((sh, si) => {
+    const el = buildShapeEl(sh);
+    el.className = "shape" + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
+    if (sel) {
+      el.addEventListener("click", e => e.stopPropagation());
+      el.addEventListener("pointerdown", e => {
+        if (e.target.classList.contains("sh") || e.target.classList.contains("shx")) return;
+        e.stopPropagation(); e.preventDefault();
+        if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; render(); return; }
+        const r = stage.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = sh.x, oy = sh.y;
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+        const mv = ev => { sh.x = clamp(ox + (ev.clientX - sx) / r.width * 100, -50, 150); sh.y = clamp(oy + (ev.clientY - sy) / r.height * 100, -50, 150); el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; };
+        const up = () => { el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); };
+        el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
+      });
+      if (si === selShape) {
+        const hnd = document.createElement("div"); hnd.className = "sh"; hnd.title = "Drag to resize";
+        hnd.addEventListener("pointerdown", e => {
+          e.stopPropagation(); e.preventDefault();
+          const r = stage.getBoundingClientRect(), rect = el.getBoundingClientRect();
+          try { hnd.setPointerCapture(e.pointerId); } catch (err) {}
+          const mv = ev => {
+            sh.w = clamp(Math.max(4, ev.clientX - rect.left) / r.width * 100, 0.5, 200);
+            sh.h = clamp(Math.max(4, ev.clientY - rect.top) / r.height * 100, 0.5, 200);
+            el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+          };
+          const up = () => { hnd.removeEventListener("pointermove", mv); hnd.removeEventListener("pointerup", up); render(); };
+          hnd.addEventListener("pointermove", mv); hnd.addEventListener("pointerup", up);
+        });
+        el.appendChild(hnd);
+        const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
+        x.addEventListener("pointerdown", e => e.stopPropagation());
+        x.onclick = e => { e.stopPropagation(); step.shapes.splice(si, 1); selShape = -1; render(); };
+        el.appendChild(x);
+      }
+    }
+    stage.appendChild(el);
+  });
 }
 
 function renderInspector() {
@@ -874,6 +1075,8 @@ function renderInspector() {
       he.style.display = ""; const h = step.hotspots[selHotspot];
       $("tipText").value = h.text;
       [...$("posGrid").children].forEach(b => b.classList.toggle("on", b.dataset.pos === h.pos));
+      $("hsColor").value = h.color || project.brand.primary;
+      $("hsSize").value = h.size || 30; $("hsSizeVal").textContent = (h.size || 30) + "px";
     } else he.style.display = "none";
     // redaction list
     const rl = $("redactList"); rl.innerHTML = "";
@@ -890,6 +1093,11 @@ function renderInspector() {
     if (!step.redactions.length) { const e = document.createElement("div"); e.className = "hint"; e.textContent = "None yet."; rl.appendChild(e); }
   }
 
+  // shape style panel (any slide type)
+  const showShape = selShape >= 0 && step.shapes && step.shapes[selShape];
+  $("shapeFields").style.display = showShape ? "" : "none";
+  if (showShape) renderShapeFields(step.shapes[selShape]);
+
   renderAssetLibrary();
 
   // branding
@@ -900,6 +1108,24 @@ function renderInspector() {
   $("ctaOn").checked = project.cta.enabled;
   $("ctaText").value = project.cta.text; $("ctaUrl").value = project.cta.url;
   $("ctaFields").style.opacity = project.cta.enabled ? "1" : ".5";
+}
+
+const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", arrow: "Arrow", highlight: "Highlight", message: "Message box" };
+function renderShapeFields(sh) {
+  const isMsg = sh.type === "message", isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isHi = sh.type === "highlight";
+  $("shapeTitle").textContent = (SHAPE_LABEL[sh.type] || "Shape") + " style";
+  $("sfTextWrap").style.display = isMsg ? "" : "none";
+  $("sfTextColorWrap").style.display = isMsg ? "" : "none";
+  $("sfFillCell").style.display = isArrow ? "none" : "";
+  $("sfOpacityWrap").style.display = isArrow ? "none" : "";
+  $("sfRadiusWrap").style.display = (isArrow || isEllipse) ? "none" : "";
+  $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
+  $("sfStrokeWLbl").firstChild.textContent = (isArrow ? "Line width " : "Border width ");
+  if (isMsg) $("sfText").value = sh.text || "";
+  $("sfFill").value = sh.fill; $("sfStroke").value = sh.stroke; $("sfTextColor").value = sh.textColor;
+  $("sfOpacity").value = Math.round(sh.opacity * 100); $("sfOpacityVal").textContent = Math.round(sh.opacity * 100) + "%";
+  $("sfStrokeW").value = sh.strokeWidth; $("sfStrokeWVal").textContent = sh.strokeWidth + "px";
+  $("sfRadius").value = sh.radius; $("sfRadiusVal").textContent = sh.radius + "px";
 }
 
 function renderContentFields(step) {
@@ -931,17 +1157,17 @@ function render() {
 function reorder(from, to) {
   if (from === to || isNaN(from)) return;
   const [m] = project.steps.splice(from, 1); project.steps.splice(to, 0, m);
-  selected = to; selHotspot = -1; selAsset = -1; render();
+  selected = to; selHotspot = -1; selAsset = -1; selShape = -1; render();
 }
 function moveStep(i, d) {
   const j = i + d; if (j < 0 || j >= project.steps.length) return;
   [project.steps[i], project.steps[j]] = [project.steps[j], project.steps[i]];
   if (selected === i) selected = j; else if (selected === j) selected = i; render();
 }
-function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; selAsset = -1; render(); }
-function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; selAsset = -1; render(); }
-function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [] }); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); }
-function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); }
+function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [], shapes: [] }); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
 // "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
 function addSlideByKind(kind) { if (kind === "text") addTextSlide(); else addContentSlide(kind); }
 
@@ -954,8 +1180,8 @@ function addImages(fileList) {
     const reader = new FileReader();
     reader.onload = () => {
       const data = safeImage(reader.result);
-      if (data) project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [], overlays: [] });
-      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; render(); toast(files.length + " slide(s) added"); }
+      if (data) project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [], overlays: [], shapes: [] });
+      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast(files.length + " slide(s) added"); }
     };
     reader.onerror = () => { if (--pending === 0) render(); };
     reader.readAsDataURL(file);
@@ -1106,7 +1332,7 @@ function slug(s) { return (s || "presentation").toLowerCase().replace(/[^a-z0-9]
 function saveProject() { download(slug(project.title) + ".presentation.json", new Blob([JSON.stringify(project, null, 2)], { type: "application/json" })); toast("Project saved"); }
 function loadProject(file) {
   const reader = new FileReader();
-  reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
+  reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
   reader.readAsText(file);
 }
 
@@ -1170,6 +1396,9 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .content-slide.center .logo-mini { left: 50%; transform: translateX(-50%); }
 .ov { position: absolute; z-index: 3; pointer-events: none; }
 .ov img { display: block; width: 100%; height: auto; }
+.shape { position: absolute; z-index: 2; box-sizing: border-box; pointer-events: none; }
+.shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.shape .msg-text { padding: .5rem .6rem; font-size: clamp(.8rem, 1.6vw, 1rem); line-height: 1.4; height: 100%; overflow: hidden; }
 .nav { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .5rem 1rem 1rem; }
 .nav button { background: rgba(255,255,255,.1); color: #fff; border: none; border-radius: 8px; padding: .5rem .9rem; cursor: pointer; font-family: inherit; font-size: .82rem; }
 .nav button:disabled { opacity: .35; cursor: default; }
@@ -1215,6 +1444,40 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
   }
 
   function vAsset(id) { var as = DATA.assets || []; for (var k = 0; k < as.length; k++) { if (as[k].id === id) return as[k]; } return null; }
+  function vHexA(hex, a) { var n = parseInt(String(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
+  function vArrow(sh) {
+    var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
+    var x1 = sh.flipX ? 92 : 8, x2 = sh.flipX ? 8 : 92, y1 = sh.flipY ? 92 : 8, y2 = sh.flipY ? 8 : 92, sw = sh.strokeWidth || 3;
+    var line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+    line.setAttribute("stroke", sh.stroke); line.setAttribute("stroke-width", sw); line.setAttribute("vector-effect", "non-scaling-stroke"); line.setAttribute("stroke-linecap", "round");
+    svg.appendChild(line);
+    var ang = Math.atan2(y2 - y1, x2 - x1), len = 16, a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82, head = document.createElementNS(NS, "polyline");
+    head.setAttribute("points", (x2 + len * Math.cos(a1)) + "," + (y2 + len * Math.sin(a1)) + " " + x2 + "," + y2 + " " + (x2 + len * Math.cos(a2)) + "," + (y2 + len * Math.sin(a2)));
+    head.setAttribute("fill", "none"); head.setAttribute("stroke", sh.stroke); head.setAttribute("stroke-width", sw);
+    head.setAttribute("vector-effect", "non-scaling-stroke"); head.setAttribute("stroke-linecap", "round"); head.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(head); return svg;
+  }
+  function drawShapes(box, step) {
+    (step.shapes || []).forEach(function (sh) {
+      var el = document.createElement("div"); el.className = "shape";
+      el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+      if (sh.type === "arrow") { el.appendChild(vArrow(sh)); }
+      else if (sh.type === "message") {
+        el.style.background = vHexA(sh.fill, sh.opacity);
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
+        el.style.borderRadius = sh.radius + "px"; el.style.color = sh.textColor;
+        var t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || ""; el.appendChild(t);
+      } else {
+        el.style.background = vHexA(sh.fill, sh.opacity);
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
+        el.style.borderRadius = sh.type === "ellipse" ? "50%" : sh.radius + "px";
+        if (sh.type === "highlight") el.style.mixBlendMode = "multiply";
+      }
+      box.appendChild(el);
+    });
+  }
   function drawOverlays(box, step) {
     (step.overlays || []).forEach(function (o) {
       var a = vAsset(o.assetId); if (!a) return;
@@ -1229,7 +1492,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     var d = document.createElement("div"); d.className = "text-slide";
     var h = document.createElement("h1"); h.textContent = step.heading || ""; d.appendChild(h);
     if (step.body) { var p = document.createElement("p"); p.textContent = step.body; d.appendChild(p); }
-    drawOverlays(d, step);
+    drawShapes(d, step); drawOverlays(d, step);
     stage.appendChild(d);
   }
 
@@ -1248,7 +1511,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       d.appendChild(ul);
     }
     if (step.body) { var p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
-    drawOverlays(d, step);
+    drawShapes(d, step); drawOverlays(d, step);
     stage.appendChild(d);
   }
 
@@ -1263,9 +1526,12 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     (step.hotspots || []).forEach(function (h, hi) {
       var m = document.createElement("div"); m.className = "marker";
       m.style.left = h.x + "%"; m.style.top = h.y + "%";
+      if (h.size) { m.style.width = m.style.height = h.size + "px"; }
+      if (h.color) m.style.background = h.color;
       m.onclick = function () { if (h.text) { active = hi; draw2(frame, step); } else next(); };
       frame.appendChild(m);
     });
+    drawShapes(frame, step);
     drawOverlays(frame, step);
     stage.appendChild(frame);
     draw2(frame, step);
@@ -1390,7 +1656,20 @@ $("txtBody").addEventListener("input", e => { const s = curSlide(); if (s && s.t
 // hotspot editing
 $("tipText").addEventListener("input", e => { const s = curSlide(); if (s && s.hotspots && s.hotspots[selHotspot]) { s.hotspots[selHotspot].text = e.target.value; renderSteps(); } });
 $("posGrid").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots[selHotspot].pos = b.dataset.pos; renderInspector(); } });
-$("delHotspot").onclick = () => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots.splice(selHotspot, 1); selHotspot = -1; selAsset = -1; render(); } };
+$("delHotspot").onclick = () => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots.splice(selHotspot, 1); selHotspot = -1; selAsset = -1; selShape = -1; render(); } };
+$("hsColor").addEventListener("input", e => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { s.hotspots[selHotspot].color = safeColor(e.target.value, project.brand.primary); renderCanvas(); } });
+$("hsSize").addEventListener("input", e => { const s = curSlide(); if (s && s.hotspots[selHotspot]) { const v = clamp(e.target.value, 14, 80); s.hotspots[selHotspot].size = v; $("hsSizeVal").textContent = v + "px"; renderCanvas(); } });
+
+// shape style
+function curShape() { const s = curSlide(); return (s && s.shapes && selShape >= 0) ? s.shapes[selShape] : null; }
+$("sfText").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.text = e.target.value; renderCanvas(); } });
+$("sfFill").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.fill = safeColor(e.target.value, sh.fill); renderCanvas(); } });
+$("sfStroke").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.stroke = safeColor(e.target.value, sh.stroke); renderCanvas(); } });
+$("sfTextColor").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.textColor = safeColor(e.target.value, sh.textColor); renderCanvas(); } });
+$("sfOpacity").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.opacity = clamp(e.target.value / 100, 0, 1); $("sfOpacityVal").textContent = e.target.value + "%"; renderCanvas(); } });
+$("sfStrokeW").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.strokeWidth = clamp(e.target.value, 0, 40); $("sfStrokeWVal").textContent = sh.strokeWidth + "px"; renderCanvas(); } });
+$("sfRadius").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.radius = clamp(e.target.value, 0, 200); $("sfRadiusVal").textContent = sh.radius + "px"; renderCanvas(); } });
+$("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
 
 // CTA
 $("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); });
@@ -1401,13 +1680,18 @@ $("ctaUrl").addEventListener("input", e => project.cta.url = e.target.value);
 canvasWrap.addEventListener("dragover", e => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); });
 canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.preventDefault(); addImages(e.dataTransfer.files); } });
 
-// Delete the selected stage asset with Delete/Backspace (unless typing in a field)
+// Keyboard: Delete/Backspace removes the selected shape or stage asset; Escape clears selection.
 document.addEventListener("keydown", e => {
-  if (e.key !== "Delete" && e.key !== "Backspace") return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-  const s = curSlide();
-  if (s && selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
+  const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  if (e.key === "Escape") {
+    if (!typing && (selHotspot !== -1 || selAsset !== -1 || selShape !== -1)) { selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+    return;
+  }
+  if ((e.key !== "Delete" && e.key !== "Backspace") || typing) return;
+  const s = curSlide(); if (!s) return;
+  if (selShape >= 0 && s.shapes && s.shapes[selShape]) { e.preventDefault(); s.shapes.splice(selShape, 1); selShape = -1; render(); }
+  else if (selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
 });
 
 window.addEventListener("beforeunload", e => { if (project.steps.length) { e.preventDefault(); e.returnValue = ""; } });

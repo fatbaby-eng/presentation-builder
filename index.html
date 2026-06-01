@@ -132,6 +132,58 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .logo-prev { display: flex; align-items: center; gap: .5rem; }
 .logo-prev img { height: 28px; max-width: 120px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
 
+/* ── Content slide preview (from-scratch slides) ── */
+.slide-canvas { width: 760px; max-width: 100%; aspect-ratio: 16 / 9; background: var(--brand-bg, #0c0e14); color: var(--brand-text, #fff);
+  border-radius: 12px; box-shadow: var(--shadow); padding: 3rem 3.4rem; overflow: hidden; position: relative;
+  display: flex; flex-direction: column; justify-content: center; }
+.slide-canvas .accent-bar { width: 56px; height: 6px; border-radius: 3px; background: var(--brand-primary, var(--accent)); margin-bottom: 1.3rem; flex: none; }
+.slide-canvas h1 { font-family: var(--brand-font-h, var(--font)); margin: 0; font-size: 2.1rem; line-height: 1.15; letter-spacing: -.01em; }
+.slide-canvas .sub { font-family: var(--brand-font-b, var(--font)); margin: .9rem 0 0; font-size: 1.1rem; line-height: 1.5; opacity: .8; white-space: pre-wrap; }
+.slide-canvas .body { font-family: var(--brand-font-b, var(--font)); margin: 1rem 0 0; font-size: 1rem; line-height: 1.6; opacity: .85; white-space: pre-wrap; }
+.slide-canvas ul { font-family: var(--brand-font-b, var(--font)); margin: 1.3rem 0 0; padding: 0; list-style: none; }
+.slide-canvas li { position: relative; padding-left: 1.4rem; margin-bottom: .7rem; font-size: 1.05rem; line-height: 1.45; }
+.slide-canvas li::before { content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; border-radius: 2px; background: var(--brand-primary, var(--accent)); }
+.slide-canvas.center { text-align: center; align-items: center; justify-content: center; }
+.slide-canvas.center .accent-bar { align-self: center; }
+.slide-canvas.layout-title h1 { font-size: 2.7rem; }
+.slide-canvas.layout-section h1 { font-size: 2.4rem; color: var(--brand-primary, var(--accent)); }
+.slide-canvas.layout-statement h1 { font-size: 2.3rem; line-height: 1.3; max-width: 92%; }
+.slide-canvas .logo-mini { position: absolute; top: 1.4rem; left: 3.4rem; height: 26px; max-width: 130px; }
+.slide-canvas.center .logo-mini { left: 50%; transform: translateX(-50%); }
+
+/* ── Add-slide popover ── */
+.add-menu-wrap { position: relative; flex: 1; }
+.add-menu-wrap > .btn { width: 100%; justify-content: center; }
+.add-menu { position: absolute; bottom: calc(100% + .4rem); left: 0; right: 0; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: var(--shadow); padding: .35rem; z-index: 20; }
+.add-menu button { display: flex; width: 100%; gap: .55rem; align-items: center; padding: .5rem .6rem; border: none; background: none;
+  border-radius: 7px; cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--ink); text-align: left; }
+.add-menu button:hover { background: var(--bg); }
+.add-menu .mi { width: 1.2rem; text-align: center; flex: none; }
+
+/* ── Modal (brand kit) ── */
+.modal-overlay { align-items: center; justify-content: center; }
+.modal { background: var(--panel); color: var(--ink); width: 580px; max-width: calc(100vw - 2rem); max-height: calc(100vh - 3rem);
+  border-radius: 14px; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.2rem; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.modal-head strong { font-size: 1rem; }
+.modal-body { padding: 1.2rem; }
+.modal-body h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 1.3rem 0 .6rem; font-weight: 700; }
+.modal-body h3:first-child { margin-top: 0; }
+.color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.color-cell { display: flex; align-items: center; gap: .55rem; border: 1px solid var(--line); border-radius: 9px; padding: .45rem .6rem; }
+.color-cell input[type=color] { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0; background: none; cursor: pointer; flex: none; }
+.color-cell .cl { font-size: .76rem; font-weight: 600; line-height: 1.2; }
+.color-cell .cv { font-size: .66rem; color: var(--muted); font-family: monospace; }
+.font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.brand-preview { margin-top: 1rem; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.bp-slide { aspect-ratio: 16 / 9; padding: 1.7rem 2rem; display: flex; flex-direction: column; justify-content: center; }
+.bp-bar { width: 44px; height: 6px; border-radius: 3px; margin-bottom: .85rem; }
+.bp-h { margin: 0; font-size: 1.5rem; line-height: 1.15; }
+.bp-s { margin: .55rem 0 0; font-size: .9rem; opacity: .82; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.3rem; }
+
 /* ── Preview overlay ───────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(12,14,20,.72); z-index: 50; display: none; flex-direction: column; }
 .overlay.open { display: flex; }
@@ -158,6 +210,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="brand"><span class="dot"></span> Presentation Builder <small>free &middot; runs in your browser</small></div>
     <input class="title-input" id="projTitle" value="Untitled Presentation" maxlength="120" aria-label="Presentation title">
     <label class="accent-pick">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
+    <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
     <div class="spacer"></div>
     <button class="btn ghost" id="loadBtn">Open</button>
     <button class="btn ghost" id="saveBtn">Save</button>
@@ -172,8 +225,17 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       <h2>Slides</h2>
       <div id="stepList"></div>
       <div class="add-row">
+        <div class="add-menu-wrap">
+          <button class="btn sm" id="addSlideBtn">＋ New slide ▾</button>
+          <div class="add-menu" id="addMenu" style="display:none">
+            <button data-add="title"><span class="mi">🏷️</span> Title slide</button>
+            <button data-add="section"><span class="mi">§</span> Section divider</button>
+            <button data-add="bullets"><span class="mi">≣</span> Bulleted list</button>
+            <button data-add="statement"><span class="mi">❝</span> Statement / quote</button>
+            <button data-add="text"><span class="mi">📝</span> Plain text</button>
+          </div>
+        </div>
         <button class="btn sm" id="addImgBtn">+ Screenshots</button>
-        <button class="btn sm" id="addTextBtn">+ Text slide</button>
       </div>
     </div>
 
@@ -188,12 +250,13 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       </div>
       <div class="col canvas-wrap" id="canvasWrap">
         <div class="empty-canvas" id="emptyState">
-          <div class="big">🖼️</div>
-          <p><strong>Build an interactive presentation.</strong></p>
-          <p>Add screenshots or text slides, drop clickable hotspots with tooltips, blur out anything sensitive, then export one shareable HTML file. No accounts, no uploads — everything stays in your browser.</p>
+          <div class="big">🎤</div>
+          <p><strong>Build a presentation — from scratch or from screenshots.</strong></p>
+          <p>Design title, section, bulleted and statement slides with your own brand colours and fonts, or drop in screenshots with clickable hotspots and redactions. Export one shareable HTML file. No accounts, no uploads — everything stays in your browser.</p>
           <p>
-            <button class="btn primary" id="emptyAddBtn" style="margin-top:.5rem">+ Add screenshots</button>
-            <button class="btn" id="emptyTextBtn" style="margin-top:.5rem">+ Add text slide</button>
+            <button class="btn primary" id="emptyScratchBtn" style="margin-top:.5rem">✎ Start from scratch</button>
+            <button class="btn" id="emptyAddBtn" style="margin-top:.5rem">+ Add screenshots</button>
+            <button class="btn ghost" id="emptyBrandBtn" style="margin-top:.5rem">🎨 Set up brand kit</button>
           </p>
         </div>
       </div>
@@ -217,6 +280,27 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <label for="txtBody">Body text</label>
           <textarea id="txtBody" maxlength="2000" placeholder="A sentence or two of context…"></textarea>
         </div>
+      </div>
+
+      <!-- Content-slide fields (from-scratch slides) -->
+      <div id="contentFields" style="display:none">
+        <div class="field">
+          <label>Layout</label>
+          <div class="chip-row" id="layoutChips"></div>
+        </div>
+        <div class="field">
+          <label for="cfHeading" id="cfHeadingLbl">Heading</label>
+          <input type="text" id="cfHeading" maxlength="160" placeholder="Your headline">
+        </div>
+        <div class="field" id="cfSubWrap">
+          <label for="cfSub" id="cfSubLbl">Subtitle</label>
+          <input type="text" id="cfSub" maxlength="200" placeholder="Supporting line">
+        </div>
+        <div class="field" id="cfBulletsWrap">
+          <label for="cfBullets">Bullet points <span class="hint" style="font-weight:400">(one per line)</span></label>
+          <textarea id="cfBullets" maxlength="1500" placeholder="First point&#10;Second point&#10;Third point"></textarea>
+        </div>
+        <div class="hint">Content slides use your brand colours &amp; fonts. Open <strong>🎨 Brand kit</strong> to change them.</div>
       </div>
 
       <!-- Image-slide fields -->
@@ -277,9 +361,55 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <iframe id="previewFrame" title="Presentation preview" sandbox="allow-scripts"></iframe>
 </div>
 
+<!-- Brand kit modal -->
+<div class="overlay modal-overlay" id="brandModal">
+  <div class="modal">
+    <div class="modal-head"><strong>🎨 Brand kit</strong><button class="btn sm" id="brandClose">✕ Close</button></div>
+    <div class="modal-body">
+      <p class="hint">Import your brand standards once and every slide — and the exported presentation — picks up your look &amp; feel. Fonts are web-safe so exports stay 100% offline.</p>
+
+      <h3>Logo</h3>
+      <div class="logo-prev" id="bLogoPrev"><span class="hint">No logo</span></div>
+      <div style="margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap">
+        <button class="btn sm" id="bLogoBtn">Upload logo</button>
+        <button class="btn ghost sm" id="bLogoClear" style="display:none">Remove</button>
+        <button class="btn ghost sm" id="bExtract">🎯 Pick brand colour from logo</button>
+      </div>
+
+      <h3>Colours</h3>
+      <div class="color-grid">
+        <label class="color-cell" for="bPrimary"><input type="color" id="bPrimary"><span><span class="cl">Primary</span><br><span class="cv" id="cvPrimary"></span></span></label>
+        <label class="color-cell" for="bSecondary"><input type="color" id="bSecondary"><span><span class="cl">Secondary</span><br><span class="cv" id="cvSecondary"></span></span></label>
+        <label class="color-cell" for="bBg"><input type="color" id="bBg"><span><span class="cl">Slide background</span><br><span class="cv" id="cvBg"></span></span></label>
+        <label class="color-cell" for="bText"><input type="color" id="bText"><span><span class="cl">Slide text</span><br><span class="cv" id="cvText"></span></span></label>
+      </div>
+
+      <h3>Typography</h3>
+      <div class="font-grid">
+        <div class="field" style="margin:0"><label for="bFontH">Heading font</label><select id="bFontH"></select></div>
+        <div class="field" style="margin:0"><label for="bFontB">Body font</label><select id="bFontB"></select></div>
+      </div>
+
+      <h3>Preview</h3>
+      <div class="brand-preview"><div class="bp-slide" id="bpSlide">
+        <div class="bp-bar" id="bpBar"></div>
+        <h2 class="bp-h" id="bpH">Your brand, on every slide</h2>
+        <p class="bp-s" id="bpS">Headlines and body copy in your chosen fonts and colours.</p>
+      </div></div>
+
+      <div class="modal-actions">
+        <button class="btn" id="bImport">⬆ Import brand kit (.json)</button>
+        <button class="btn" id="bExport">⬇ Export brand kit</button>
+        <button class="btn ghost" id="bReset">Reset to default</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="imgInput" class="hidden-file" accept="image/*" multiple>
 <input type="file" id="logoInput" class="hidden-file" accept="image/*">
 <input type="file" id="projInput" class="hidden-file" accept="application/json,.json">
+<input type="file" id="brandInput" class="hidden-file" accept="application/json,.json">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -287,16 +417,55 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 
 /* ───────────────────────── State ───────────────────────── */
 const POSITIONS = ["top", "bottom", "left", "right"];
+
+// Web-safe font stacks only — keeps exported HTML fully offline (no font CDN).
+const FONTS = {
+  system:    "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+  helvetica: "Helvetica, Arial, sans-serif",
+  verdana:   "Verdana, Geneva, sans-serif",
+  trebuchet: "'Trebuchet MS', Tahoma, sans-serif",
+  georgia:   "Georgia, 'Times New Roman', serif",
+  times:     "'Times New Roman', Times, serif",
+  palatino:  "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+  garamond:  "Garamond, 'Hoefler Text', 'Times New Roman', serif",
+  courier:   "'Courier New', Courier, monospace"
+};
+const FONT_LABELS = {
+  system: "System sans", helvetica: "Helvetica / Arial", verdana: "Verdana", trebuchet: "Trebuchet MS",
+  georgia: "Georgia", times: "Times", palatino: "Palatino", garamond: "Garamond", courier: "Courier mono"
+};
+const LAYOUTS = ["title", "section", "bullets", "statement"];
+const LAYOUT_LABELS = { title: "Title", section: "Section", bullets: "Bullets", statement: "Statement" };
+const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statement: "❝" };
+
+const DEFAULT_BRAND = { primary: "#6c5ce7", secondary: "#0ea5e9", bg: "#0c0e14", text: "#ffffff",
+  fontHeading: "system", fontBody: "system" };
+
 let project = newProject();
 let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
 let tool = "hotspot";    // hotspot | redact | select
 
 function newProject() {
-  return { v: 2, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
+  return { v: 3, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
+    brand: Object.assign({}, DEFAULT_BRAND),
     steps: [], cta: { enabled: false, text: "Get started", url: "" } };
 }
 function uid() { return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// Starter content for each from-scratch layout.
+function newContentSlide(layout) {
+  const presets = {
+    title:     { heading: "Presentation title", subhead: "Subtitle, date or presenter", bullets: [] },
+    section:   { heading: "Section title", subhead: "What this part covers", bullets: [] },
+    bullets:   { heading: "Key points", subhead: "", bullets: ["First point", "Second point", "Third point"] },
+    statement: { heading: "A bold statement worth remembering.", subhead: "— Attribution", bullets: [] }
+  };
+  layout = LAYOUTS.includes(layout) ? layout : "bullets";
+  const pr = presets[layout];
+  return { id: uid(), type: "content", layout, name: "",
+    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice() };
+}
 
 /* ───────────────────────── Security helpers ─────────────────────────
    The choke points that keep author content from attacking viewers.
@@ -307,15 +476,49 @@ function safeUrl(u) {
   catch (e) {}
   return "";
 }
-function safeColor(c) { return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : "#6c5ce7"; }
+function safeColor(c, fallback) { return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c.toLowerCase() : (fallback || "#6c5ce7"); }
+function safeFont(k) { return FONTS.hasOwnProperty(k) ? k : "system"; }
 function safeImage(d) { return (typeof d === "string" && /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(d)) ? d : null; }
 function clamp(n, lo, hi) { n = Number(n); if (!isFinite(n)) return lo; return Math.max(lo, Math.min(hi, n)); }
 function str(v, max) { return (typeof v === "string" ? v : "").slice(0, max); }
+
+function sanitizeBrand(b) {
+  b = b || {};
+  return {
+    primary:   safeColor(b.primary, DEFAULT_BRAND.primary),
+    secondary: safeColor(b.secondary, DEFAULT_BRAND.secondary),
+    bg:        safeColor(b.bg, DEFAULT_BRAND.bg),
+    text:      safeColor(b.text, DEFAULT_BRAND.text),
+    fontHeading: safeFont(b.fontHeading),
+    fontBody:    safeFont(b.fontBody)
+  };
+}
+// Map an imported brand-kit file (or another project) into a clean brand object + optional logo.
+function brandFromImport(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const c = raw.colors || {}, f = raw.fonts || {};
+  const src = raw.brand || {
+    primary:   c.primary || c.accent || raw.primary || raw.accent,
+    secondary: c.secondary,
+    bg:        c.background || c.bg,
+    text:      c.text,
+    fontHeading: f.heading || raw.fontHeading,
+    fontBody:    f.body || raw.fontBody
+  };
+  return { brand: sanitizeBrand(src), logo: safeImage(raw.logo) };
+}
 
 function sanitizeStep(s) {
   if (!s || typeof s !== "object") return null;
   if (s.type === "text") {
     return { id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000) };
+  }
+  if (s.type === "content") {
+    const bullets = Array.isArray(s.bullets) ? s.bullets.map(b => str(b, 200)).filter(x => x.trim()).slice(0, 12) : [];
+    return { id: uid(), type: "content",
+      layout: LAYOUTS.includes(s.layout) ? s.layout : "bullets",
+      name: str(s.name, 80), heading: str(s.heading, 160), subhead: str(s.subhead, 200),
+      body: str(s.body, 1200), bullets };
   }
   const img = safeImage(s.image);
   if (!img) return null; // image slide with no valid image is meaningless
@@ -346,7 +549,9 @@ function sanitizeProject(raw) {
   const p = newProject();
   if (!raw || typeof raw !== "object") return p;
   p.title = str(raw.title, 120) || "Untitled Presentation";
-  p.accent = safeColor(raw.accent);
+  // Brand: prefer an explicit brand object, fall back to the legacy single accent colour.
+  p.brand = sanitizeBrand(raw.brand || { primary: safeColor(raw.accent, DEFAULT_BRAND.primary) });
+  p.accent = p.brand.primary; // kept in sync for back-compat
   p.logo = safeImage(raw.logo);
   if (Array.isArray(raw.steps)) for (const s of raw.steps) { const st = sanitizeStep(s); if (st) p.steps.push(st); }
   const cta = raw.cta || {};
@@ -362,7 +567,35 @@ const stepList = $("stepList"), canvasWrap = $("canvasWrap"), inspector = $("ins
 function curSlide() { return project.steps[selected]; }
 
 /* ───────────────────────── Rendering ───────────────────────── */
-function applyAccent() { document.documentElement.style.setProperty("--accent", project.accent); }
+function applyBrand() {
+  const b = project.brand; project.accent = b.primary;
+  const r = document.documentElement.style;
+  r.setProperty("--accent", b.primary);
+  r.setProperty("--brand-primary", b.primary);
+  r.setProperty("--brand-secondary", b.secondary);
+  r.setProperty("--brand-bg", b.bg);
+  r.setProperty("--brand-text", b.text);
+  r.setProperty("--brand-font-h", FONTS[b.fontHeading]);
+  r.setProperty("--brand-font-b", FONTS[b.fontBody]);
+}
+
+// One styled content-slide element, shared shape with the exported viewer.
+function buildContentSlideEl(step) {
+  const layout = LAYOUTS.includes(step.layout) ? step.layout : "bullets";
+  const d = document.createElement("div");
+  d.className = "slide-canvas layout-" + layout + (layout === "bullets" ? "" : " center");
+  if (project.logo) { const lg = document.createElement("img"); lg.className = "logo-mini"; lg.src = project.logo; lg.alt = ""; d.appendChild(lg); }
+  const bar = document.createElement("div"); bar.className = "accent-bar"; d.appendChild(bar);
+  const h = document.createElement("h1"); h.textContent = step.heading || "Heading"; d.appendChild(h);
+  if (step.subhead) { const s = document.createElement("div"); s.className = "sub"; s.textContent = step.subhead; d.appendChild(s); }
+  if (layout === "bullets") {
+    const ul = document.createElement("ul");
+    (step.bullets || []).forEach(b => { const li = document.createElement("li"); li.textContent = b; ul.appendChild(li); });
+    if (ul.children.length) d.appendChild(ul);
+  }
+  if (step.body) { const p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
+  return d;
+}
 
 function renderSteps() {
   stepList.innerHTML = "";
@@ -383,15 +616,20 @@ function renderSteps() {
 
     const thumb = document.createElement("div"); thumb.className = "thumb";
     if (s.type === "text") { thumb.textContent = "📝"; }
+    else if (s.type === "content") {
+      thumb.textContent = CONTENT_ICON[s.layout] || "📄";
+      thumb.style.background = project.brand.bg; thumb.style.color = project.brand.primary;
+    }
     else { const im = document.createElement("img"); im.src = s.image; im.alt = "";
       im.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:4px"; thumb.appendChild(im); }
     row.appendChild(thumb);
 
     const meta = document.createElement("div"); meta.className = "meta";
     const n = document.createElement("div"); n.className = "n";
-    n.textContent = s.name || (s.type === "text" ? (s.heading || "Text slide") : "Slide " + (i + 1));
+    n.textContent = s.name || ((s.type === "text" || s.type === "content") ? (s.heading || "Slide " + (i + 1)) : "Slide " + (i + 1));
     const sub = document.createElement("div"); sub.className = "sub";
     sub.textContent = s.type === "text" ? "text slide"
+      : s.type === "content" ? (LAYOUT_LABELS[s.layout] || "Content") + " slide"
       : (s.hotspots.length + " hotspot" + (s.hotspots.length === 1 ? "" : "s")
          + (s.redactions.length ? " · " + s.redactions.length + " redaction" + (s.redactions.length === 1 ? "" : "s") : ""));
     meta.appendChild(n); meta.appendChild(sub); row.appendChild(meta);
@@ -423,6 +661,12 @@ function renderCanvas() {
     const h = document.createElement("h1"); h.textContent = step.heading || "Heading";
     const p = document.createElement("p"); p.textContent = step.body || "Body text appears here.";
     card.appendChild(h); card.appendChild(p); canvasWrap.appendChild(card);
+    return;
+  }
+
+  if (step.type === "content") {
+    canvasTools.style.display = "none";
+    canvasWrap.appendChild(buildContentSlideEl(step));
     return;
   }
 
@@ -494,11 +738,15 @@ function renderInspector() {
   const step = curSlide(); if (!step) return;
   $("stepName").value = step.name;
   const isText = step.type === "text";
+  const isContent = step.type === "content";
   $("textFields").style.display = isText ? "" : "none";
-  $("imageFields").style.display = isText ? "none" : "";
+  $("contentFields").style.display = isContent ? "" : "none";
+  $("imageFields").style.display = (isText || isContent) ? "none" : "";
 
   if (isText) {
     $("txtHeading").value = step.heading; $("txtBody").value = step.body;
+  } else if (isContent) {
+    renderContentFields(step);
   } else {
     // hotspot chips
     const chips = $("hotspotChips"); chips.innerHTML = "";
@@ -539,8 +787,25 @@ function renderInspector() {
   $("ctaFields").style.opacity = project.cta.enabled ? "1" : ".5";
 }
 
+function renderContentFields(step) {
+  const lc = $("layoutChips"); lc.innerHTML = "";
+  LAYOUTS.forEach(l => {
+    const c = document.createElement("button"); c.className = "chip" + (step.layout === l ? " on" : "");
+    c.textContent = (CONTENT_ICON[l] || "") + " " + LAYOUT_LABELS[l];
+    c.onclick = () => { step.layout = l; render(); }; lc.appendChild(c);
+  });
+  $("cfHeadingLbl").textContent = step.layout === "statement" ? "Statement" : step.layout === "title" ? "Title" : "Heading";
+  $("cfSubLbl").textContent = step.layout === "statement" ? "Attribution"
+    : step.layout === "bullets" ? "Intro line (optional)" : "Subtitle";
+  $("cfHeading").value = step.heading;
+  $("cfSub").value = step.subhead;
+  const showBullets = step.layout === "bullets";
+  $("cfBulletsWrap").style.display = showBullets ? "" : "none";
+  if (showBullets) $("cfBullets").value = (step.bullets || []).join("\n");
+}
+
 function render() {
-  $("projTitle").value = project.title; $("accent").value = project.accent; applyAccent();
+  $("projTitle").value = project.title; applyBrand(); syncBrandInputs();
   if (selected >= project.steps.length) selected = Math.max(0, project.steps.length - 1);
   renderSteps(); renderCanvas(); renderInspector();
   const has = project.steps.length > 0;
@@ -561,6 +826,9 @@ function moveStep(i, d) {
 function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; render(); }
 function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; render(); }
 function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "" }); selected = project.steps.length - 1; selHotspot = -1; render(); }
+function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; render(); }
+// "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
+function addSlideByKind(kind) { if (kind === "text") addTextSlide(); else addContentSlide(kind); }
 
 /* ───────────────────────── Image import ───────────────────────── */
 function addImages(fileList) {
@@ -584,6 +852,89 @@ function setLogo(file) {
   reader.readAsDataURL(file);
 }
 
+/* ───────────────────────── Brand kit ───────────────────────── */
+function populateFontSelects() {
+  ["bFontH", "bFontB"].forEach(id => {
+    const sel = $(id); sel.innerHTML = "";
+    Object.keys(FONTS).forEach(k => { const o = document.createElement("option"); o.value = k; o.textContent = FONT_LABELS[k]; sel.appendChild(o); });
+  });
+}
+// Push current brand into both the modal controls and the top-bar swatch.
+function syncBrandInputs() {
+  const b = project.brand;
+  $("accent").value = b.primary;
+  $("bPrimary").value = b.primary; $("cvPrimary").textContent = b.primary;
+  $("bSecondary").value = b.secondary; $("cvSecondary").textContent = b.secondary;
+  $("bBg").value = b.bg; $("cvBg").textContent = b.bg;
+  $("bText").value = b.text; $("cvText").textContent = b.text;
+  $("bFontH").value = b.fontHeading; $("bFontB").value = b.fontBody;
+  const lp = $("bLogoPrev");
+  if (project.logo) { lp.innerHTML = ""; const im = document.createElement("img"); im.src = project.logo; im.alt = "logo"; lp.appendChild(im); $("bLogoClear").style.display = ""; }
+  else { lp.innerHTML = '<span class="hint">No logo</span>'; $("bLogoClear").style.display = "none"; }
+  const sl = $("bpSlide");
+  sl.style.background = b.bg; sl.style.color = b.text;
+  $("bpBar").style.background = b.primary;
+  $("bpH").style.fontFamily = FONTS[b.fontHeading];
+  $("bpS").style.fontFamily = FONTS[b.fontBody];
+}
+function openBrand() { syncBrandInputs(); $("brandModal").classList.add("open"); }
+function closeBrand() { $("brandModal").classList.remove("open"); }
+
+function setBrand(key, value) { project.brand[key] = value; applyBrand(); syncBrandInputs(); renderSteps(); renderCanvas(); }
+
+// Sample the dominant brand-ish colour from the logo (prefers saturated pixels).
+function extractLogoColor() {
+  if (!project.logo) { toast("Upload a logo first", true); return; }
+  const img = new Image();
+  img.onload = () => {
+    const s = 48, cv = document.createElement("canvas"); cv.width = s; cv.height = s;
+    const ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0, s, s);
+    let data; try { data = ctx.getImageData(0, 0, s, s).data; } catch (e) { toast("Couldn't read logo colours", true); return; }
+    let r = 0, g = 0, b = 0, n = 0;
+    const scan = (saturatedOnly) => {
+      r = g = b = n = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 128) continue;
+        const rr = data[i], gg = data[i + 1], bb = data[i + 2];
+        const mx = Math.max(rr, gg, bb), mn = Math.min(rr, gg, bb);
+        if (mx > 240 && mn > 240) continue;          // near-white
+        if (mx < 18) continue;                         // near-black
+        if (saturatedOnly && mx - mn < 22) continue;   // skip greys on first pass
+        r += rr; g += gg; b += bb; n++;
+      }
+    };
+    scan(true); if (!n) scan(false);
+    if (!n) { toast("No usable colour in logo", true); return; }
+    const hex = "#" + [r, g, b].map(v => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+    setBrand("primary", safeColor(hex));
+    toast("Brand colour picked from logo");
+  };
+  img.onerror = () => toast("Couldn't load logo", true);
+  img.src = project.logo;
+}
+
+function exportBrand() {
+  const b = project.brand;
+  const kit = { type: "presentation-brandkit", v: 1, name: (project.title || "Brand") + " kit",
+    colors: { primary: b.primary, secondary: b.secondary, background: b.bg, text: b.text },
+    fonts: { heading: b.fontHeading, body: b.fontBody }, logo: project.logo || null };
+  download(slug(project.title) + ".brandkit.json", new Blob([JSON.stringify(kit, null, 2)], { type: "application/json" }));
+  toast("Brand kit exported");
+}
+function importBrand(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const res = brandFromImport(JSON.parse(reader.result));
+      if (!res) { toast("Not a valid brand kit", true); return; }
+      project.brand = res.brand; if (res.logo) project.logo = res.logo;
+      applyBrand(); render(); toast("Brand kit imported");
+    } catch (e) { toast("Couldn't read that file", true); }
+  };
+  reader.readAsText(file);
+}
+function resetBrand() { project.brand = Object.assign({}, DEFAULT_BRAND); applyBrand(); render(); toast("Brand reset to default"); }
+
 /* ───────────────────────── Save / load ───────────────────────── */
 function download(filename, blob) {
   const url = URL.createObjectURL(blob); const a = document.createElement("a");
@@ -603,7 +954,7 @@ function loadProject(file) {
    preview is exactly what ships. */
 function buildDemoHTML(p) {
   const safe = sanitizeProject(p);                              // re-sanitize at the boundary
-  const dataJson = JSON.stringify(safe).replace(/</g, "\\u003c"); // inert JSON, no </script> breakout
+  const dataJson = JSON.stringify(safe).replace(/</g, "\\u003c"); // inert JSON; closing tag is split below so it can't end this script
   const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   return `<!DOCTYPE html>
@@ -614,7 +965,8 @@ function buildDemoHTML(p) {
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>${esc(safe.title)}</title>
 <style>
-:root { --accent: ${safe.accent}; }
+:root { --accent: ${safe.brand.primary}; --b-secondary: ${safe.brand.secondary}; --b-bg: ${safe.brand.bg};
+  --b-text: ${safe.brand.text}; --b-fh: ${FONTS[safe.brand.fontHeading]}; --b-fb: ${FONTS[safe.brand.fontBody]}; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; display: flex; flex-direction: column; }
@@ -639,6 +991,22 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .text-slide { max-width: 720px; text-align: center; padding: 1rem 2rem; }
 .text-slide h1 { font-size: 2.2rem; margin: 0 0 1rem; }
 .text-slide p { font-size: 1.05rem; line-height: 1.7; color: #c8cdd8; white-space: pre-wrap; margin: 0; }
+.content-slide { width: min(960px, 92vw); aspect-ratio: 16 / 9; max-height: calc(100vh - 150px); background: var(--b-bg); color: var(--b-text);
+  border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.5); padding: clamp(1.5rem, 4vw, 3.4rem); overflow: hidden; position: relative;
+  display: flex; flex-direction: column; justify-content: center; }
+.content-slide .accent-bar { width: 60px; height: 6px; border-radius: 3px; background: var(--accent); margin-bottom: 1.4rem; flex: none; }
+.content-slide h1 { font-family: var(--b-fh); margin: 0; font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.15; }
+.content-slide .sub { font-family: var(--b-fb); margin: 1rem 0 0; font-size: clamp(1rem, 2.4vw, 1.25rem); opacity: .82; line-height: 1.5; white-space: pre-wrap; }
+.content-slide .body { font-family: var(--b-fb); margin: 1rem 0 0; opacity: .85; line-height: 1.6; white-space: pre-wrap; }
+.content-slide ul { font-family: var(--b-fb); margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.content-slide li { position: relative; padding-left: 1.6rem; margin-bottom: .85rem; font-size: clamp(1rem, 2.2vw, 1.2rem); line-height: 1.45; }
+.content-slide li::before { content: ""; position: absolute; left: 0; top: .55em; width: 9px; height: 9px; border-radius: 2px; background: var(--accent); }
+.content-slide.center { text-align: center; align-items: center; }
+.content-slide.center .accent-bar { align-self: center; }
+.content-slide.layout-title h1 { font-size: clamp(2rem, 5vw, 3.2rem); }
+.content-slide.layout-section h1 { color: var(--accent); }
+.content-slide .logo-mini { position: absolute; top: 1.5rem; left: clamp(1.5rem, 4vw, 3.4rem); height: 26px; max-width: 130px; }
+.content-slide.center .logo-mini { left: 50%; transform: translateX(-50%); }
 .nav { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .5rem 1rem 1rem; }
 .nav button { background: rgba(255,255,255,.1); color: #fff; border: none; border-radius: 8px; padding: .5rem .9rem; cursor: pointer; font-family: inherit; font-size: .82rem; }
 .nav button:disabled { opacity: .35; cursor: default; }
@@ -675,13 +1043,33 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     document.getElementById("next").textContent = (i === n - 1) ? "Finish ›" : "Next ›";
     if (i >= n) { drawEnd(); return; }
     var step = DATA.steps[i];
-    if (step.type === "text") { drawText(step); } else { drawImage(step); }
+    if (step.type === "text") { drawText(step); }
+    else if (step.type === "content") { drawContent(step); }
+    else { drawImage(step); }
   }
 
   function drawText(step) {
     var d = document.createElement("div"); d.className = "text-slide";
     var h = document.createElement("h1"); h.textContent = step.heading || ""; d.appendChild(h);
     if (step.body) { var p = document.createElement("p"); p.textContent = step.body; d.appendChild(p); }
+    stage.appendChild(d);
+  }
+
+  function drawContent(step) {
+    var LAYOUTS = ["title", "section", "bullets", "statement"];
+    var layout = LAYOUTS.indexOf(step.layout) >= 0 ? step.layout : "bullets";
+    var d = document.createElement("div");
+    d.className = "content-slide layout-" + layout + (layout === "bullets" ? "" : " center");
+    if (DATA.logo) { var lg = document.createElement("img"); lg.className = "logo-mini"; lg.src = DATA.logo; lg.alt = ""; d.appendChild(lg); }
+    var bar = document.createElement("div"); bar.className = "accent-bar"; d.appendChild(bar);
+    var h = document.createElement("h1"); h.textContent = step.heading || ""; d.appendChild(h);
+    if (step.subhead) { var s = document.createElement("div"); s.className = "sub"; s.textContent = step.subhead; d.appendChild(s); }
+    if (layout === "bullets" && step.bullets && step.bullets.length) {
+      var ul = document.createElement("ul");
+      step.bullets.forEach(function (b) { var li = document.createElement("li"); li.textContent = b; ul.appendChild(li); });
+      d.appendChild(ul);
+    }
+    if (step.body) { var p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
     stage.appendChild(d);
   }
 
@@ -762,10 +1150,39 @@ function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.classNam
 
 /* ───────────────────────── Wiring ───────────────────────── */
 $("projTitle").addEventListener("input", e => project.title = e.target.value);
-$("accent").addEventListener("input", e => { project.accent = safeColor(e.target.value); applyAccent(); });
+$("accent").addEventListener("input", e => setBrand("primary", safeColor(e.target.value, project.brand.primary)));
 $("addImgBtn").onclick = $("emptyAddBtn").onclick = () => $("imgInput").click();
-$("addTextBtn").onclick = $("emptyTextBtn").onclick = () => addTextSlide();
+$("emptyScratchBtn").onclick = () => addContentSlide("title");
 $("imgInput").addEventListener("change", e => { addImages(e.target.files); e.target.value = ""; });
+
+// "+ New slide" popover menu
+const addMenu = $("addMenu");
+$("addSlideBtn").onclick = (e) => { e.stopPropagation(); addMenu.style.display = addMenu.style.display === "none" ? "" : "none"; };
+addMenu.querySelectorAll("button").forEach(b => b.onclick = () => { addMenu.style.display = "none"; addSlideByKind(b.dataset.add); });
+document.addEventListener("click", e => { if (!e.target.closest(".add-menu-wrap")) addMenu.style.display = "none"; });
+
+// Content-slide fields
+$("cfHeading").addEventListener("input", e => { const s = curSlide(); if (s && s.type === "content") { s.heading = e.target.value; renderCanvas(); renderSteps(); } });
+$("cfSub").addEventListener("input", e => { const s = curSlide(); if (s && s.type === "content") { s.subhead = e.target.value; renderCanvas(); } });
+$("cfBullets").addEventListener("input", e => { const s = curSlide(); if (s && s.type === "content") { s.bullets = e.target.value.split("\n").map(x => x.trim()).filter(x => x).slice(0, 12); renderCanvas(); } });
+
+// Brand kit modal
+$("brandBtn").onclick = $("emptyBrandBtn").onclick = openBrand;
+$("brandClose").onclick = closeBrand;
+$("brandModal").addEventListener("click", e => { if (e.target === $("brandModal")) closeBrand(); });
+$("bPrimary").addEventListener("input", e => setBrand("primary", safeColor(e.target.value, project.brand.primary)));
+$("bSecondary").addEventListener("input", e => setBrand("secondary", safeColor(e.target.value, project.brand.secondary)));
+$("bBg").addEventListener("input", e => setBrand("bg", safeColor(e.target.value, project.brand.bg)));
+$("bText").addEventListener("input", e => setBrand("text", safeColor(e.target.value, project.brand.text)));
+$("bFontH").addEventListener("change", e => setBrand("fontHeading", safeFont(e.target.value)));
+$("bFontB").addEventListener("change", e => setBrand("fontBody", safeFont(e.target.value)));
+$("bLogoBtn").onclick = () => $("logoInput").click();
+$("bLogoClear").onclick = () => { project.logo = null; render(); };
+$("bExtract").onclick = extractLogoColor;
+$("bExport").onclick = exportBrand;
+$("bImport").onclick = () => $("brandInput").click();
+$("bReset").onclick = resetBrand;
+$("brandInput").addEventListener("change", e => { if (e.target.files[0]) importBrand(e.target.files[0]); e.target.value = ""; });
 $("logoBtn").onclick = () => $("logoInput").click();
 $("logoInput").addEventListener("change", e => { if (e.target.files[0]) setLogo(e.target.files[0]); e.target.value = ""; });
 $("logoClear").onclick = () => { project.logo = null; render(); };
@@ -800,6 +1217,7 @@ canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.
 
 window.addEventListener("beforeunload", e => { if (project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
 
+populateFontSelects();
 render();
 </script>
 </body>

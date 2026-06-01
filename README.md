@@ -17,6 +17,13 @@ No accounts. No backend. No data ever leaves the browser.
 - **One brand kit, applied everywhere** — import your brand standards (colours,
   fonts, logo) and every slide *and* the exported presentation pick up your look
   and feel automatically.
+- **Reusable asset library** — upload logos, icons or images once, then drop them
+  onto any slide and drag/scale them into place. Deleting an asset from the
+  library removes it from every slide it appears on.
+- **Vector annotation tools** — on any slide, draw boxes, ellipses, arrows,
+  highlight areas and message-box callouts, each with customizable fill colour,
+  border colour/width and opacity. Hotspots are customizable too (colour & size).
+  Everything is movable, scalable and deletable, and renders in the export.
 
 ## Use it
 
@@ -72,13 +79,24 @@ feel, applied live in the editor and baked into every export:
 - **Import / Export** — share a `.brandkit.json` across decks, or hand it to a
   teammate so every presentation matches your standards.
 
-## The three canvas tools
+## The canvas tools
+
+Drawing tools work on **every** slide type (title, section, bullets, statement,
+text and screenshot slides). Hotspots and redactions are specific to screenshot
+slides.
 
 | Tool | What it does |
 |---|---|
-| **＋ Hotspot** | Click the image to add a clickable hotspot. |
-| **▦ Redact** | Drag on the image to cover an area (blur or black out). |
-| **↖ Select** | Click a hotspot or redaction box to edit or remove it. |
+| **↖ Select** | Click any item to select it, then drag to move, use the corner handle to resize, and restyle it in the inspector. `Delete`/`Backspace` removes it; `Esc` deselects. |
+| **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize its colour and size. |
+| **▦ Redact** *(image)* | Drag to cover an area (blur or black out). |
+| **▭ Box / ◯ Ellipse** | Drag to draw a shape with fill colour, border colour/width, opacity (and corner radius for boxes). |
+| **➶ Arrow** | Drag to draw an arrow in any direction; set its colour and thickness. |
+| **▨ Highlight** | Drag to draw a translucent highlight that emphasizes part of the slide. |
+| **💬 Message** | Drag to draw a text callout box with its own background, border and text colour. |
+
+Selecting a shape opens a **Shape style** panel in the inspector for fill/border
+colours, opacity, border width, corner radius and (for message boxes) the text.
 
 ## Viewer controls (in an exported presentation)
 

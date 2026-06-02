@@ -42,6 +42,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .btn.ghost { background: transparent; }
 .btn.sm { padding: .35rem .55rem; font-size: .76rem; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+.save-state { font-size: .74rem; color: var(--muted); font-weight: 600; min-width: 56px; text-align: right; }
 .accent-pick { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; color: var(--muted); }
 .accent-pick input[type=color] { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px;
   background: none; padding: 0; cursor: pointer; }
@@ -59,7 +60,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .tool { padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 7px; background: #fff; cursor: pointer;
   font-size: .78rem; font-weight: 600; color: var(--muted); }
 .tool.on { border-color: var(--accent); color: var(--accent); background: #f2f0ff; }
-.canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; overflow: auto; }
+.canvas-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem; overflow: auto; }
+.cta-preview { text-align: center; }
+.cta-preview .cap { font-size: .72rem; color: var(--muted); margin-bottom: .5rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.cta-preview .cap.warn { color: var(--danger); text-transform: none; letter-spacing: 0; margin: .5rem auto 0; font-weight: 600; max-width: 360px; }
+.cta-prev-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: .7rem 1.3rem; font-size: .95rem; font-weight: 600; }
 .inspector { background: var(--panel); border-left: 1px solid var(--line); padding: 1rem; }
 
 /* ── Step thumbnails ───────────────────── */
@@ -212,6 +217,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   border-radius: 3px; cursor: nwse-resize; z-index: 3; }
 .shx { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
   border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 3; }
+.rot { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--accent); cursor: grab; z-index: 3; }
+.rot::before { content: ""; position: absolute; left: 50%; top: 12px; width: 2px; height: 14px; background: var(--accent); transform: translateX(-50%); }
 .tool-draw, .tool-draw * { cursor: crosshair; }
 .marker.passive, .ov.passive, .rd.passive { pointer-events: none; }
 .marker.draggable { cursor: move; }
@@ -244,6 +252,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <label class="accent-pick">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
     <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
     <div class="spacer"></div>
+    <span id="saveState" class="save-state" title="Your work is auto-saved in this browser"></span>
     <button class="btn ghost" id="loadBtn">Open</button>
     <button class="btn ghost" id="saveBtn">Save</button>
     <button class="btn" id="previewBtn">▶ Preview</button>
@@ -401,6 +410,10 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <label for="sfRadius">Corner radius <span id="sfRadiusVal" class="hint" style="font-weight:400"></span></label>
           <input type="range" id="sfRadius" min="0" max="60" step="1" style="width:100%">
         </div>
+        <div class="field">
+          <label for="sfRotate">Rotation <span id="sfRotateVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="sfRotate" min="-180" max="180" step="1" style="width:100%">
+        </div>
         <button class="btn ghost sm" id="sfDelete" style="width:100%">Delete shape</button>
       </div>
 
@@ -528,7 +541,7 @@ const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statemen
 const SHAPE_TOOLS = ["box", "ellipse", "arrow", "highlight", "message"];
 const SHAPE_TYPES = SHAPE_TOOLS.slice();
 function newShape(type, x, y, w, h) {
-  const b = { id: uid(), type, x, y, w, h, flipX: false, flipY: false };
+  const b = { id: uid(), type, x, y, w, h, rot: 0, flipX: false, flipY: false };
   if (type === "box")       return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
   if (type === "ellipse")   return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
   if (type === "highlight") return Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
@@ -546,6 +559,7 @@ let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
 let selAsset = -1;       // selected placed-asset (overlay) index within the slide
 let selShape = -1;       // selected annotation shape index within the slide
+let editing = false;     // true while typing directly into an on-canvas text box
 let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | highlight | message
 
 function newProject() {
@@ -575,8 +589,13 @@ function newContentSlide(layout) {
    Run on import AND on export, so nothing unsafe ever reaches output. */
 function safeUrl(u) {
   if (typeof u !== "string" || !u.trim()) return "";
-  try { const x = new URL(u.trim()); if (["http:", "https:", "mailto:"].includes(x.protocol)) return x.href; }
+  const v = u.trim();
+  try { const x = new URL(v); if (["http:", "https:", "mailto:"].includes(x.protocol)) return x.href; }
   catch (e) {}
+  // No scheme but looks like a domain (e.g. "www.example.com") → assume https.
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(v) && /^[^\s]+\.[^\s]+$/.test(v)) {
+    try { const x = new URL("https://" + v); if (x.protocol === "https:") return x.href; } catch (e) {}
+  }
   return "";
 }
 function safeColor(c, fallback) { return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c.toLowerCase() : (fallback || "#6c5ce7"); }
@@ -612,7 +631,8 @@ function sanitizeOverlays(raw) {
     if (!o || typeof o !== "object") continue;
     const aid = str(o.assetId, 40); if (!aid) continue;
     out.push({ id: str(o.id, 40) || uid(), assetId: aid,
-      x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200) });
+      x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200),
+      rot: o.rot == null ? 0 : clamp(o.rot, -180, 180) });
   }
   return out;
 }
@@ -622,7 +642,7 @@ function sanitizeShapes(raw) {
     if (!sh || typeof sh !== "object" || !SHAPE_TYPES.includes(sh.type)) continue;
     out.push({ id: str(sh.id, 40) || uid(), type: sh.type,
       x: clamp(sh.x, -50, 150), y: clamp(sh.y, -50, 150), w: clamp(sh.w, 0, 200), h: clamp(sh.h, 0, 200),
-      flipX: !!sh.flipX, flipY: !!sh.flipY,
+      rot: sh.rot == null ? 0 : clamp(sh.rot, -180, 180), flipX: !!sh.flipX, flipY: !!sh.flipY,
       fill: safeColor(sh.fill, "#6c5ce7"), stroke: safeColor(sh.stroke, "#6c5ce7"),
       strokeWidth: clamp(sh.strokeWidth, 0, 40), opacity: clamp(sh.opacity, 0, 1), radius: clamp(sh.radius, 0, 200),
       text: str(sh.text, 300), textColor: safeColor(sh.textColor, "#1b1f2a") });
@@ -749,6 +769,7 @@ function attachOverlays(stageEl, step, sel) {
     const ov = document.createElement("div");
     ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
+    if (o.rot) ov.style.transform = "rotate(" + o.rot + "deg)";
     const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false; ov.appendChild(img);
     if (!sel) { stageEl.appendChild(ov); return; }
     ov.addEventListener("click", e => e.stopPropagation());
@@ -774,17 +795,19 @@ function attachOverlays(stageEl, step, sel) {
       const h = document.createElement("div"); h.className = "oh"; h.title = "Drag to resize";
       h.addEventListener("pointerdown", e => {
         e.stopPropagation(); e.preventDefault();
-        const rect = stageEl.getBoundingClientRect(), ovRect = ov.getBoundingClientRect();
+        const rect = stageEl.getBoundingClientRect();
+        const sx = e.clientX, sy = e.clientY, sw = o.w, rad = (o.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
         try { h.setPointerCapture(e.pointerId); } catch (err) {}
         const move = ev => {
-          const wpx = Math.max(8, ev.clientX - ovRect.left);
-          o.w = clamp(wpx / rect.width * 100, 1, 200);
+          const dx = ev.clientX - sx, dy = ev.clientY - sy;            // project onto the asset's own x-axis
+          o.w = clamp(sw + (dx * cos + dy * sin) / rect.width * 100, 1, 200);
           ov.style.width = o.w + "%";
         };
         const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); };
         h.addEventListener("pointermove", move); h.addEventListener("pointerup", up);
       });
       ov.appendChild(h);
+      addRotateHandle(ov, o);
 
       const x = document.createElement("div"); x.className = "ox"; x.textContent = "×"; x.title = "Remove from this slide";
       x.addEventListener("pointerdown", e => e.stopPropagation());
@@ -840,6 +863,7 @@ function renderSteps() {
     row.appendChild(tools);
     stepList.appendChild(row);
   });
+  scheduleSave();
 }
 function toolBtn(label, title, fn) {
   const b = document.createElement("button"); b.textContent = label; b.title = title;
@@ -912,6 +936,25 @@ function renderCanvas() {
   }
 
   canvasWrap.appendChild(stage);
+
+  // CTA preview — the CTA shows on the end screen (after the last slide), so preview it there.
+  if (selected === project.steps.length - 1 && project.cta.enabled) {
+    const wrap = document.createElement("div"); wrap.className = "cta-preview";
+    const cap = document.createElement("div"); cap.className = "cap"; cap.textContent = "End screen — shown after the last slide";
+    const btn = document.createElement("button"); btn.className = "cta-prev-btn"; btn.textContent = project.cta.text || "Get started"; btn.disabled = true;
+    wrap.appendChild(cap); wrap.appendChild(btn);
+    if (project.cta.url && !safeUrl(project.cta.url)) {
+      const warn = document.createElement("div"); warn.className = "cap warn";
+      warn.textContent = "⚠ That link isn't valid — use something like https://example.com so the button appears in the export.";
+      wrap.appendChild(warn);
+    } else if (!project.cta.url) {
+      const warn = document.createElement("div"); warn.className = "cap warn";
+      warn.textContent = "⚠ Add a button link (https://…) or the button won't appear in the export.";
+      wrap.appendChild(warn);
+    }
+    canvasWrap.appendChild(wrap);
+  }
+  scheduleSave();
 }
 
 // Generic drag-to-draw a rectangle on a stage; onDone gets (x,y,w,h,flipX,flipY) in %.
@@ -969,6 +1012,7 @@ function attachHotspot(stage, step, h, hi, sel) {
 function buildShapeEl(sh) {
   const el = document.createElement("div");
   el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+  if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
   if (sh.type === "arrow") {
     el.appendChild(arrowSVG(sh));
   } else if (sh.type === "message") {
@@ -1006,6 +1050,44 @@ function arrowSVG(sh) {
   return svg;
 }
 
+// Drag-to-rotate knob; writes degrees (-180..180, snapped near 45°s) onto obj.rot.
+function addRotateHandle(el, obj) {
+  const r = document.createElement("div"); r.className = "rot"; r.title = "Drag to rotate";
+  r.addEventListener("pointerdown", e => {
+    e.stopPropagation(); e.preventDefault();
+    const rect = el.getBoundingClientRect(), cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    try { r.setPointerCapture(e.pointerId); } catch (err) {}
+    const mv = ev => {
+      let a = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI + 90;
+      a = ((Math.round(a) + 180) % 360 + 360) % 360 - 180;
+      [0, 45, 90, 135, 180, -45, -90, -135, -180].forEach(s => { if (Math.abs(a - s) <= 4) a = s; });
+      obj.rot = a; el.style.transform = "rotate(" + a + "deg)";
+    };
+    const up = () => { r.removeEventListener("pointermove", mv); r.removeEventListener("pointerup", up); render(); };
+    r.addEventListener("pointermove", mv); r.addEventListener("pointerup", up);
+  });
+  el.appendChild(r);
+}
+
+// Edit a message box's text directly on the canvas.
+function startEditMessage(t, sh) {
+  if (!t) return;
+  editing = true;
+  t.setAttribute("contenteditable", "true"); t.style.cursor = "text"; t.style.outline = "none";
+  t.focus();
+  try { const range = document.createRange(); range.selectNodeContents(t); range.collapse(false);
+    const selN = window.getSelection(); selN.removeAllRanges(); selN.addRange(range); } catch (err) {}
+  const readText = () => (t.innerText != null ? t.innerText : t.textContent) || "";
+  const onInput = () => { sh.text = readText(); scheduleSave(); };
+  const onKey = e => { e.stopPropagation(); if (e.key === "Escape") t.blur(); };
+  const onBlur = () => {
+    sh.text = readText(); t.removeAttribute("contenteditable"); editing = false;
+    t.removeEventListener("input", onInput); t.removeEventListener("keydown", onKey); t.removeEventListener("blur", onBlur);
+    render();
+  };
+  t.addEventListener("input", onInput); t.addEventListener("keydown", onKey); t.addEventListener("blur", onBlur);
+}
+
 // Render shapes onto a stage; interactive (select / move / resize / delete) only in Select.
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
@@ -1013,8 +1095,12 @@ function attachShapes(stage, step, sel) {
     el.className = "shape" + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
+      if (sh.type === "message") {
+        el.style.cursor = "text";
+        el.addEventListener("dblclick", e => { e.stopPropagation(); startEditMessage(el.querySelector(".msg-text"), sh); });
+      }
       el.addEventListener("pointerdown", e => {
-        if (e.target.classList.contains("sh") || e.target.classList.contains("shx")) return;
+        if (editing || e.target.classList.contains("sh") || e.target.classList.contains("shx") || e.target.classList.contains("rot")) return;
         e.stopPropagation(); e.preventDefault();
         if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; render(); return; }
         const r = stage.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = sh.x, oy = sh.y;
@@ -1027,17 +1113,20 @@ function attachShapes(stage, step, sel) {
         const hnd = document.createElement("div"); hnd.className = "sh"; hnd.title = "Drag to resize";
         hnd.addEventListener("pointerdown", e => {
           e.stopPropagation(); e.preventDefault();
-          const r = stage.getBoundingClientRect(), rect = el.getBoundingClientRect();
+          const r = stage.getBoundingClientRect();
+          const sx = e.clientX, sy = e.clientY, sw = sh.w, sH = sh.h, rad = (sh.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
           try { hnd.setPointerCapture(e.pointerId); } catch (err) {}
           const mv = ev => {
-            sh.w = clamp(Math.max(4, ev.clientX - rect.left) / r.width * 100, 0.5, 200);
-            sh.h = clamp(Math.max(4, ev.clientY - rect.top) / r.height * 100, 0.5, 200);
+            const dx = ev.clientX - sx, dy = ev.clientY - sy;           // project screen delta onto the shape's own axes
+            sh.w = clamp(sw + (dx * cos + dy * sin) / r.width * 100, 0.5, 200);
+            sh.h = clamp(sH + (-dx * sin + dy * cos) / r.height * 100, 0.5, 200);
             el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
           };
           const up = () => { hnd.removeEventListener("pointermove", mv); hnd.removeEventListener("pointerup", up); render(); };
           hnd.addEventListener("pointermove", mv); hnd.addEventListener("pointerup", up);
         });
         el.appendChild(hnd);
+        addRotateHandle(el, sh);
         const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
         x.addEventListener("pointerdown", e => e.stopPropagation());
         x.onclick = e => { e.stopPropagation(); step.shapes.splice(si, 1); selShape = -1; render(); };
@@ -1108,6 +1197,7 @@ function renderInspector() {
   $("ctaOn").checked = project.cta.enabled;
   $("ctaText").value = project.cta.text; $("ctaUrl").value = project.cta.url;
   $("ctaFields").style.opacity = project.cta.enabled ? "1" : ".5";
+  scheduleSave();
 }
 
 const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", arrow: "Arrow", highlight: "Highlight", message: "Message box" };
@@ -1126,6 +1216,7 @@ function renderShapeFields(sh) {
   $("sfOpacity").value = Math.round(sh.opacity * 100); $("sfOpacityVal").textContent = Math.round(sh.opacity * 100) + "%";
   $("sfStrokeW").value = sh.strokeWidth; $("sfStrokeWVal").textContent = sh.strokeWidth + "px";
   $("sfRadius").value = sh.radius; $("sfRadiusVal").textContent = sh.radius + "px";
+  $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
 }
 
 function renderContentFields(step) {
@@ -1151,6 +1242,7 @@ function render() {
   renderSteps(); renderCanvas(); renderInspector();
   const has = project.steps.length > 0;
   $("previewBtn").disabled = !has; $("exportBtn").disabled = !has; $("saveBtn").disabled = !has;
+  scheduleSave();
 }
 
 /* ───────────────────────── Slide ops ───────────────────────── */
@@ -1213,7 +1305,7 @@ function placeAsset(assetId) {
   const s = curSlide();
   if (!s) { toast("Add a slide first", true); return; }
   if (!s.overlays) s.overlays = [];
-  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24 });
+  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24, rot: 0 });
   selHotspot = -1; selAsset = s.overlays.length - 1; render();
   toast("Asset placed — drag to move, corner handle to scale");
 }
@@ -1334,6 +1426,34 @@ function loadProject(file) {
   const reader = new FileReader();
   reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
   reader.readAsText(file);
+}
+
+/* ───────────────────────── Autosave (localStorage) ─────────────────────────
+   Persists work-in-progress in the browser; restored on next visit. */
+const LS_KEY = "presentationBuilder.autosave.v1";
+let saveTimer = null, autosaveOff = false;
+function setSaveState(t) { const e = $("saveState"); if (e) e.textContent = t; }
+function autosaveNow() {
+  if (autosaveOff) return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(project));
+    setSaveState("Saved ✓");
+  } catch (e) {
+    autosaveOff = true; setSaveState("Autosave off");
+    toast("Autosave off — browser storage is full", true);
+  }
+}
+function scheduleSave() {
+  if (autosaveOff) return;
+  setSaveState("Saving…");
+  clearTimeout(saveTimer); saveTimer = setTimeout(autosaveNow, 600);
+}
+function restoreAutosave() {
+  let raw; try { raw = localStorage.getItem(LS_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  try { const p = sanitizeProject(JSON.parse(raw)); if (p.steps.length || p.assets.length) { project = p; return true; } }
+  catch (e) {}
+  return false;
 }
 
 /* ───────────────────────── Build standalone viewer ─────────────────────────
@@ -1463,6 +1583,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     (step.shapes || []).forEach(function (sh) {
       var el = document.createElement("div"); el.className = "shape";
       el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+      if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
       if (sh.type === "arrow") { el.appendChild(vArrow(sh)); }
       else if (sh.type === "message") {
         el.style.background = vHexA(sh.fill, sh.opacity);
@@ -1483,6 +1604,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       var a = vAsset(o.assetId); if (!a) return;
       var d = document.createElement("div"); d.className = "ov";
       d.style.left = o.x + "%"; d.style.top = o.y + "%"; d.style.width = o.w + "%";
+      if (o.rot) d.style.transform = "rotate(" + o.rot + "deg)";
       var im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; d.appendChild(im);
       box.appendChild(d);
     });
@@ -1669,12 +1791,15 @@ $("sfTextColor").addEventListener("input", e => { const sh = curShape(); if (sh)
 $("sfOpacity").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.opacity = clamp(e.target.value / 100, 0, 1); $("sfOpacityVal").textContent = e.target.value + "%"; renderCanvas(); } });
 $("sfStrokeW").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.strokeWidth = clamp(e.target.value, 0, 40); $("sfStrokeWVal").textContent = sh.strokeWidth + "px"; renderCanvas(); } });
 $("sfRadius").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.radius = clamp(e.target.value, 0, 200); $("sfRadiusVal").textContent = sh.radius + "px"; renderCanvas(); } });
+$("sfRotate").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.rot = clamp(e.target.value, -180, 180); $("sfRotateVal").textContent = sh.rot + "°"; renderCanvas(); } });
 $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
 
 // CTA
-$("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); });
-$("ctaText").addEventListener("input", e => project.cta.text = e.target.value);
-$("ctaUrl").addEventListener("input", e => project.cta.url = e.target.value);
+$("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); renderCanvas(); });
+$("ctaText").addEventListener("input", e => { project.cta.text = e.target.value; renderCanvas(); });
+$("ctaUrl").addEventListener("input", e => { project.cta.url = e.target.value; renderCanvas(); });
+// On blur, upgrade a bare domain to a full https:// link so it works in the export.
+$("ctaUrl").addEventListener("change", e => { const n = safeUrl(e.target.value); if (n) { project.cta.url = n; e.target.value = n; renderCanvas(); } });
 
 // drag-and-drop images onto canvas
 canvasWrap.addEventListener("dragover", e => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); });
@@ -1682,6 +1807,7 @@ canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.
 
 // Keyboard: Delete/Backspace removes the selected shape or stage asset; Escape clears selection.
 document.addEventListener("keydown", e => {
+  if (editing) return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   if (e.key === "Escape") {
@@ -1694,10 +1820,13 @@ document.addEventListener("keydown", e => {
   else if (selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
 });
 
-window.addEventListener("beforeunload", e => { if (project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
+// With autosave on, only warn about losing work if autosave failed (e.g. storage full).
+window.addEventListener("beforeunload", e => { if (autosaveOff && project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
 
 populateFontSelects();
+const restored = restoreAutosave();
 render();
+if (restored) toast("Restored your last session");
 </script>
 </body>
 </html>

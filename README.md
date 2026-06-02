@@ -23,7 +23,12 @@ No accounts. No backend. No data ever leaves the browser.
 - **Vector annotation tools** — on any slide, draw boxes, ellipses, arrows,
   highlight areas and message-box callouts, each with customizable fill colour,
   border colour/width and opacity. Hotspots are customizable too (colour & size).
-  Everything is movable, scalable and deletable, and renders in the export.
+  Everything is movable, scalable, **rotatable** and deletable, and renders in the export.
+- **On-canvas text** — double-click a message box to type directly on the slide;
+  move, resize and rotate it like any other object.
+- **Autosave** — your work is continuously saved in the browser (localStorage) and
+  restored automatically next time you open the tool. A "Saved ✓" indicator shows
+  status; use **Save**/**Open** for portable `.presentation.json` files.
 
 ## Use it
 

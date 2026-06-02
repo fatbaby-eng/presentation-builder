@@ -60,7 +60,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .tool { padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 7px; background: #fff; cursor: pointer;
   font-size: .78rem; font-weight: 600; color: var(--muted); }
 .tool.on { border-color: var(--accent); color: var(--accent); background: #f2f0ff; }
-.canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; overflow: auto; }
+.canvas-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem; overflow: auto; }
+.cta-preview { text-align: center; }
+.cta-preview .cap { font-size: .72rem; color: var(--muted); margin-bottom: .5rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.cta-preview .cap.warn { color: var(--danger); text-transform: none; letter-spacing: 0; margin: .5rem auto 0; font-weight: 600; max-width: 360px; }
+.cta-prev-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: .7rem 1.3rem; font-size: .95rem; font-weight: 600; }
 .inspector { background: var(--panel); border-left: 1px solid var(--line); padding: 1rem; }
 
 /* ── Step thumbnails ───────────────────── */
@@ -585,8 +589,13 @@ function newContentSlide(layout) {
    Run on import AND on export, so nothing unsafe ever reaches output. */
 function safeUrl(u) {
   if (typeof u !== "string" || !u.trim()) return "";
-  try { const x = new URL(u.trim()); if (["http:", "https:", "mailto:"].includes(x.protocol)) return x.href; }
+  const v = u.trim();
+  try { const x = new URL(v); if (["http:", "https:", "mailto:"].includes(x.protocol)) return x.href; }
   catch (e) {}
+  // No scheme but looks like a domain (e.g. "www.example.com") → assume https.
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(v) && /^[^\s]+\.[^\s]+$/.test(v)) {
+    try { const x = new URL("https://" + v); if (x.protocol === "https:") return x.href; } catch (e) {}
+  }
   return "";
 }
 function safeColor(c, fallback) { return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c.toLowerCase() : (fallback || "#6c5ce7"); }
@@ -927,6 +936,24 @@ function renderCanvas() {
   }
 
   canvasWrap.appendChild(stage);
+
+  // CTA preview — the CTA shows on the end screen (after the last slide), so preview it there.
+  if (selected === project.steps.length - 1 && project.cta.enabled) {
+    const wrap = document.createElement("div"); wrap.className = "cta-preview";
+    const cap = document.createElement("div"); cap.className = "cap"; cap.textContent = "End screen — shown after the last slide";
+    const btn = document.createElement("button"); btn.className = "cta-prev-btn"; btn.textContent = project.cta.text || "Get started"; btn.disabled = true;
+    wrap.appendChild(cap); wrap.appendChild(btn);
+    if (project.cta.url && !safeUrl(project.cta.url)) {
+      const warn = document.createElement("div"); warn.className = "cap warn";
+      warn.textContent = "⚠ That link isn't valid — use something like https://example.com so the button appears in the export.";
+      wrap.appendChild(warn);
+    } else if (!project.cta.url) {
+      const warn = document.createElement("div"); warn.className = "cap warn";
+      warn.textContent = "⚠ Add a button link (https://…) or the button won't appear in the export.";
+      wrap.appendChild(warn);
+    }
+    canvasWrap.appendChild(wrap);
+  }
   scheduleSave();
 }
 
@@ -1768,9 +1795,11 @@ $("sfRotate").addEventListener("input", e => { const sh = curShape(); if (sh) { 
 $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
 
 // CTA
-$("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); });
-$("ctaText").addEventListener("input", e => project.cta.text = e.target.value);
-$("ctaUrl").addEventListener("input", e => project.cta.url = e.target.value);
+$("ctaOn").addEventListener("change", e => { project.cta.enabled = e.target.checked; renderInspector(); renderCanvas(); });
+$("ctaText").addEventListener("input", e => { project.cta.text = e.target.value; renderCanvas(); });
+$("ctaUrl").addEventListener("input", e => { project.cta.url = e.target.value; renderCanvas(); });
+// On blur, upgrade a bare domain to a full https:// link so it works in the export.
+$("ctaUrl").addEventListener("change", e => { const n = safeUrl(e.target.value); if (n) { project.cta.url = n; e.target.value = n; renderCanvas(); } });
 
 // drag-and-drop images onto canvas
 canvasWrap.addEventListener("dragover", e => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); });

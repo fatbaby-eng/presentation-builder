@@ -42,6 +42,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .btn.ghost { background: transparent; }
 .btn.sm { padding: .35rem .55rem; font-size: .76rem; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+.save-state { font-size: .74rem; color: var(--muted); font-weight: 600; min-width: 56px; text-align: right; }
 .accent-pick { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; color: var(--muted); }
 .accent-pick input[type=color] { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px;
   background: none; padding: 0; cursor: pointer; }
@@ -247,6 +248,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <label class="accent-pick">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
     <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
     <div class="spacer"></div>
+    <span id="saveState" class="save-state" title="Your work is auto-saved in this browser"></span>
     <button class="btn ghost" id="loadBtn">Open</button>
     <button class="btn ghost" id="saveBtn">Save</button>
     <button class="btn" id="previewBtn">▶ Preview</button>
@@ -553,6 +555,7 @@ let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
 let selAsset = -1;       // selected placed-asset (overlay) index within the slide
 let selShape = -1;       // selected annotation shape index within the slide
+let editing = false;     // true while typing directly into an on-canvas text box
 let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | highlight | message
 
 function newProject() {
@@ -851,6 +854,7 @@ function renderSteps() {
     row.appendChild(tools);
     stepList.appendChild(row);
   });
+  scheduleSave();
 }
 function toolBtn(label, title, fn) {
   const b = document.createElement("button"); b.textContent = label; b.title = title;
@@ -923,6 +927,7 @@ function renderCanvas() {
   }
 
   canvasWrap.appendChild(stage);
+  scheduleSave();
 }
 
 // Generic drag-to-draw a rectangle on a stage; onDone gets (x,y,w,h,flipX,flipY) in %.
@@ -1037,6 +1042,25 @@ function addRotateHandle(el, obj) {
   el.appendChild(r);
 }
 
+// Edit a message box's text directly on the canvas.
+function startEditMessage(t, sh) {
+  if (!t) return;
+  editing = true;
+  t.setAttribute("contenteditable", "true"); t.style.cursor = "text"; t.style.outline = "none";
+  t.focus();
+  try { const range = document.createRange(); range.selectNodeContents(t); range.collapse(false);
+    const selN = window.getSelection(); selN.removeAllRanges(); selN.addRange(range); } catch (err) {}
+  const readText = () => (t.innerText != null ? t.innerText : t.textContent) || "";
+  const onInput = () => { sh.text = readText(); scheduleSave(); };
+  const onKey = e => { e.stopPropagation(); if (e.key === "Escape") t.blur(); };
+  const onBlur = () => {
+    sh.text = readText(); t.removeAttribute("contenteditable"); editing = false;
+    t.removeEventListener("input", onInput); t.removeEventListener("keydown", onKey); t.removeEventListener("blur", onBlur);
+    render();
+  };
+  t.addEventListener("input", onInput); t.addEventListener("keydown", onKey); t.addEventListener("blur", onBlur);
+}
+
 // Render shapes onto a stage; interactive (select / move / resize / delete) only in Select.
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
@@ -1044,8 +1068,12 @@ function attachShapes(stage, step, sel) {
     el.className = "shape" + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
+      if (sh.type === "message") {
+        el.style.cursor = "text";
+        el.addEventListener("dblclick", e => { e.stopPropagation(); startEditMessage(el.querySelector(".msg-text"), sh); });
+      }
       el.addEventListener("pointerdown", e => {
-        if (e.target.classList.contains("sh") || e.target.classList.contains("shx")) return;
+        if (editing || e.target.classList.contains("sh") || e.target.classList.contains("shx") || e.target.classList.contains("rot")) return;
         e.stopPropagation(); e.preventDefault();
         if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; render(); return; }
         const r = stage.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = sh.x, oy = sh.y;
@@ -1142,6 +1170,7 @@ function renderInspector() {
   $("ctaOn").checked = project.cta.enabled;
   $("ctaText").value = project.cta.text; $("ctaUrl").value = project.cta.url;
   $("ctaFields").style.opacity = project.cta.enabled ? "1" : ".5";
+  scheduleSave();
 }
 
 const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", arrow: "Arrow", highlight: "Highlight", message: "Message box" };
@@ -1186,6 +1215,7 @@ function render() {
   renderSteps(); renderCanvas(); renderInspector();
   const has = project.steps.length > 0;
   $("previewBtn").disabled = !has; $("exportBtn").disabled = !has; $("saveBtn").disabled = !has;
+  scheduleSave();
 }
 
 /* ───────────────────────── Slide ops ───────────────────────── */
@@ -1369,6 +1399,34 @@ function loadProject(file) {
   const reader = new FileReader();
   reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
   reader.readAsText(file);
+}
+
+/* ───────────────────────── Autosave (localStorage) ─────────────────────────
+   Persists work-in-progress in the browser; restored on next visit. */
+const LS_KEY = "presentationBuilder.autosave.v1";
+let saveTimer = null, autosaveOff = false;
+function setSaveState(t) { const e = $("saveState"); if (e) e.textContent = t; }
+function autosaveNow() {
+  if (autosaveOff) return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(project));
+    setSaveState("Saved ✓");
+  } catch (e) {
+    autosaveOff = true; setSaveState("Autosave off");
+    toast("Autosave off — browser storage is full", true);
+  }
+}
+function scheduleSave() {
+  if (autosaveOff) return;
+  setSaveState("Saving…");
+  clearTimeout(saveTimer); saveTimer = setTimeout(autosaveNow, 600);
+}
+function restoreAutosave() {
+  let raw; try { raw = localStorage.getItem(LS_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  try { const p = sanitizeProject(JSON.parse(raw)); if (p.steps.length || p.assets.length) { project = p; return true; } }
+  catch (e) {}
+  return false;
 }
 
 /* ───────────────────────── Build standalone viewer ─────────────────────────
@@ -1720,6 +1778,7 @@ canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.
 
 // Keyboard: Delete/Backspace removes the selected shape or stage asset; Escape clears selection.
 document.addEventListener("keydown", e => {
+  if (editing) return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   if (e.key === "Escape") {
@@ -1732,10 +1791,13 @@ document.addEventListener("keydown", e => {
   else if (selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
 });
 
-window.addEventListener("beforeunload", e => { if (project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
+// With autosave on, only warn about losing work if autosave failed (e.g. storage full).
+window.addEventListener("beforeunload", e => { if (autosaveOff && project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
 
 populateFontSelects();
+const restored = restoreAutosave();
 render();
+if (restored) toast("Restored your last session");
 </script>
 </body>
 </html>

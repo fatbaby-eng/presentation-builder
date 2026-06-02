@@ -23,7 +23,7 @@ No accounts. No backend. No data ever leaves the browser.
 - **Vector annotation tools** — on any slide, draw boxes, ellipses, arrows,
   highlight areas and message-box callouts, each with customizable fill colour,
   border colour/width and opacity. Hotspots are customizable too (colour & size).
-  Everything is movable, scalable and deletable, and renders in the export.
+  Everything is movable, scalable, **rotatable** and deletable, and renders in the export.
 
 ## Use it
 

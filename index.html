@@ -212,6 +212,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   border-radius: 3px; cursor: nwse-resize; z-index: 3; }
 .shx { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
   border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 3; }
+.rot { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--accent); cursor: grab; z-index: 3; }
+.rot::before { content: ""; position: absolute; left: 50%; top: 12px; width: 2px; height: 14px; background: var(--accent); transform: translateX(-50%); }
 .tool-draw, .tool-draw * { cursor: crosshair; }
 .marker.passive, .ov.passive, .rd.passive { pointer-events: none; }
 .marker.draggable { cursor: move; }
@@ -401,6 +404,10 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <label for="sfRadius">Corner radius <span id="sfRadiusVal" class="hint" style="font-weight:400"></span></label>
           <input type="range" id="sfRadius" min="0" max="60" step="1" style="width:100%">
         </div>
+        <div class="field">
+          <label for="sfRotate">Rotation <span id="sfRotateVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="sfRotate" min="-180" max="180" step="1" style="width:100%">
+        </div>
         <button class="btn ghost sm" id="sfDelete" style="width:100%">Delete shape</button>
       </div>
 
@@ -528,7 +535,7 @@ const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statemen
 const SHAPE_TOOLS = ["box", "ellipse", "arrow", "highlight", "message"];
 const SHAPE_TYPES = SHAPE_TOOLS.slice();
 function newShape(type, x, y, w, h) {
-  const b = { id: uid(), type, x, y, w, h, flipX: false, flipY: false };
+  const b = { id: uid(), type, x, y, w, h, rot: 0, flipX: false, flipY: false };
   if (type === "box")       return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
   if (type === "ellipse")   return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
   if (type === "highlight") return Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
@@ -612,7 +619,8 @@ function sanitizeOverlays(raw) {
     if (!o || typeof o !== "object") continue;
     const aid = str(o.assetId, 40); if (!aid) continue;
     out.push({ id: str(o.id, 40) || uid(), assetId: aid,
-      x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200) });
+      x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200),
+      rot: o.rot == null ? 0 : clamp(o.rot, -180, 180) });
   }
   return out;
 }
@@ -622,7 +630,7 @@ function sanitizeShapes(raw) {
     if (!sh || typeof sh !== "object" || !SHAPE_TYPES.includes(sh.type)) continue;
     out.push({ id: str(sh.id, 40) || uid(), type: sh.type,
       x: clamp(sh.x, -50, 150), y: clamp(sh.y, -50, 150), w: clamp(sh.w, 0, 200), h: clamp(sh.h, 0, 200),
-      flipX: !!sh.flipX, flipY: !!sh.flipY,
+      rot: sh.rot == null ? 0 : clamp(sh.rot, -180, 180), flipX: !!sh.flipX, flipY: !!sh.flipY,
       fill: safeColor(sh.fill, "#6c5ce7"), stroke: safeColor(sh.stroke, "#6c5ce7"),
       strokeWidth: clamp(sh.strokeWidth, 0, 40), opacity: clamp(sh.opacity, 0, 1), radius: clamp(sh.radius, 0, 200),
       text: str(sh.text, 300), textColor: safeColor(sh.textColor, "#1b1f2a") });
@@ -749,6 +757,7 @@ function attachOverlays(stageEl, step, sel) {
     const ov = document.createElement("div");
     ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
+    if (o.rot) ov.style.transform = "rotate(" + o.rot + "deg)";
     const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false; ov.appendChild(img);
     if (!sel) { stageEl.appendChild(ov); return; }
     ov.addEventListener("click", e => e.stopPropagation());
@@ -774,17 +783,19 @@ function attachOverlays(stageEl, step, sel) {
       const h = document.createElement("div"); h.className = "oh"; h.title = "Drag to resize";
       h.addEventListener("pointerdown", e => {
         e.stopPropagation(); e.preventDefault();
-        const rect = stageEl.getBoundingClientRect(), ovRect = ov.getBoundingClientRect();
+        const rect = stageEl.getBoundingClientRect();
+        const sx = e.clientX, sy = e.clientY, sw = o.w, rad = (o.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
         try { h.setPointerCapture(e.pointerId); } catch (err) {}
         const move = ev => {
-          const wpx = Math.max(8, ev.clientX - ovRect.left);
-          o.w = clamp(wpx / rect.width * 100, 1, 200);
+          const dx = ev.clientX - sx, dy = ev.clientY - sy;            // project onto the asset's own x-axis
+          o.w = clamp(sw + (dx * cos + dy * sin) / rect.width * 100, 1, 200);
           ov.style.width = o.w + "%";
         };
         const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); };
         h.addEventListener("pointermove", move); h.addEventListener("pointerup", up);
       });
       ov.appendChild(h);
+      addRotateHandle(ov, o);
 
       const x = document.createElement("div"); x.className = "ox"; x.textContent = "×"; x.title = "Remove from this slide";
       x.addEventListener("pointerdown", e => e.stopPropagation());
@@ -969,6 +980,7 @@ function attachHotspot(stage, step, h, hi, sel) {
 function buildShapeEl(sh) {
   const el = document.createElement("div");
   el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+  if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
   if (sh.type === "arrow") {
     el.appendChild(arrowSVG(sh));
   } else if (sh.type === "message") {
@@ -1006,6 +1018,25 @@ function arrowSVG(sh) {
   return svg;
 }
 
+// Drag-to-rotate knob; writes degrees (-180..180, snapped near 45°s) onto obj.rot.
+function addRotateHandle(el, obj) {
+  const r = document.createElement("div"); r.className = "rot"; r.title = "Drag to rotate";
+  r.addEventListener("pointerdown", e => {
+    e.stopPropagation(); e.preventDefault();
+    const rect = el.getBoundingClientRect(), cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    try { r.setPointerCapture(e.pointerId); } catch (err) {}
+    const mv = ev => {
+      let a = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI + 90;
+      a = ((Math.round(a) + 180) % 360 + 360) % 360 - 180;
+      [0, 45, 90, 135, 180, -45, -90, -135, -180].forEach(s => { if (Math.abs(a - s) <= 4) a = s; });
+      obj.rot = a; el.style.transform = "rotate(" + a + "deg)";
+    };
+    const up = () => { r.removeEventListener("pointermove", mv); r.removeEventListener("pointerup", up); render(); };
+    r.addEventListener("pointermove", mv); r.addEventListener("pointerup", up);
+  });
+  el.appendChild(r);
+}
+
 // Render shapes onto a stage; interactive (select / move / resize / delete) only in Select.
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
@@ -1027,17 +1058,20 @@ function attachShapes(stage, step, sel) {
         const hnd = document.createElement("div"); hnd.className = "sh"; hnd.title = "Drag to resize";
         hnd.addEventListener("pointerdown", e => {
           e.stopPropagation(); e.preventDefault();
-          const r = stage.getBoundingClientRect(), rect = el.getBoundingClientRect();
+          const r = stage.getBoundingClientRect();
+          const sx = e.clientX, sy = e.clientY, sw = sh.w, sH = sh.h, rad = (sh.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
           try { hnd.setPointerCapture(e.pointerId); } catch (err) {}
           const mv = ev => {
-            sh.w = clamp(Math.max(4, ev.clientX - rect.left) / r.width * 100, 0.5, 200);
-            sh.h = clamp(Math.max(4, ev.clientY - rect.top) / r.height * 100, 0.5, 200);
+            const dx = ev.clientX - sx, dy = ev.clientY - sy;           // project screen delta onto the shape's own axes
+            sh.w = clamp(sw + (dx * cos + dy * sin) / r.width * 100, 0.5, 200);
+            sh.h = clamp(sH + (-dx * sin + dy * cos) / r.height * 100, 0.5, 200);
             el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
           };
           const up = () => { hnd.removeEventListener("pointermove", mv); hnd.removeEventListener("pointerup", up); render(); };
           hnd.addEventListener("pointermove", mv); hnd.addEventListener("pointerup", up);
         });
         el.appendChild(hnd);
+        addRotateHandle(el, sh);
         const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
         x.addEventListener("pointerdown", e => e.stopPropagation());
         x.onclick = e => { e.stopPropagation(); step.shapes.splice(si, 1); selShape = -1; render(); };
@@ -1126,6 +1160,7 @@ function renderShapeFields(sh) {
   $("sfOpacity").value = Math.round(sh.opacity * 100); $("sfOpacityVal").textContent = Math.round(sh.opacity * 100) + "%";
   $("sfStrokeW").value = sh.strokeWidth; $("sfStrokeWVal").textContent = sh.strokeWidth + "px";
   $("sfRadius").value = sh.radius; $("sfRadiusVal").textContent = sh.radius + "px";
+  $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
 }
 
 function renderContentFields(step) {
@@ -1213,7 +1248,7 @@ function placeAsset(assetId) {
   const s = curSlide();
   if (!s) { toast("Add a slide first", true); return; }
   if (!s.overlays) s.overlays = [];
-  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24 });
+  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24, rot: 0 });
   selHotspot = -1; selAsset = s.overlays.length - 1; render();
   toast("Asset placed — drag to move, corner handle to scale");
 }
@@ -1463,6 +1498,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     (step.shapes || []).forEach(function (sh) {
       var el = document.createElement("div"); el.className = "shape";
       el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+      if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
       if (sh.type === "arrow") { el.appendChild(vArrow(sh)); }
       else if (sh.type === "message") {
         el.style.background = vHexA(sh.fill, sh.opacity);
@@ -1483,6 +1519,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       var a = vAsset(o.assetId); if (!a) return;
       var d = document.createElement("div"); d.className = "ov";
       d.style.left = o.x + "%"; d.style.top = o.y + "%"; d.style.width = o.w + "%";
+      if (o.rot) d.style.transform = "rotate(" + o.rot + "deg)";
       var im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; d.appendChild(im);
       box.appendChild(d);
     });
@@ -1669,6 +1706,7 @@ $("sfTextColor").addEventListener("input", e => { const sh = curShape(); if (sh)
 $("sfOpacity").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.opacity = clamp(e.target.value / 100, 0, 1); $("sfOpacityVal").textContent = e.target.value + "%"; renderCanvas(); } });
 $("sfStrokeW").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.strokeWidth = clamp(e.target.value, 0, 40); $("sfStrokeWVal").textContent = sh.strokeWidth + "px"; renderCanvas(); } });
 $("sfRadius").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.radius = clamp(e.target.value, 0, 200); $("sfRadiusVal").textContent = sh.radius + "px"; renderCanvas(); } });
+$("sfRotate").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.rot = clamp(e.target.value, -180, 180); $("sfRotateVal").textContent = sh.rot + "°"; renderCanvas(); } });
 $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
 
 // CTA

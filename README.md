@@ -38,6 +38,9 @@ No accounts. No backend. No data ever leaves the browser.
 - **Type on the slide** — double-click a message box to edit text in place.
 - **Motion** — make shapes and images fade in, fly in, pulse, or leave. Open the Motion
   bar under the slide, pick an object, choose how it appears, then hit **Play this slide**.
+- **When this slide opens** — pick how a slide appears (fade, push, wipe, zoom…). Set it in
+  Slide settings; the exported viewer plays the effect when that slide opens.
+- **When clicked** (hotspots) — show a tip, go to the next slide, or jump to a specific slide.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files.
 
@@ -75,18 +78,21 @@ To give the tool away to a company, hand them this folder (or host it on any sta
    On an empty canvas you can also **Start from scratch**, **Import an outline**,
    or **Add screenshots**.
 3. **Place hotspots** (image slides) — with the **Hotspot** tool, click anywhere
-   on a slide to drop a hotspot. Each gets its own tooltip. Pick an animation
-   (Pulse, Bounce, Glow, Spotlight, or None) in the inspector.
-4. **Write tooltips** — select a hotspot, type its text, and choose where the
-   tooltip sits (top / bottom / left / right).
-5. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
+   on a slide to drop a hotspot. Each can show a tip, go to the next slide, or
+   jump to another slide (**When clicked**). Pick an animation (Pulse, Bounce,
+   Glow, Spotlight, or None) in the inspector.
+4. **Write tooltips** — for “Show tip, then continue,” select a hotspot, type its
+   text, and choose where the tooltip sits (top / bottom / left / right).
+5. **Choose how slides open** — in Slide settings, set **When this slide opens**
+   (fade, push, wipe…) and how long the effect lasts.
+6. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
    names, or numbers. Choose **Black out** (solid) or **Blur** per region.
-6. **Organize** — drag slides to reorder (or use the ↑/↓ buttons), duplicate, or
+7. **Organize** — drag slides to reorder (or use the ↑/↓ buttons), duplicate, or
    delete.
-7. **Add a final CTA** (optional) — a button shown at the end, e.g.
+8. **Add a final CTA** (optional) — a button shown at the end, e.g.
    *Start free trial → https://…*.
-8. **Preview** to click through it exactly as your viewers will.
-9. **Export** → downloads one `.html` file with the images embedded. Share that
+9. **Preview** to click through it exactly as your viewers will.
+10. **Export** → downloads one `.html` file with the images embedded. Share that
    file; it runs offline, anywhere.
 
 Use **Save** / **Open** to keep working later — it downloads a
@@ -122,7 +128,7 @@ slides.
 | Tool | What it does |
 |---|---|
 | **↖ Select** | Click any item to select it, then drag to move, use the corner handle to resize, and restyle it in the inspector. `Delete`/`Backspace` removes it; `Esc` deselects. |
-| **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize its colour, size and animation (Pulse / Bounce / Glow / Spotlight / None). |
+| **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize colour, size, animation, and **When clicked** (show tip / next slide / jump to a slide). |
 | **▦ Redact** *(image)* | Drag to cover an area (blur or black out). |
 | **▭ Box / ◯ Ellipse** | Drag to draw a shape with fill colour, border colour/width, opacity (and corner radius for boxes). |
 | **➶ Arrow** | Drag to draw an arrow in any direction; set its colour and thickness. |
@@ -134,8 +140,8 @@ colours, opacity, border width, corner radius and (for message boxes) the text.
 
 ## Viewer controls (in an exported presentation)
 
-- Click a hotspot to read its tooltip; click **Next** (or the hotspot's button) to advance, **Back** to go back
-- Arrow keys ← → (or space) to navigate
+- Click a hotspot to follow its **When clicked** action (tip, next slide, or jump); tip **Next** advances with the slide’s open effect
+- Arrow keys ← → (or space) to navigate (with slide transitions)
 - A progress bar and slide counter, plus a Restart at the end
 
 ## Security

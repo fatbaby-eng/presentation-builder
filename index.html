@@ -422,6 +422,18 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .float-bar button:hover { background: var(--bg); }
 .float-bar button.danger:hover { color: var(--danger); background: #fef2f2; }
 
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .65rem; margin: .6rem 0 1rem; }
+.tpl-card { text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: .75rem; background: #fafbfc;
+  cursor: pointer; font-family: inherit; color: var(--ink); transition: border-color .12s, background .12s; }
+.tpl-card:hover { border-color: var(--accent); background: #f2f0ff; }
+.tpl-card strong { display: block; font-size: .88rem; margin-bottom: .25rem; }
+.tpl-card span { font-size: .72rem; color: var(--muted); line-height: 1.35; }
+.harmony-block { margin: .55rem 0; }
+.harmony-block .lab { font-size: .72rem; font-weight: 700; color: var(--muted); margin-bottom: .3rem; }
+.harmony-row { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.harmony-row button.sw { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--line); cursor: pointer; padding: 0; }
+.harmony-row .apply { margin-left: .25rem; }
+
 /* ── Toast ─────────────────────────────── */
 .toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(20px);
   background: var(--ink); color: #fff; padding: .6rem 1rem; border-radius: 9px; font-size: .82rem; opacity: 0;
@@ -474,6 +486,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <button data-add="statement"><span class="mi">❝</span> Statement / quote</button>
             <button data-add="text"><span class="mi">📝</span> Plain text</button>
             <button data-add="outline"><span class="mi">☰</span> Import content…</button>
+            <button data-add="template"><span class="mi">▦</span> Start from a template…</button>
           </div>
         </div>
         <button class="btn sm" id="addImgBtn">+ Screenshots</button>
@@ -515,6 +528,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
               <span class="ec-icon">☰</span>
               <strong>Import an outline</strong>
               <span class="ec-desc">Paste a list, or import .txt / .md / .pdf / .docx</span>
+            </button>
+            <button type="button" class="empty-card" id="emptyTplBtn">
+              <span class="ec-icon">▦</span>
+              <strong>Start from a template</strong>
+              <span class="ec-desc">Pitch, product tour, training, status</span>
             </button>
             <button type="button" class="empty-card" id="emptyAddBtn">
               <span class="ec-icon">🖼</span>
@@ -1048,6 +1066,26 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <iframe id="previewFrame" title="Presentation preview" sandbox="allow-scripts"></iframe>
 </div>
 
+<!-- Template gallery -->
+<div class="overlay modal-overlay" id="tplModal">
+  <div class="modal">
+    <div class="modal-head"><strong>▦ Start from a template</strong><button class="btn sm" id="tplClose">✕ Close</button></div>
+    <div class="modal-body">
+      <p class="hint">Pick a starter deck. Your brand kit can still be applied after. Nothing leaves your browser.</p>
+      <h3>Built-in</h3>
+      <div class="tpl-grid" id="tplBuiltin"></div>
+      <h3>Saved by you</h3>
+      <div class="tpl-grid" id="tplCustom"></div>
+      <div class="hint" id="tplCustomEmpty" style="display:none">No saved templates yet. Build a deck, then use <strong>Save as template</strong>.</div>
+      <div class="modal-actions">
+        <button class="btn" id="tplSaveCurrent">Save current deck as template</button>
+        <button class="btn" id="tplImport">⬆ Import template file</button>
+        <input type="file" id="tplFileInput" class="hidden-file" accept=".json,application/json">
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Outline / document import modal -->
 <div class="overlay modal-overlay" id="outlineModal">
   <div class="modal">
@@ -1106,6 +1144,8 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <label class="color-cell" for="bWarning"><input type="color" id="bWarning"><span><span class="cl">Warning</span><br><span class="cv" id="cvWarning"></span></span></label>
         <label class="color-cell" for="bDanger"><input type="color" id="bDanger"><span><span class="cl">Danger</span><br><span class="cv" id="cvDanger"></span></span></label>
       </div>
+      <div class="hint" style="margin:.55rem 0 .25rem">Colour ideas from your primary</div>
+      <div id="bHarmonies"></div>
 
       <h3>Slide background</h3>
       <div class="bg-mode" id="bgMode">
@@ -1157,6 +1197,21 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       </div>
       <div class="hint" style="margin:.7rem 0 .35rem">Text styles — edit once, apply on message boxes</div>
       <div id="bTextStyles"></div>
+      <div class="field" style="margin-top:.75rem">
+        <label>Build a type scale</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;align-items:end">
+          <div>
+            <label for="bScaleBase" class="hint">Body size <span id="bScaleBaseVal"></span></label>
+            <input type="range" id="bScaleBase" min="12" max="22" step="1" style="width:100%">
+          </div>
+          <div>
+            <label for="bScaleRatio" class="hint">Ratio</label>
+            <select id="bScaleRatio"></select>
+          </div>
+        </div>
+        <button type="button" class="btn sm" id="bScaleApply" style="margin-top:.45rem">Apply type scale</button>
+        <div class="hint" style="margin-top:.3rem">Updates Heading 1, Heading 2, Body, Caption, Quote, and Label together.</div>
+      </div>
 
       <h3>Preview</h3>
       <div class="brand-preview"><div class="bp-slide" id="bpSlide">
@@ -1223,6 +1278,11 @@ import {
   sanitizeNotes, sanitizeTimingMs, notesTextFile, presenterStylesheet
 } from "./js/canvas/presenter.js";
 import { filterCommands } from "./js/canvas/commands.js";
+import {
+  BUILTIN_TEMPLATES, listCustomTemplates, saveCustomTemplate, deleteCustomTemplate,
+  templateToProjectPayload, projectToTemplatePayload
+} from "./js/canvas/templates.js";
+import { colorHarmonies, TYPE_SCALE_RATIOS, buildTypeScale } from "./js/canvas/brandPro.js";
 
 "use strict";
 
@@ -2544,6 +2604,7 @@ function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); 
 // "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
 function addSlideByKind(kind) {
   if (kind === "outline") { openOutline(); return; }
+  if (kind === "template") { openTemplates(); return; }
   if (kind === "text") addTextSlide(); else addContentSlide(kind);
 }
 
@@ -3059,6 +3120,8 @@ function syncBrandInputs() {
   $("bDanger").value = b.danger || DEFAULT_BRAND.danger; $("cvDanger").textContent = b.danger || DEFAULT_BRAND.danger;
   $("bFontH").value = b.fontHeading; $("bFontB").value = b.fontBody;
   renderBrandTextStyles();
+  renderHarmonies();
+  initTypeScaleControls();
   // Background controls
   const mode = BG_MODES.includes(b.bgMode) ? b.bgMode : "solid";
   [...$("bgMode").children].forEach(btn => btn.classList.toggle("on", btn.dataset.bg === mode));
@@ -3106,6 +3169,119 @@ function syncBrandInputs() {
 function openBrand() { syncBrandInputs(); $("brandModal").classList.add("open"); }
 function closeBrand() { $("brandModal").classList.remove("open"); }
 function setBrand(key, value) { project.brand[key] = value; applyBrand(); syncBrandInputs(); renderSteps(); renderCanvas(); }
+
+function renderHarmonies() {
+  const host = $("bHarmonies"); if (!host) return;
+  host.innerHTML = "";
+  const sets = colorHarmonies(project.brand.primary);
+  const labels = { complementary: "Complementary", analogous: "Analogous", triadic: "Triadic", split: "Split complementary" };
+  Object.keys(labels).forEach(key => {
+    const block = document.createElement("div"); block.className = "harmony-block";
+    const lab = document.createElement("div"); lab.className = "lab"; lab.textContent = labels[key]; block.appendChild(lab);
+    const row = document.createElement("div"); row.className = "harmony-row";
+    const colors = sets[key] || [];
+    colors.forEach((hex, i) => {
+      const sw = document.createElement("button"); sw.type = "button"; sw.className = "sw";
+      sw.style.background = hex; sw.title = hex + " — click to set primary";
+      sw.onclick = () => setBrand("primary", safeColor(hex, project.brand.primary));
+      row.appendChild(sw);
+    });
+    const apply = document.createElement("button"); apply.type = "button"; apply.className = "btn ghost sm apply";
+    apply.textContent = "Use as palette";
+    apply.onclick = () => {
+      if (colors[0]) setBrand("primary", safeColor(colors[0], project.brand.primary));
+      if (colors[1]) setBrand("secondary", safeColor(colors[1], project.brand.secondary));
+      if (colors[2]) setBrand("accent", safeColor(colors[2], project.brand.accent));
+      toast("Palette applied from " + labels[key].toLowerCase());
+    };
+    row.appendChild(apply);
+    block.appendChild(row); host.appendChild(block);
+  });
+}
+function initTypeScaleControls() {
+  const sel = $("bScaleRatio");
+  if (sel && !sel.dataset.ready) {
+    TYPE_SCALE_RATIOS.forEach(r => {
+      const o = document.createElement("option"); o.value = r.id; o.textContent = r.label; sel.appendChild(o);
+    });
+    sel.value = "1.25"; sel.dataset.ready = "1";
+  }
+  const base = $("bScaleBase");
+  if (base) {
+    const body = (project.brand.textStyles && project.brand.textStyles.body && project.brand.textStyles.body.size) || 16;
+    base.value = clamp(body, 12, 22);
+    $("bScaleBaseVal").textContent = base.value + "px";
+  }
+}
+
+/* ───────────────────────── Templates ───────────────────────── */
+function openTemplates() {
+  paintTemplateGallery();
+  $("tplModal").classList.add("open");
+}
+function closeTemplates() { $("tplModal").classList.remove("open"); }
+function paintTemplateGallery() {
+  const builtin = $("tplBuiltin"); builtin.innerHTML = "";
+  BUILTIN_TEMPLATES.forEach(tpl => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "tpl-card";
+    const t = document.createElement("strong"); t.textContent = tpl.name; b.appendChild(t);
+    const s = document.createElement("span"); s.textContent = tpl.blurb; b.appendChild(s);
+    b.onclick = () => applyTemplatePayload(templateToProjectPayload(tpl), tpl.name);
+    builtin.appendChild(b);
+  });
+  const customHost = $("tplCustom"); customHost.innerHTML = "";
+  const customs = listCustomTemplates();
+  $("tplCustomEmpty").style.display = customs.length ? "none" : "";
+  customs.forEach(entry => {
+    const wrap = document.createElement("div"); wrap.style.display = "flex"; wrap.style.flexDirection = "column"; wrap.style.gap = ".3rem";
+    const b = document.createElement("button"); b.type = "button"; b.className = "tpl-card";
+    const t = document.createElement("strong"); t.textContent = entry.name; b.appendChild(t);
+    const s = document.createElement("span"); s.textContent = entry.blurb || "Saved template"; b.appendChild(s);
+    b.onclick = () => applyTemplatePayload(entry.payload, entry.name);
+    const del = document.createElement("button"); del.type = "button"; del.className = "btn ghost sm";
+    del.textContent = "Remove saved template";
+    del.onclick = () => { deleteCustomTemplate(entry.id); paintTemplateGallery(); toast("Template removed"); };
+    wrap.appendChild(b); wrap.appendChild(del); customHost.appendChild(wrap);
+  });
+}
+function applyTemplatePayload(payload, name) {
+  if (project.steps.length && !confirm("Replace the current presentation with “" + name + "”? Unsaved work in this browser session may be overwritten.")) return;
+  const next = sanitizeProject(payload);
+  next.title = str((payload && payload.title) || name, 120) || name;
+  project = next;
+  selected = 0; selHotspot = -1; selAsset = -1; selShape = -1;
+  closeTemplates();
+  render();
+  toast("Loaded template: " + name);
+}
+function saveCurrentAsTemplate() {
+  if (!project.steps.length) { toast("Add some slides first", true); return; }
+  const name = prompt("Name this template", project.title || "My template");
+  if (name == null) return;
+  const entry = projectToTemplatePayload(project, name.trim() || project.title);
+  // Store a sanitized snapshot so reloads stay safe
+  entry.payload = sanitizeProject(entry.payload);
+  entry.payload.title = entry.name;
+  saveCustomTemplate(entry);
+  download(slug(entry.name) + ".template.json", new Blob([JSON.stringify(entry, null, 2)], { type: "application/json" }));
+  paintTemplateGallery();
+  toast("Template saved in this browser (and downloaded)");
+}
+function importTemplateFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const raw = JSON.parse(reader.result);
+      let payload = raw;
+      let name = "Imported template";
+      if (raw && raw.payload) { payload = raw.payload; name = str(raw.name, 80) || name; }
+      else if (raw && raw.steps) { name = str(raw.title, 80) || name; }
+      else { toast("Not a template file", true); return; }
+      applyTemplatePayload(payload, name);
+    } catch (err) { toast("Couldn’t read that file", true); }
+  };
+  reader.readAsText(file);
+}
 
 function renderBrandTextStyles() {
   const box = $("bTextStyles");
@@ -4268,6 +4444,9 @@ $("accent").addEventListener("input", e => setBrand("primary", safeColor(e.targe
 $("addImgBtn").onclick = $("emptyAddBtn").onclick = () => $("imgInput").click();
 $("emptyScratchBtn").onclick = () => addContentSlide("title");
 $("emptyOutlineBtn").onclick = openOutline;
+$("emptyTplBtn").onclick = openTemplates;
+$("emptyBrandBtn").onclick = openBrand;
+$("emptyTplBtn").onclick = openTemplates;
 $("imgInput").addEventListener("change", e => { addImages(e.target.files); e.target.value = ""; });
 
 // "+ New slide" popover menu
@@ -4315,6 +4494,20 @@ $("bExport").onclick = exportBrand;
 $("bImport").onclick = () => $("brandInput").click();
 $("bReset").onclick = resetBrand;
 $("brandInput").addEventListener("change", e => { if (e.target.files[0]) importBrand(e.target.files[0]); e.target.value = ""; });
+$("bScaleBase").addEventListener("input", e => { $("bScaleBaseVal").textContent = e.target.value + "px"; });
+$("bScaleApply").onclick = () => {
+  const ratioMeta = TYPE_SCALE_RATIOS.find(r => r.id === $("bScaleRatio").value) || TYPE_SCALE_RATIOS[0];
+  project.brand.textStyles = sanitizeTextStyles(buildTypeScale(Number($("bScaleBase").value), ratioMeta.value));
+  renderBrandTextStyles(); applyBrand(); render(); toast("Type scale applied");
+};
+
+$("tplClose").onclick = closeTemplates;
+$("tplSaveCurrent").onclick = saveCurrentAsTemplate;
+$("tplImport").onclick = () => $("tplFileInput").click();
+$("tplFileInput").addEventListener("change", e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (f) importTemplateFile(f);
+});
 
 // Flexible background controls
 $("bgMode").addEventListener("click", e => {
@@ -4676,6 +4869,7 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (e.key === "Escape" && $("cmdPalette").classList.contains("open")) { closeCommandPalette(); return; }
+  if (e.key === "Escape" && $("tplModal").classList.contains("open")) { closeTemplates(); return; }
   if (e.key === "Escape" && $("outlineModal").classList.contains("open")) { closeOutline(); return; }
   if (e.key === "Escape" && $("brandModal").classList.contains("open")) { closeBrand(); return; }
   if (editing) return;
@@ -4702,6 +4896,8 @@ function editorCommands() {
     { id: "new-statement", label: "New statement slide", keywords: "add slide quote", run: () => addContentSlide("statement") },
     { id: "new-text", label: "New plain text slide", keywords: "add slide", run: () => addTextSlide() },
     { id: "import", label: "Import content…", keywords: "outline pdf docx markdown", shortcut: "", run: () => openOutline() },
+    { id: "template", label: "Start from a template…", keywords: "pitch tour training", run: () => openTemplates() },
+    { id: "save-tpl", label: "Save current deck as template", keywords: "reuse template", run: () => { openTemplates(); saveCurrentAsTemplate(); } },
     { id: "screenshots", label: "Add screenshots…", keywords: "image upload", run: () => $("imgInput").click() },
     { id: "dup-slide", label: "Duplicate this slide", keywords: "copy slide", run: () => { if (project.steps[selected]) dupStep(selected); } },
     { id: "del-slide", label: "Delete this slide", keywords: "remove slide", run: () => { if (project.steps[selected]) delStep(selected); } },

@@ -49,6 +49,10 @@ No accounts. No backend. No data ever leaves the browser.
   tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
+- **Templates** — start from Pitch, Product tour, Training, or Status. Save your own templates
+  in the browser and export a `.template.json`.
+- **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
+  build Heading/Body sizes from one body size and a ratio.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files.
 
@@ -73,7 +77,8 @@ To give the tool away to a company, hand them this folder (or host it on any sta
    and body fonts, and logo. **Import** an existing `.brandkit.json` to apply a
    saved look instantly, **Export** to reuse it across presentations, or click
    *Pick brand colour from logo* to sample your logo's dominant colour.
-2. **Add slides** — click **＋ New slide** to add a from-scratch layout:
+2. **Add slides** — click **＋ New slide** to add a from-scratch layout, **Start from a template…**,
+   or import content:
    - 🏷️ **Title slide** — big title + subtitle (great as a cover)
    - § **Section divider** — section heading in your brand colour
    - ≣ **Bulleted list** — heading + bullet points (one per line)

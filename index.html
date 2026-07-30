@@ -388,6 +388,14 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .overlay-bar .ttl { font-weight: 600; }
 .overlay-bar button { margin-left: auto; }
 .overlay iframe { flex: 1; width: 100%; border: 0; background: #0c0e14; }
+.export-menu-wrap { position: relative; display: inline-flex; }
+.export-menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 220px; background: #fff;
+  border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); z-index: 40; padding: .35rem; display: none; }
+.export-menu.open { display: block; }
+.export-menu button { display: flex; width: 100%; text-align: left; border: none; background: transparent;
+  padding: .55rem .65rem; border-radius: 7px; cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--ink); font-family: inherit; }
+.export-menu button:hover { background: var(--bg); }
+.notes-field textarea { min-height: 88px; resize: vertical; }
 
 /* ── Toast ─────────────────────────────── */
 .toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -413,7 +421,15 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <button class="btn ghost" id="loadBtn">Open</button>
     <button class="btn ghost" id="saveBtn">Save</button>
     <button class="btn" id="previewBtn">▶ Preview</button>
-    <button class="btn primary" id="exportBtn">Export</button>
+    <button class="btn" id="presentBtn" title="Open presenter view with notes and timer">Present</button>
+    <div class="export-menu-wrap">
+      <button class="btn primary" id="exportBtn">Export ▾</button>
+      <div class="export-menu" id="exportMenu">
+        <button type="button" data-export="html">Presentation (.html)</button>
+        <button type="button" data-export="notes">Speaker notes (.txt)</button>
+        <button type="button" data-export="print">Print / PDF…</button>
+      </div>
+    </div>
   </div>
 
   <!-- ── Main ── -->
@@ -538,6 +554,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <div class="hint" style="margin-top:.35rem">How people see this slide after the previous one</div>
         <label for="slideTxDur" style="margin-top:.5rem;display:block">Transition speed <span id="slideTxDurVal" class="hint" style="font-weight:400"></span></label>
         <input type="range" id="slideTxDur" min="1" max="20" step="1" style="width:100%">
+      </div>
+      <div class="field notes-field">
+        <label for="slideNotes">Notes for you</label>
+        <textarea id="slideNotes" maxlength="4000" placeholder="Reminders only you see while presenting…"></textarea>
+        <div class="hint" style="margin-top:.35rem">Shown in Present mode. Optional in the exported file (press N).</div>
       </div>
 
       <!-- Text-slide fields -->
@@ -976,9 +997,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   </div>
 </div>
 
-<!-- Preview overlay -->
+<!-- Preview / Present overlay -->
 <div class="overlay" id="overlay">
-  <div class="overlay-bar"><span class="ttl">Preview</span><button class="btn" id="closePreview">✕ Close</button></div>
+  <div class="overlay-bar"><span class="ttl" id="overlayTitle">Preview</span><button class="btn" id="closePreview">✕ Close</button></div>
   <iframe id="previewFrame" title="Presentation preview" sandbox="allow-scripts"></iframe>
 </div>
 
@@ -1153,6 +1174,9 @@ import {
   TRANSITION_PRESETS, sanitizeTransition, defaultTransition, transitionStylesheet,
   transitionClasses, HOTSPOT_ACTIONS, sanitizeHotspotAction
 } from "./js/canvas/transitions.js";
+import {
+  sanitizeNotes, sanitizeTimingMs, notesTextFile, presenterStylesheet
+} from "./js/canvas/presenter.js";
 
 "use strict";
 
@@ -1398,6 +1422,8 @@ function withChrome(step, src) {
   step.showSafe = c.showSafe;
   step.guides = c.guides;
   step.transition = sanitizeTransition(src && src.transition);
+  step.notes = sanitizeNotes(src && src.notes);
+  step.timingMs = sanitizeTimingMs(src && src.timingMs);
   return step;
 }
 function sanitizeStep(s) {
@@ -2028,6 +2054,7 @@ function renderInspector() {
   txSel.value = step.transition.type;
   $("slideTxDur").value = Math.round(step.transition.duration * 10);
   $("slideTxDurVal").textContent = step.transition.duration.toFixed(1) + "s";
+  $("slideNotes").value = step.notes || "";
 
   const isText = step.type === "text";
   const isContent = step.type === "content";
@@ -3285,13 +3312,16 @@ function restoreAutosave() {
 /* ───────────────────────── Build standalone viewer ─────────────────────────
    Same output for in-app preview (iframe srcdoc) and export, so what you
    preview is exactly what ships. */
-function buildDemoHTML(p) {
+function buildDemoHTML(p, opts) {
+  opts = opts || {};
+  const mode = opts.mode === "presenter" || opts.mode === "print" ? opts.mode : "viewer";
   const safe = sanitizeProject(p);                              // re-sanitize at the boundary
   const dataJson = JSON.stringify(safe).replace(/</g, "\\u003c"); // inert JSON; closing tag is split below so it can't end this script
   const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const txMap = {};
   TRANSITION_PRESETS.forEach(pr => { txMap[pr.id] = transitionClasses(pr.id); });
   const txMapJson = JSON.stringify(txMap);
+  const bodyClass = mode === "presenter" ? "pv-mode" : mode === "print" ? "print-mode" : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -3369,13 +3399,47 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .made a:hover { color: #fff; text-decoration: underline; }
 ${motionStylesheet()}
 ${transitionStylesheet()}
+${presenterStylesheet()}
 </style>
 </head>
-<body>
+<body class="${bodyClass}">
 <div class="bar" id="bar"><span class="t" id="dt"></span><span class="count" id="dc"></span></div>
 <div class="progress"><i id="dp"></i></div>
-<div class="stage" id="stage"></div>
+<div class="pv-shell" id="pvShell">
+  <div class="pv-main" id="pvMain">
+    <div class="stage" id="stage"></div>
+    <canvas class="pv-annot" id="pvAnnot" width="1" height="1"></canvas>
+    <div class="pv-blank" id="pvBlank"></div>
+  </div>
+  <aside class="pv-side" id="pvSide" style="${mode === "presenter" ? "" : "display:none"}">
+    <div>
+      <div class="pv-label">Elapsed</div>
+      <div class="pv-clock" id="pvClock">0:00<small id="pvSlideClock">This slide 0:00</small></div>
+    </div>
+    <div>
+      <div class="pv-label">Up next</div>
+      <div class="pv-next" id="pvNext">—</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div class="pv-label">Notes for you</div>
+      <div class="pv-notes empty" id="pvNotes">No notes on this slide</div>
+    </div>
+    <div>
+      <div class="pv-label">Jump to slide</div>
+      <div class="pv-thumbs" id="pvThumbs"></div>
+    </div>
+    <div class="pv-tools">
+      <button type="button" id="pvLaser">Laser</button>
+      <button type="button" id="pvPen">Pen</button>
+      <button type="button" id="pvClear">Clear marks</button>
+      <button type="button" id="pvBlack">Black</button>
+      <button type="button" id="pvWhite">White</button>
+    </div>
+    <div class="pv-help">L laser · P pen · B black · W white · C clear · Esc closes blank/tool</div>
+  </aside>
+</div>
 <div class="nav"><button id="prev">‹ Back</button><button id="next">Next ›</button></div>
+<div class="notes-panel" id="notesPanel"><div class="cap">Notes for you</div><div id="notesPanelBody"></div></div>
 
 <script type="application/json" id="demo-data">${dataJson}</` + `script>
 <script>
@@ -3384,8 +3448,19 @@ ${transitionStylesheet()}
   var DATA = JSON.parse(document.getElementById("demo-data").textContent);
   var POS = ["top", "bottom", "left", "right"];
   var TX = ${txMapJson};
+  var MODE = ${JSON.stringify(mode)};
+  var IS_PV = MODE === "presenter";
+  var IS_PRINT = MODE === "print";
   function safeUrl(u){ if(!u) return ""; try{ var x=new URL(u); if(["http:","https:","mailto:"].indexOf(x.protocol)>=0) return x.href; }catch(e){} return ""; }
+  function fmtClock(ms) {
+    ms = Math.max(0, Math.round(ms / 1000));
+    var m = Math.floor(ms / 60), s = ms % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
   var stage = document.getElementById("stage"), i = 0, active = 0, busy = false, firstPaint = true;
+  var sessionStart = Date.now(), slideStart = Date.now(), clockSlide = -1;
+  var annotMode = null; // laser | pen | null
+  var blankMode = null; // black | white | null
   document.getElementById("dt").textContent = DATA.title || "Presentation";
   if (DATA.logo) { var lg = document.createElement("img"); lg.className = "logo"; lg.src = DATA.logo; lg.alt = ""; document.getElementById("bar").insertBefore(lg, document.getElementById("dt")); }
 
@@ -3397,7 +3472,146 @@ ${transitionStylesheet()}
     document.getElementById("next").style.visibility = (i >= n) ? "hidden" : "visible";
     document.getElementById("next").disabled = busy;
     document.getElementById("next").textContent = (i === n - 1) ? "Finish ›" : "Next ›";
+    updateNotesUI();
+    if (IS_PV) updatePresenterSide();
   }
+
+  function slideLabel(idx) {
+    var n = DATA.steps.length;
+    if (idx >= n) return "End";
+    var s = DATA.steps[idx];
+    return "Slide " + (idx + 1) + (s && s.name ? " — " + s.name : "");
+  }
+
+  function updateNotesUI() {
+    var n = DATA.steps.length;
+    var notes = (i < n && DATA.steps[i] && DATA.steps[i].notes) ? String(DATA.steps[i].notes) : "";
+    var panel = document.getElementById("notesPanel");
+    var body = document.getElementById("notesPanelBody");
+    if (body) body.textContent = notes.trim() ? notes : "No notes on this slide.";
+    if (IS_PV) {
+      var el = document.getElementById("pvNotes");
+      if (el) {
+        el.textContent = notes.trim() ? notes : "No notes on this slide";
+        el.className = "pv-notes" + (notes.trim() ? "" : " empty");
+      }
+    }
+  }
+
+  function updatePresenterSide() {
+    var n = DATA.steps.length;
+    var nextEl = document.getElementById("pvNext");
+    if (nextEl) nextEl.textContent = (i + 1 < n) ? slideLabel(i + 1) : (i < n ? "End of presentation" : "—");
+    var thumbs = document.getElementById("pvThumbs");
+    if (thumbs && !thumbs.dataset.ready) {
+      for (var t = 0; t < n; t++) {
+        (function (idx) {
+          var b = document.createElement("button");
+          b.type = "button"; b.textContent = String(idx + 1);
+          b.title = slideLabel(idx);
+          b.onclick = function () { goTo(idx); };
+          thumbs.appendChild(b);
+        })(t);
+      }
+      thumbs.dataset.ready = "1";
+    }
+    if (thumbs) {
+      var kids = thumbs.children;
+      for (var k = 0; k < kids.length; k++) kids[k].className = (k === i) ? "on" : "";
+    }
+    if (i !== clockSlide) { slideStart = Date.now(); clockSlide = i; }
+  }
+
+  if (IS_PV) {
+    setInterval(function () {
+      var c = document.getElementById("pvClock");
+      var sc = document.getElementById("pvSlideClock");
+      var elapsed = fmtClock(Date.now() - sessionStart);
+      if (c) {
+        if (c.firstChild && c.firstChild.nodeType === 3) c.firstChild.textContent = elapsed;
+        else c.insertBefore(document.createTextNode(elapsed), c.firstChild);
+      }
+      if (sc) sc.textContent = "This slide " + fmtClock(Date.now() - slideStart);
+    }, 250);
+  }
+
+  function sizeAnnot() {
+    var cv = document.getElementById("pvAnnot");
+    var main = document.getElementById("pvMain") || stage;
+    if (!cv || !main) return;
+    var r = main.getBoundingClientRect();
+    var w = Math.max(1, Math.floor(r.width)), h = Math.max(1, Math.floor(r.height));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  }
+  function setAnnotMode(m) {
+    annotMode = (annotMode === m) ? null : m;
+    var cv = document.getElementById("pvAnnot");
+    if (cv) cv.classList.toggle("active", !!annotMode);
+    var laser = document.getElementById("pvLaser");
+    var pen = document.getElementById("pvPen");
+    if (laser) laser.classList.toggle("on", annotMode === "laser");
+    if (pen) pen.classList.toggle("on", annotMode === "pen");
+    sizeAnnot();
+  }
+  function setBlank(m) {
+    blankMode = (blankMode === m) ? null : m;
+    var el = document.getElementById("pvBlank");
+    if (!el) return;
+    el.className = "pv-blank" + (blankMode ? " on " + blankMode : "");
+  }
+  function clearAnnot() {
+    var cv = document.getElementById("pvAnnot");
+    if (cv) { var ctx = cv.getContext("2d"); ctx.clearRect(0, 0, cv.width, cv.height); }
+  }
+  (function wireAnnot() {
+    var cv = document.getElementById("pvAnnot");
+    if (!cv) return;
+    var drawing = false, lastX = 0, lastY = 0;
+    function pos(e) {
+      var r = cv.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * (cv.width / Math.max(1, r.width)), y: (e.clientY - r.top) * (cv.height / Math.max(1, r.height)) };
+    }
+    cv.addEventListener("pointerdown", function (e) {
+      if (!annotMode) return;
+      drawing = true; cv.setPointerCapture(e.pointerId);
+      var p = pos(e); lastX = p.x; lastY = p.y;
+      var ctx = cv.getContext("2d");
+      if (annotMode === "laser") {
+        ctx.beginPath(); ctx.fillStyle = "rgba(255,40,40,.95)"; ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill();
+        setTimeout(function () {
+          ctx.save(); ctx.globalCompositeOperation = "destination-out";
+          ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }, 450);
+      }
+    });
+    cv.addEventListener("pointermove", function (e) {
+      if (!drawing || !annotMode) return;
+      var p = pos(e); var ctx = cv.getContext("2d");
+      if (annotMode === "pen") {
+        ctx.strokeStyle = "#ff3b3b"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+      } else if (annotMode === "laser") {
+        ctx.beginPath(); ctx.fillStyle = "rgba(255,40,40,.9)"; ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill();
+        (function (x, y) {
+          setTimeout(function () {
+            ctx.save(); ctx.globalCompositeOperation = "destination-out";
+            ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          }, 400);
+        })(p.x, p.y);
+      }
+      lastX = p.x; lastY = p.y;
+    });
+    cv.addEventListener("pointerup", function () { drawing = false; });
+    window.addEventListener("resize", sizeAnnot);
+    if (IS_PV) {
+      var bl = document.getElementById("pvLaser"); if (bl) bl.onclick = function () { setAnnotMode("laser"); };
+      var bp = document.getElementById("pvPen"); if (bp) bp.onclick = function () { setAnnotMode("pen"); };
+      var bc = document.getElementById("pvClear"); if (bc) bc.onclick = clearAnnot;
+      var bb = document.getElementById("pvBlack"); if (bb) bb.onclick = function () { setBlank("black"); };
+      var bw = document.getElementById("pvWhite"); if (bw) bw.onclick = function () { setBlank("white"); };
+      sizeAnnot();
+    }
+  })();
 
   function fillPane(pane, idx) {
     var n = DATA.steps.length;
@@ -3426,9 +3640,10 @@ ${transitionStylesheet()}
     if (ni > n) ni = n;
     if (ni === i && !opts.force && !firstPaint) return;
     var tx = slideTx(ni);
-    var skip = firstPaint || opts.instant || tx.type === "none";
+    var skip = firstPaint || opts.instant || tx.type === "none" || IS_PRINT;
     firstPaint = false;
     active = 0;
+    clearAnnot();
     var oldPane = stage.querySelector(".stage-pane");
     var newPane = document.createElement("div");
     newPane.className = "stage-pane";
@@ -3878,18 +4093,80 @@ ${transitionStylesheet()}
   document.getElementById("next").onclick = next;
   document.getElementById("prev").onclick = prev;
   document.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); next(); }
-    if (e.key === "ArrowLeft") prev();
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    var k = e.key;
+    if (k === "ArrowRight" || k === " ") { e.preventDefault(); next(); return; }
+    if (k === "ArrowLeft") { prev(); return; }
+    if (k === "n" || k === "N") {
+      var panel = document.getElementById("notesPanel");
+      if (panel && !IS_PV) panel.classList.toggle("open");
+      return;
+    }
+    if (!IS_PV) return;
+    if (k === "l" || k === "L") setAnnotMode("laser");
+    else if (k === "p" || k === "P") setAnnotMode("pen");
+    else if (k === "b" || k === "B") setBlank("black");
+    else if (k === "w" || k === "W") setBlank("white");
+    else if (k === "c" || k === "C") clearAnnot();
+    else if (k === "Escape") {
+      if (blankMode) setBlank(blankMode);
+      else if (annotMode) setAnnotMode(annotMode);
+    }
   });
-  goTo(0, { force: true, instant: true });
+
+  if (IS_PRINT) {
+    stage.innerHTML = "";
+    var n = DATA.steps.length;
+    for (var pi = 0; pi < n; pi++) {
+      var page = document.createElement("div"); page.className = "print-page";
+      var pane = document.createElement("div"); pane.className = "stage-pane"; pane.style.position = "relative";
+      fillPane(pane, pi);
+      page.appendChild(pane);
+      var nt = (DATA.steps[pi] && DATA.steps[pi].notes) ? String(DATA.steps[pi].notes).trim() : "";
+      if (nt) {
+        var nd = document.createElement("div"); nd.className = "print-notes"; nd.textContent = nt; page.appendChild(nd);
+      }
+      stage.appendChild(page);
+    }
+    setTimeout(function () { try { window.print(); } catch (err) {} }, 400);
+  } else {
+    goTo(0, { force: true, instant: true });
+  }
 })();
 </` + `script>
 </body>
 </html>`;
 }
 
-function exportDemo() { download(slug(project.title) + ".html", new Blob([buildDemoHTML(project)], { type: "text/html" })); toast("Presentation exported — share the .html file"); }
-function openPreview() { $("previewFrame").srcdoc = buildDemoHTML(project); $("overlay").classList.add("open"); }
+function exportDemo() {
+  download(slug(project.title) + ".html", new Blob([buildDemoHTML(project)], { type: "text/html" }));
+  toast("Presentation exported — share the .html file");
+}
+function exportNotes() {
+  const text = notesTextFile(project);
+  download(slug(project.title) + "-notes.txt", new Blob([text], { type: "text/plain;charset=utf-8" }));
+  toast("Speaker notes exported");
+}
+function exportPrint() {
+  const html = buildDemoHTML(project, { mode: "print" });
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+  if (!w) { URL.revokeObjectURL(url); toast("Allow pop-ups to print / save as PDF", true); return; }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  toast("Print dialog — choose “Save as PDF” if you want a file");
+}
+function openPreview() {
+  $("overlayTitle").textContent = "Preview";
+  $("previewFrame").srcdoc = buildDemoHTML(project);
+  $("overlay").classList.add("open");
+}
+function openPresent() {
+  $("overlayTitle").textContent = "Present";
+  $("previewFrame").srcdoc = buildDemoHTML(project, { mode: "presenter" });
+  $("overlay").classList.add("open");
+}
 
 /* ───────────────────────── Toast ───────────────────────── */
 let toastTimer;
@@ -4021,8 +4298,24 @@ $("logoClear").onclick = () => { project.logo = null; render(); };
 $("loadBtn").onclick = () => $("projInput").click();
 $("projInput").addEventListener("change", e => { if (e.target.files[0]) loadProject(e.target.files[0]); e.target.value = ""; });
 $("saveBtn").onclick = saveProject;
-$("exportBtn").onclick = exportDemo;
+$("exportBtn").onclick = (e) => {
+  e.stopPropagation();
+  $("exportMenu").classList.toggle("open");
+};
+$("exportMenu").querySelectorAll("button[data-export]").forEach(b => {
+  b.onclick = () => {
+    $("exportMenu").classList.remove("open");
+    const kind = b.dataset.export;
+    if (kind === "html") exportDemo();
+    else if (kind === "notes") exportNotes();
+    else if (kind === "print") exportPrint();
+  };
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest(".export-menu-wrap")) $("exportMenu").classList.remove("open");
+});
 $("previewBtn").onclick = openPreview;
+$("presentBtn").onclick = openPresent;
 $("closePreview").onclick = () => { $("overlay").classList.remove("open"); $("previewFrame").srcdoc = ""; };
 
 // tool switcher
@@ -4047,6 +4340,11 @@ $("slideTxDur").addEventListener("input", e => {
   s.transition.duration = Number(e.target.value) / 10;
   s.transition = sanitizeTransition(s.transition);
   $("slideTxDurVal").textContent = s.transition.duration.toFixed(1) + "s";
+  scheduleSave();
+});
+$("slideNotes").addEventListener("input", e => {
+  const s = curSlide(); if (!s) return;
+  s.notes = sanitizeNotes(e.target.value);
   scheduleSave();
 });
 

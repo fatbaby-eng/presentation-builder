@@ -41,6 +41,10 @@ No accounts. No backend. No data ever leaves the browser.
 - **When this slide opens** — pick how a slide appears (fade, push, wipe, zoom…). Set it in
   Slide settings; the exported viewer plays the effect when that slide opens.
 - **When clicked** (hotspots) — show a tip, go to the next slide, or jump to a specific slide.
+- **Present** — open presenter view with your notes, a timer, laser/pen marks, and black/white screen.
+  In a normal export, press **N** to peek at notes.
+- **Export menu** — download the offline `.html`, speaker notes as `.txt`, or **Print / PDF…**
+  (use your browser’s Save as PDF).
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files.
 
@@ -85,15 +89,17 @@ To give the tool away to a company, hand them this folder (or host it on any sta
    text, and choose where the tooltip sits (top / bottom / left / right).
 5. **Choose how slides open** — in Slide settings, set **When this slide opens**
    (fade, push, wipe…) and how long the effect lasts.
-6. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
+6. **Add notes for you** — optional reminders in Slide settings. They show while you
+   **Present**, and you can export them as a text file.
+7. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
    names, or numbers. Choose **Black out** (solid) or **Blur** per region.
-7. **Organize** — drag slides to reorder (or use the ↑/↓ buttons), duplicate, or
+8. **Organize** — drag slides to reorder (or use the ↑/↓ buttons), duplicate, or
    delete.
-8. **Add a final CTA** (optional) — a button shown at the end, e.g.
+9. **Add a final CTA** (optional) — a button shown at the end, e.g.
    *Start free trial → https://…*.
-9. **Preview** to click through it exactly as your viewers will.
-10. **Export** → downloads one `.html` file with the images embedded. Share that
-   file; it runs offline, anywhere.
+10. **Preview** or **Present** — Preview matches the shared file; Present adds notes,
+    timer, laser, and pen.
+11. **Export** — Presentation (`.html`), Speaker notes (`.txt`), or Print / PDF….
 
 Use **Save** / **Open** to keep working later — it downloads a
 `.presentation.json` you can reload into the editor. (Older project files are
@@ -142,7 +148,10 @@ colours, opacity, border width, corner radius and (for message boxes) the text.
 
 - Click a hotspot to follow its **When clicked** action (tip, next slide, or jump); tip **Next** advances with the slide’s open effect
 - Arrow keys ← → (or space) to navigate (with slide transitions)
+- Press **N** to show or hide speaker notes (if any)
 - A progress bar and slide counter, plus a Restart at the end
+
+**Present mode** (from the editor): notes + timer on the side; **L** laser, **P** pen, **B**/**W** blank screen, **C** clear marks.
 
 ## Security
 

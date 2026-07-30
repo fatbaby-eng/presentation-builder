@@ -54,6 +54,23 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .steps h2, .inspector h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
   margin: .25rem .25rem .8rem; font-weight: 700; }
 .canvas-col { display: flex; flex-direction: column; min-height: 0; }
+.canvas-wrap { flex: 1; min-height: 0; }
+.motion-panel { border-top: 1px solid var(--line); background: #fff; flex: none; max-height: 42%; display: flex; flex-direction: column; }
+.motion-panel.collapsed .motion-body { display: none; }
+.motion-head { display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem; border-bottom: 1px solid var(--line); }
+.motion-head strong { font-size: .82rem; }
+.motion-head .hint { flex: 1; }
+.motion-body { padding: .55rem .75rem .7rem; overflow: auto; min-height: 0; }
+.motion-tracks { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .55rem; }
+.motion-row { display: grid; grid-template-columns: 110px 1fr 70px; gap: .4rem; align-items: center;
+  padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fafbfc; }
+.motion-row.on { border-color: var(--accent); background: #f2f0ff; }
+.motion-row .lab { font-size: .72rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.motion-bar-track { position: relative; height: 10px; background: #eef0f4; border-radius: 5px; overflow: hidden; }
+.motion-bar-fill { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, #a78bfa, #6c5ce7); border-radius: 5px; opacity: .85; }
+.motion-row .meta { font-size: .65rem; color: var(--muted); text-align: right; }
+.motion-edit { border-top: 1px dashed var(--line); padding-top: .55rem; margin-top: .2rem; }
+.motion-edit .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; }
 .canvas-tools { display: flex; gap: .4rem; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line);
   background: var(--panel); flex-wrap: wrap; min-height: 48px; }
 .canvas-tools .tlabel { font-size: .72rem; color: var(--muted); font-weight: 600; margin-right: .2rem; }
@@ -464,6 +481,46 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             </button>
           </div>
           <button class="btn ghost" id="emptyBrandBtn">🎨 Set up brand kit first</button>
+        </div>
+      </div>
+      <div class="motion-panel collapsed" id="motionPanel" style="display:none">
+        <div class="motion-head">
+          <button type="button" class="btn ghost sm" id="motionToggle" title="Show or hide motion">Motion ▸</button>
+          <span class="hint">Make things appear, pulse, or leave</span>
+          <button type="button" class="btn sm primary" id="motionPlay">Play this slide</button>
+        </div>
+        <div class="motion-body" id="motionBody">
+          <div class="hint" style="margin-bottom:.45rem">Select a shape or image, then choose how it moves. Keep it simple — one nice entrance is enough.</div>
+          <div class="motion-tracks" id="motionTracks"></div>
+          <div class="motion-edit" id="motionEdit" style="display:none">
+            <div class="grid2">
+              <div class="field" style="margin:0">
+                <label for="motAppear">How it appears</label>
+                <select id="motAppear"></select>
+              </div>
+              <div class="field" style="margin:0">
+                <label for="motAttention">Attention (optional)</label>
+                <select id="motAttention"></select>
+              </div>
+              <div class="field" style="margin:0">
+                <label for="motDisappear">How it leaves</label>
+                <select id="motDisappear"></select>
+              </div>
+              <div class="field" style="margin:0">
+                <label for="motEasing">Feel</label>
+                <select id="motEasing"></select>
+              </div>
+            </div>
+            <div class="field" style="margin:.5rem 0 0">
+              <label for="motAppearDelay">Starts after <span id="motAppearDelayVal" class="hint" style="font-weight:400"></span></label>
+              <input type="range" id="motAppearDelay" min="0" max="50" step="1" style="width:100%">
+            </div>
+            <div class="field" style="margin:.4rem 0 0">
+              <label for="motAppearDur">Appears over <span id="motAppearDurVal" class="hint" style="font-weight:400"></span></label>
+              <input type="range" id="motAppearDur" min="1" max="30" step="1" style="width:100%">
+            </div>
+            <button type="button" class="btn ghost sm" id="motClear" style="margin-top:.45rem">Clear motion</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1071,6 +1128,12 @@ import {
   LOOK_PRESETS, sanitizeImageLook, imageLookCss, compressImageDataUrl,
   dataUrlSizeLabel, defaultImageLook
 } from "./js/canvas/images.js";
+import {
+  APPEAR_PRESETS, ATTENTION_PRESETS, DISAPPEAR_PRESETS, EASINGS,
+  sanitizeMotion, readMotion, buildMotionItems, timelineDuration,
+  motionStylesheet, playMotionOnElement, clearMotionPlayback,
+  defaultMotion
+} from "./js/canvas/motion.js";
 
 "use strict";
 
@@ -1238,7 +1301,8 @@ function sanitizeOverlays(raw) {
       x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200),
       rot: o.rot == null ? 0 : clamp(o.rot, -180, 180),
       brightness: look.brightness, contrast: look.contrast, saturate: look.saturate,
-      warmth: look.warmth, look: look.look });
+      warmth: look.warmth, look: look.look,
+      motion: sanitizeMotion(o.motion) });
   }
   return out;
 }
@@ -1255,7 +1319,8 @@ function sanitizeShapes(raw) {
         overrides: sanitizeOverrides(sh.overrides),
         parentId: null,
         fill: "#ffffff", stroke: "#94a3b8", strokeWidth: 0, opacity: 1, radius: 0,
-        text: "", textColor: "#1b1f2a"
+        text: "", textColor: "#1b1f2a",
+        motion: sanitizeMotion(sh.motion)
       });
       continue;
     }
@@ -1270,6 +1335,7 @@ function sanitizeShapes(raw) {
       parentId: str(sh.parentId, 40) || null };
     mergeEffectFields(item, sh);
     mergeTypeFields(item, sh);
+    item.motion = sanitizeMotion(sh.motion);
     if (sh.type === "frame") {
       item.image = safeImage(sh.image);
       item.imageFit = ["cover", "contain", "fill"].includes(sh.imageFit) ? sh.imageFit : "cover";
@@ -1453,6 +1519,7 @@ function attachOverlays(stageEl, step, sel) {
     const a = assetById(o.assetId); if (!a) return;
     const ov = document.createElement("div");
     ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
+    ov.dataset.pbMot = o.id;
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
     if (o.rot) ov.style.transform = "rotate(" + o.rot + "deg)";
     const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false;
@@ -1556,8 +1623,9 @@ function toolBtn(label, title, fn) {
 function renderCanvas() {
   [...canvasWrap.children].forEach(c => { if (c !== emptyState) c.remove(); });
   const step = curSlide();
-  if (!step) { emptyState.style.display = ""; inspector.style.display = "none"; canvasTools.style.display = "none"; return; }
+  if (!step) { emptyState.style.display = ""; inspector.style.display = "none"; canvasTools.style.display = "none"; $("motionPanel").style.display = "none"; return; }
   emptyState.style.display = "none"; inspector.style.display = "";
+  $("motionPanel").style.display = "";
 
   const isImage = step.type === "image";
   if (!isImage && (tool === "hotspot" || tool === "redact")) tool = "select";   // image-only tools
@@ -1863,6 +1931,7 @@ function startEditMessage(t, sh) {
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
     const el = buildShapeEl(sh);
+    el.dataset.pbMot = sh.id;
     el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
@@ -1978,6 +2047,7 @@ function renderInspector() {
 
   renderAssetLibrary();
   renderSymbolLibrary();
+  renderMotionPanel();
 
   // branding
   const lp = $("logoPrev");
@@ -2663,6 +2733,139 @@ function renderSymbolLibrary() {
   });
 }
 
+/* ───────────────────────── Motion (appear / attention / leave) ───────────────────────── */
+let motionPanelOpen = false;
+let motionPlaying = false;
+
+function fillMotionSelects() {
+  const fill = (id, list) => {
+    const sel = $(id); if (!sel || sel.dataset.ready) return;
+    sel.innerHTML = "";
+    list.forEach(p => {
+      const o = document.createElement("option"); o.value = p.id; o.textContent = p.label; sel.appendChild(o);
+    });
+    sel.dataset.ready = "1";
+  };
+  fill("motAppear", APPEAR_PRESETS);
+  fill("motAttention", ATTENTION_PRESETS);
+  fill("motDisappear", DISAPPEAR_PRESETS);
+  fill("motEasing", EASINGS);
+}
+
+function curMotionTarget() {
+  const s = curSlide(); if (!s) return null;
+  if (selShape >= 0 && s.shapes && s.shapes[selShape] && !s.shapes[selShape].parentId) {
+    return { kind: "shape", obj: s.shapes[selShape] };
+  }
+  if (selAsset >= 0 && s.overlays && s.overlays[selAsset]) {
+    return { kind: "overlay", obj: s.overlays[selAsset] };
+  }
+  return null;
+}
+
+function ensureMotion(obj) {
+  if (!obj.motion) obj.motion = defaultMotion();
+  obj.motion = sanitizeMotion(obj.motion);
+  return obj.motion;
+}
+
+function renderMotionPanel() {
+  const panel = $("motionPanel");
+  if (!panel || panel.style.display === "none") return;
+  fillMotionSelects();
+  panel.classList.toggle("collapsed", !motionPanelOpen);
+  $("motionToggle").textContent = motionPanelOpen ? "Motion ▾" : "Motion ▸";
+
+  const step = curSlide();
+  const tracks = $("motionTracks"); tracks.innerHTML = "";
+  const items = buildMotionItems(step);
+  if (!items.length) {
+    const e = document.createElement("div"); e.className = "hint";
+    e.textContent = "Add a shape or image on this slide to animate it.";
+    tracks.appendChild(e);
+  }
+  const maxT = Math.max(2, timelineDuration(items));
+  items.forEach(it => {
+    const m = readMotion(it.obj);
+    const row = document.createElement("div");
+    const selected = (it.kind === "shape" && it.index === selShape) || (it.kind === "overlay" && it.index === selAsset);
+    row.className = "motion-row" + (selected ? " on" : "");
+    const lab = document.createElement("div"); lab.className = "lab"; lab.textContent = it.label; row.appendChild(lab);
+    const track = document.createElement("div"); track.className = "motion-bar-track";
+    if (m.appear !== "none") {
+      const fill = document.createElement("div"); fill.className = "motion-bar-fill";
+      fill.style.left = (m.appearDelay / maxT * 100) + "%";
+      fill.style.width = Math.max(3, m.appearDuration / maxT * 100) + "%";
+      fill.title = "Appears";
+      track.appendChild(fill);
+    }
+    row.appendChild(track);
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = m.appear === "none" && m.attention === "none" ? "—" :
+      (m.appear !== "none"
+        ? ((APPEAR_PRESETS.find(p => p.id === m.appear) || {}).label || m.appear)
+        : ((ATTENTION_PRESETS.find(p => p.id === m.attention) || {}).label || m.attention));
+    row.appendChild(meta);
+    row.onclick = () => {
+      if (it.kind === "shape") { selShape = it.index; selAsset = -1; selHotspot = -1; }
+      else { selAsset = it.index; selShape = -1; selHotspot = -1; }
+      tool = "select"; motionPanelOpen = true; render();
+    };
+    tracks.appendChild(row);
+  });
+
+  const target = curMotionTarget();
+  const edit = $("motionEdit");
+  if (!target) { edit.style.display = "none"; return; }
+  edit.style.display = "";
+  const m = ensureMotion(target.obj);
+  $("motAppear").value = m.appear;
+  $("motAttention").value = m.attention;
+  $("motDisappear").value = m.disappear;
+  $("motEasing").value = m.easing;
+  $("motAppearDelay").value = Math.round(m.appearDelay * 10);
+  $("motAppearDelayVal").textContent = m.appearDelay.toFixed(1) + "s";
+  $("motAppearDur").value = Math.round(m.appearDuration * 10);
+  $("motAppearDurVal").textContent = m.appearDuration.toFixed(1) + "s";
+}
+
+function playSlideMotion() {
+  const step = curSlide(); if (!step) return;
+  const stage = canvasWrap.querySelector(".slide-canvas") || canvasWrap.querySelector(".frame") || canvasWrap.querySelector(".text-preview");
+  if (!stage) { toast("Nothing to play on this slide", true); return; }
+  if (motionPlaying) return;
+  motionPlaying = true;
+  $("motionPlay").disabled = true;
+  $("motionPlay").textContent = "Playing…";
+
+  const items = buildMotionItems(step);
+  let longest = 1.2;
+  items.forEach(it => {
+    const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
+    if (!el) return;
+    const t = playMotionOnElement(el, readMotion(it.obj), { preview: true });
+    longest = Math.max(longest, t);
+  });
+  setTimeout(() => {
+    items.forEach(it => {
+      const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
+      if (el) clearMotionPlayback(el);
+    });
+    motionPlaying = false;
+    $("motionPlay").disabled = false;
+    $("motionPlay").textContent = "Play this slide";
+  }, longest * 1000 + 200);
+}
+
+function touchMotion(mutator) {
+  const t = curMotionTarget(); if (!t) return;
+  const m = ensureMotion(t.obj);
+  mutator(m);
+  t.obj.motion = sanitizeMotion(m);
+  renderMotionPanel();
+  scheduleSave();
+}
+
 /* ───────────────────────── Brand kit ───────────────────────── */
 let styleDraft = null; // { palette, roles, pairs, pairId, images }
 
@@ -3106,6 +3309,7 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .made { margin-top: 1.6rem; font-size: .78rem; color: #8b92a3; }
 .made a { color: #aeb4c2; text-decoration: none; font-weight: 600; }
 .made a:hover { color: #fff; text-decoration: underline; }
+${motionStylesheet()}
 </style>
 </head>
 <body>
@@ -3333,6 +3537,25 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       if (sh.backdropBlur) { el.style.backdropFilter = "blur(" + sh.backdropBlur + "px)"; el.style.webkitBackdropFilter = el.style.backdropFilter; }
       if (sh.blendMode && sh.blendMode !== "normal") el.style.mixBlendMode = sh.blendMode;
       if (sh.objOpacity != null && sh.objOpacity < 0.999 && mode === "solid") el.style.opacity = String(sh.objOpacity);
+      if (sh.motion) {
+        (function applyMot(node, mot) {
+          mot = mot || {};
+          var appear = mot.appear || "none", attn = mot.attention || "none";
+          if (appear === "none" && attn === "none") return;
+          node.classList.add("pb-mot");
+          if (appear !== "none") {
+            node.classList.add("pb-appear-" + appear);
+            node.style.animationDuration = (mot.appearDuration == null ? 0.55 : mot.appearDuration) + "s";
+            node.style.animationDelay = (mot.appearDelay || 0) + "s";
+            node.style.animationTimingFunction = mot.easing || "ease-out";
+            node.style.opacity = "0";
+          } else if (attn !== "none") {
+            node.classList.add("pb-attn-" + attn);
+            node.style.animationDuration = "0.7s";
+            node.style.animationDelay = (mot.attentionDelay || 0) + "s";
+          }
+        })(el, sh.motion);
+      }
       box.appendChild(el);
     });
   }
@@ -3362,6 +3585,13 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       var im = document.createElement("img"); im.src = a.image; im.alt = a.name || "";
       im.style.filter = vLookFilter(o);
       d.appendChild(im);
+      if (o.motion && o.motion.appear && o.motion.appear !== "none") {
+        d.classList.add("pb-mot", "pb-appear-" + o.motion.appear);
+        d.style.animationDuration = (o.motion.appearDuration == null ? 0.55 : o.motion.appearDuration) + "s";
+        d.style.animationDelay = (o.motion.appearDelay || 0) + "s";
+        d.style.animationTimingFunction = o.motion.easing || "ease-out";
+        d.style.opacity = "0";
+      }
       box.appendChild(d);
     });
   }
@@ -3821,6 +4051,24 @@ $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selSh
 $("sfSaveSymbol").onclick = saveSelectionAsSymbol;
 $("sfDetachSymbol").onclick = detachSelectedSymbol;
 
+$("motionToggle").onclick = () => { motionPanelOpen = !motionPanelOpen; renderMotionPanel(); };
+$("motionPlay").onclick = playSlideMotion;
+$("motAppear").addEventListener("change", e => touchMotion(m => { m.appear = e.target.value; }));
+$("motAttention").addEventListener("change", e => touchMotion(m => { m.attention = e.target.value; }));
+$("motDisappear").addEventListener("change", e => touchMotion(m => { m.disappear = e.target.value; }));
+$("motEasing").addEventListener("change", e => touchMotion(m => { m.easing = e.target.value; }));
+$("motAppearDelay").addEventListener("input", e => {
+  touchMotion(m => { m.appearDelay = clamp(e.target.value / 10, 0, 12); $("motAppearDelayVal").textContent = m.appearDelay.toFixed(1) + "s"; });
+});
+$("motAppearDur").addEventListener("input", e => {
+  touchMotion(m => { m.appearDuration = clamp(e.target.value / 10, 0.1, 5); $("motAppearDurVal").textContent = m.appearDuration.toFixed(1) + "s"; });
+});
+$("motClear").onclick = () => {
+  const t = curMotionTarget(); if (!t) return;
+  t.obj.motion = defaultMotion();
+  renderMotionPanel(); scheduleSave(); toast("Motion cleared");
+};
+
 // Frame inspector + view chrome toggles
 $("sfFrameLayout").addEventListener("change", e => {
   const sh = curShape(); if (!sh || sh.type !== "frame") return;
@@ -3885,6 +4133,12 @@ document.addEventListener("keydown", e => {
 window.addEventListener("beforeunload", e => { if (autosaveOff && project.steps.length) { e.preventDefault(); e.returnValue = ""; } });
 
 populateFontSelects();
+(function injectMotionCss() {
+  if (document.getElementById("pb-motion-css")) return;
+  const s = document.createElement("style"); s.id = "pb-motion-css";
+  s.textContent = motionStylesheet();
+  document.head.appendChild(s);
+})();
 const restored = restoreAutosave();
 render();
 if (restored) toast("Restored your last session");

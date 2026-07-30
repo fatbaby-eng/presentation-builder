@@ -36,6 +36,8 @@ No accounts. No backend. No data ever leaves the browser.
   to move freely). Toggle **Grid**, **Rulers**, and **Safe** area from the toolbar.
 - **Frames** — draw a Frame, add a photo, and optionally stack children inside it.
 - **Type on the slide** — double-click a message box to edit text in place.
+- **Motion** — make shapes and images fade in, fly in, pulse, or leave. Open the Motion
+  bar under the slide, pick an object, choose how it appears, then hit **Play this slide**.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files.
 

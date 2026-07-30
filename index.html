@@ -255,6 +255,32 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   font-size: .72rem; font-weight: 600; color: #94a3b8; pointer-events: none; text-align: center; padding: .5rem; }
 .view-tools { display: flex; gap: .25rem; align-items: center; margin-left: .35rem; padding-left: .5rem; border-left: 1px solid var(--line); }
 .view-tools .tool { font-size: .72rem; padding: .35rem .5rem; }
+.pro-fold { border: 1px solid var(--line); border-radius: 10px; margin: .7rem 0; overflow: hidden; background: #fafbfc; }
+.pro-fold > summary { list-style: none; cursor: pointer; padding: .55rem .7rem; font-size: .78rem; font-weight: 700; color: var(--ink);
+  display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.pro-fold > summary::-webkit-details-marker { display: none; }
+.pro-fold > summary::after { content: "▸"; color: var(--muted); font-size: .7rem; }
+.pro-fold[open] > summary::after { content: "▾"; }
+.pro-fold .fold-body { padding: .2rem .7rem .75rem; border-top: 1px solid var(--line); background: #fff; }
+.swatch-row { display: flex; flex-wrap: wrap; gap: .3rem; margin: .35rem 0 .5rem; }
+.swatch-row button { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); cursor: pointer; padding: 0; }
+.swatch-row button.var { box-shadow: inset 0 0 0 1px rgba(255,255,255,.4); }
+.fmt-row { display: grid; grid-template-columns: 56px 1fr auto; gap: .35rem; align-items: center; margin-bottom: .45rem; }
+.fmt-row select, .fmt-row input[type=text] { width: 100%; padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 7px; font-size: .75rem; }
+.corner-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: .35rem; align-items: end; }
+.corner-grid input[type=range] { width: 100%; }
+.grad-bar { position: relative; height: 22px; border-radius: 6px; border: 1px solid var(--line); margin: .45rem 0; cursor: pointer; }
+.grad-stop { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); cursor: grab; }
+.grad-stop.on { outline: 2px solid var(--accent); }
+.grad-presets { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+.grad-presets button { width: 28px; height: 20px; border-radius: 5px; border: 1px solid rgba(0,0,0,.12); cursor: pointer; padding: 0; }
+.type-style-btn { padding: .35rem .55rem !important; width: auto !important; height: auto !important; border-radius: 7px !important;
+  font-size: .68rem; font-weight: 700; background: #fff; color: var(--muted); }
+.type-style-btn.on { border-color: var(--accent) !important; color: var(--accent) !important; background: #f2f0ff !important; }
+.b-style-row { display: grid; grid-template-columns: 72px 1fr 64px 56px; gap: .35rem; align-items: center; margin-bottom: .4rem; }
+.b-style-row label { font-size: .72rem; font-weight: 700; color: var(--ink); }
+.b-style-row input[type=number], .b-style-row select { width: 100%; padding: .3rem .35rem; border: 1px solid var(--line); border-radius: 6px; font-size: .72rem; }
 
 /* ── Add-slide popover ── */
 .add-menu-wrap { position: relative; flex: 1; }
@@ -545,9 +571,133 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <label class="color-cell" for="sfFill" id="sfFillCell"><input type="color" id="sfFill"><span class="cl">Fill</span></label>
             <label class="color-cell" for="sfStroke"><input type="color" id="sfStroke"><span class="cl" id="sfStrokeLbl">Border</span></label>
           </div>
+          <div class="fmt-row" id="sfFillFmtRow">
+            <select id="sfFillFmt" title="Colour format">
+              <option value="hex">HEX</option>
+              <option value="rgb">RGB</option>
+              <option value="hsl">HSL</option>
+              <option value="oklch">OKLCH</option>
+            </select>
+            <input type="text" id="sfFillText" maxlength="48" spellcheck="false" placeholder="#6c5ce7">
+            <button type="button" class="btn sm" id="sfEyeDrop" title="Eyedropper">⊙</button>
+          </div>
+          <div class="hint">Brand variables</div>
+          <div class="swatch-row" id="sfBrandSwatches"></div>
+          <div class="hint">Recent</div>
+          <div class="swatch-row" id="sfRecentSwatches"></div>
+        </div>
+        <div class="field" id="sfFillModeWrap">
+          <label for="sfFillMode">Fill type</label>
+          <select id="sfFillMode">
+            <option value="solid">Solid</option>
+            <option value="linear">Linear gradient</option>
+            <option value="radial">Radial gradient</option>
+            <option value="conic">Angular (conic)</option>
+            <option value="diamond">Diamond</option>
+          </select>
+          <div id="sfGradWrap" style="display:none">
+            <div class="grad-bar" id="sfGradBar" title="Click to add a colour stop"></div>
+            <div class="color-grid" style="margin-top:.4rem">
+              <label class="color-cell" for="sfGradStopColor"><input type="color" id="sfGradStopColor"><span class="cl">Stop colour</span></label>
+            </div>
+            <div class="field" style="margin:.45rem 0 0">
+              <label for="sfFillAngle">Angle <span class="hint" id="sfFillAngleVal" style="font-weight:400"></span></label>
+              <input type="range" id="sfFillAngle" min="0" max="360" step="1" style="width:100%">
+            </div>
+            <div class="hint">Presets</div>
+            <div class="grad-presets" id="sfGradPresets"></div>
+            <button type="button" class="btn ghost sm" id="sfGradDelStop" style="margin-top:.4rem">Remove stop</button>
+          </div>
         </div>
         <div class="field" id="sfTextColorWrap">
           <label class="color-cell" for="sfTextColor" style="width:100%"><input type="color" id="sfTextColor"><span class="cl">Text colour</span></label>
+        </div>
+        <div id="sfTypeWrap" style="display:none">
+          <div class="field">
+            <label>Text style</label>
+            <div class="swatch-row" id="sfTypeStyles" style="gap:.35rem"></div>
+            <div class="hint">Brand styles update everywhere. Tweaking size/weight below creates a local override.</div>
+          </div>
+          <div class="field">
+            <label for="sfFontSize">Size <span id="sfFontSizeVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfFontSize" min="10" max="72" step="1" style="width:100%">
+          </div>
+          <div class="field">
+            <label for="sfFontWeight">Weight</label>
+            <select id="sfFontWeight">
+              <option value="300">Light 300</option>
+              <option value="400">Regular 400</option>
+              <option value="500">Medium 500</option>
+              <option value="600">Semibold 600</option>
+              <option value="700">Bold 700</option>
+              <option value="800">ExtraBold 800</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sfLineHeight">Line height <span id="sfLineHeightVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfLineHeight" min="80" max="250" step="5" style="width:100%">
+          </div>
+          <div class="field">
+            <label for="sfLetterSp">Letter spacing <span id="sfLetterSpVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfLetterSp" min="-20" max="80" step="1" style="width:100%">
+          </div>
+          <div class="field">
+            <label for="sfTextAlign">Align</label>
+            <select id="sfTextAlign">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sfTextTransform">Case</label>
+            <select id="sfTextTransform">
+              <option value="none">As typed</option>
+              <option value="uppercase">ALL CAPS</option>
+              <option value="lowercase">lowercase</option>
+              <option value="capitalize">Title Case</option>
+              <option value="small-caps">Small Caps</option>
+            </select>
+          </div>
+          <details class="pro-fold" id="sfTypeFxFold">
+            <summary>Text effects <span class="hint" style="font-weight:400">stroke, shadow, highlight, columns</span></summary>
+            <div class="fold-body">
+              <div class="field">
+                <label for="sfColumns">Columns <span id="sfColumnsVal" class="hint" style="font-weight:400"></span></label>
+                <input type="range" id="sfColumns" min="1" max="4" step="1" style="width:100%">
+              </div>
+              <div class="field">
+                <label for="sfTextIndent">Indent <span id="sfTextIndentVal" class="hint" style="font-weight:400"></span></label>
+                <input type="range" id="sfTextIndent" min="-20" max="60" step="1" style="width:100%">
+              </div>
+              <div class="field toggle-row">
+                <span style="font-size:.82rem;font-weight:600">Text shadow</span>
+                <label class="switch"><input type="checkbox" id="sfTxShadowOn"><span class="slider"></span></label>
+              </div>
+              <div id="sfTxShadowFields">
+                <label class="color-cell" for="sfTxShadowColor" style="width:100%"><input type="color" id="sfTxShadowColor"><span class="cl">Shadow colour</span></label>
+                <label class="hint">Blur <span id="sfTxShadowBlurVal"></span></label>
+                <input type="range" id="sfTxShadowBlur" min="0" max="24" step="1" style="width:100%">
+              </div>
+              <div class="field toggle-row" style="margin-top:.5rem">
+                <span style="font-size:.82rem;font-weight:600">Text stroke</span>
+                <label class="switch"><input type="checkbox" id="sfTxStrokeOn"><span class="slider"></span></label>
+              </div>
+              <div id="sfTxStrokeFields">
+                <label class="color-cell" for="sfTxStrokeColor" style="width:100%"><input type="color" id="sfTxStrokeColor"><span class="cl">Stroke colour</span></label>
+                <label class="hint">Width <span id="sfTxStrokeWVal"></span></label>
+                <input type="range" id="sfTxStrokeW" min="1" max="6" step="1" style="width:100%">
+              </div>
+              <div class="field toggle-row" style="margin-top:.5rem">
+                <span style="font-size:.82rem;font-weight:600">Highlight</span>
+                <label class="switch"><input type="checkbox" id="sfTxHiOn"><span class="slider"></span></label>
+              </div>
+              <div id="sfTxHiFields">
+                <label class="color-cell" for="sfTxHiColor" style="width:100%"><input type="color" id="sfTxHiColor"><span class="cl">Highlight colour</span></label>
+              </div>
+            </div>
+          </details>
         </div>
         <div class="field" id="sfOpacityWrap">
           <label for="sfOpacity">Fill opacity <span id="sfOpacityVal" class="hint" style="font-weight:400"></span></label>
@@ -558,14 +708,102 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <input type="range" id="sfStrokeW" min="0" max="20" step="1" style="width:100%">
         </div>
         <div class="field" id="sfRadiusWrap">
-          <label for="sfRadius">Corner radius <span id="sfRadiusVal" class="hint" style="font-weight:400"></span></label>
-          <input type="range" id="sfRadius" min="0" max="60" step="1" style="width:100%">
+          <label>Corner radius <button type="button" class="btn ghost sm" id="sfRadiiLink" title="Lock corners together" style="float:right;padding:.15rem .4rem">🔗</button></label>
+          <div id="sfRadiusSimple">
+            <input type="range" id="sfRadius" min="0" max="60" step="1" style="width:100%">
+            <span id="sfRadiusVal" class="hint"></span>
+          </div>
+          <div id="sfRadiusCorners" style="display:none" class="corner-grid">
+            <div><label class="hint">TL</label><input type="range" id="sfRTL" min="0" max="80" step="1"></div>
+            <div></div>
+            <div><label class="hint">TR</label><input type="range" id="sfRTR" min="0" max="80" step="1"></div>
+            <div><label class="hint">BL</label><input type="range" id="sfRBL" min="0" max="80" step="1"></div>
+            <div></div>
+            <div><label class="hint">BR</label><input type="range" id="sfRBR" min="0" max="80" step="1"></div>
+          </div>
         </div>
         <div class="field">
           <label for="sfRotate">Rotation <span id="sfRotateVal" class="hint" style="font-weight:400"></span></label>
           <input type="range" id="sfRotate" min="-180" max="180" step="1" style="width:100%">
         </div>
-        <button class="btn ghost sm" id="sfDelete" style="width:100%">Delete shape</button>
+
+        <details class="pro-fold" id="sfEffectsFold">
+          <summary>Effects <span class="hint" style="font-weight:400">shadow, glow, blur, blend</span></summary>
+          <div class="fold-body">
+            <div class="field">
+              <label for="sfObjOpacity">Object opacity <span id="sfObjOpacityVal" class="hint" style="font-weight:400"></span></label>
+              <input type="range" id="sfObjOpacity" min="0" max="100" step="5" style="width:100%">
+            </div>
+            <div class="field">
+              <label for="sfBlend">Blend mode</label>
+              <select id="sfBlend">
+                <option value="normal">Normal</option>
+                <option value="multiply">Multiply</option>
+                <option value="screen">Screen</option>
+                <option value="overlay">Overlay</option>
+                <option value="soft-light">Soft Light</option>
+                <option value="hard-light">Hard Light</option>
+                <option value="color-burn">Color Burn</option>
+                <option value="color-dodge">Color Dodge</option>
+                <option value="difference">Difference</option>
+                <option value="exclusion">Exclusion</option>
+                <option value="hue">Hue</option>
+                <option value="saturation">Saturation</option>
+                <option value="color">Color</option>
+                <option value="luminosity">Luminosity</option>
+              </select>
+            </div>
+            <div class="field toggle-row">
+              <span style="font-size:.82rem;font-weight:600">Drop shadow</span>
+              <label class="switch"><input type="checkbox" id="sfShadowOn"><span class="slider"></span></label>
+            </div>
+            <div id="sfShadowFields">
+              <div class="color-grid">
+                <label class="color-cell" for="sfShadowColor"><input type="color" id="sfShadowColor"><span class="cl">Colour</span></label>
+              </div>
+              <label class="hint">X <span id="sfShadowXVal"></span></label>
+              <input type="range" id="sfShadowX" min="-30" max="30" step="1" style="width:100%">
+              <label class="hint">Y <span id="sfShadowYVal"></span></label>
+              <input type="range" id="sfShadowY" min="-30" max="30" step="1" style="width:100%">
+              <label class="hint">Blur <span id="sfShadowBlurVal"></span></label>
+              <input type="range" id="sfShadowBlur" min="0" max="60" step="1" style="width:100%">
+              <label class="hint">Spread <span id="sfShadowSpreadVal"></span></label>
+              <input type="range" id="sfShadowSpread" min="-10" max="30" step="1" style="width:100%">
+              <label class="hint">Opacity <span id="sfShadowOpVal"></span></label>
+              <input type="range" id="sfShadowOp" min="0" max="100" step="5" style="width:100%">
+              <div class="field toggle-row" style="margin-top:.4rem">
+                <span style="font-size:.78rem;font-weight:600">Inner shadow</span>
+                <label class="switch"><input type="checkbox" id="sfShadowInset"><span class="slider"></span></label>
+              </div>
+            </div>
+            <div class="field toggle-row" style="margin-top:.6rem">
+              <span style="font-size:.82rem;font-weight:600">Glow</span>
+              <label class="switch"><input type="checkbox" id="sfGlowOn"><span class="slider"></span></label>
+            </div>
+            <div id="sfGlowFields">
+              <div class="color-grid">
+                <label class="color-cell" for="sfGlowColor"><input type="color" id="sfGlowColor"><span class="cl">Colour</span></label>
+              </div>
+              <label class="hint">Blur <span id="sfGlowBlurVal"></span></label>
+              <input type="range" id="sfGlowBlur" min="0" max="60" step="1" style="width:100%">
+              <label class="hint">Spread <span id="sfGlowSpreadVal"></span></label>
+              <input type="range" id="sfGlowSpread" min="0" max="30" step="1" style="width:100%">
+              <label class="hint">Opacity <span id="sfGlowOpVal"></span></label>
+              <input type="range" id="sfGlowOp" min="0" max="100" step="5" style="width:100%">
+            </div>
+            <div class="field" style="margin-top:.55rem">
+              <label for="sfBlur">Object blur <span id="sfBlurVal" class="hint" style="font-weight:400"></span></label>
+              <input type="range" id="sfBlur" min="0" max="24" step="1" style="width:100%">
+            </div>
+            <div class="field">
+              <label for="sfBackdrop">Backdrop blur <span id="sfBackdropVal" class="hint" style="font-weight:400"></span></label>
+              <input type="range" id="sfBackdrop" min="0" max="24" step="1" style="width:100%">
+              <div class="hint">Glassmorphism — blurs content behind the shape</div>
+            </div>
+          </div>
+        </details>
+
+        <button class="btn ghost sm" id="sfDelete" style="width:100%;margin-top:.6rem">Delete shape</button>
       </div>
 
       <div class="divider"></div>
@@ -662,7 +900,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       <div class="color-grid">
         <label class="color-cell" for="bPrimary"><input type="color" id="bPrimary"><span><span class="cl">Primary</span><br><span class="cv" id="cvPrimary"></span></span></label>
         <label class="color-cell" for="bSecondary"><input type="color" id="bSecondary"><span><span class="cl">Secondary</span><br><span class="cv" id="cvSecondary"></span></span></label>
+        <label class="color-cell" for="bAccent"><input type="color" id="bAccent"><span><span class="cl">Accent</span><br><span class="cv" id="cvAccent"></span></span></label>
         <label class="color-cell" for="bText"><input type="color" id="bText"><span><span class="cl">Slide text</span><br><span class="cv" id="cvText"></span></span></label>
+        <label class="color-cell" for="bSuccess"><input type="color" id="bSuccess"><span><span class="cl">Success</span><br><span class="cv" id="cvSuccess"></span></span></label>
+        <label class="color-cell" for="bWarning"><input type="color" id="bWarning"><span><span class="cl">Warning</span><br><span class="cv" id="cvWarning"></span></span></label>
+        <label class="color-cell" for="bDanger"><input type="color" id="bDanger"><span><span class="cl">Danger</span><br><span class="cv" id="cvDanger"></span></span></label>
       </div>
 
       <h3>Slide background</h3>
@@ -713,6 +955,8 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <div class="field" style="margin:0"><label for="bFontH">Heading font</label><select id="bFontH"></select></div>
         <div class="field" style="margin:0"><label for="bFontB">Body font</label><select id="bFontB"></select></div>
       </div>
+      <div class="hint" style="margin:.7rem 0 .35rem">Text styles — edit once, apply on message boxes</div>
+      <div id="bTextStyles"></div>
 
       <h3>Preview</h3>
       <div class="brand-preview"><div class="bp-slide" id="bpSlide">
@@ -743,6 +987,19 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 import { beginPercentDrag } from "./js/canvas/dragTransform.js";
 import { renderChromeOverlays, sanitizeSlideChrome, mountRulers } from "./js/canvas/slideChrome.js";
 import { newFrameShape, applyFrameVisual, reflowFrameChildren, FRAME_LAYOUTS } from "./js/canvas/frame.js";
+import {
+  safeHex, hexToRgb, rgbToHex, rgbToHsl, hexToOklchString, parseColorInput,
+  COLOR_VARS, COLOR_VAR_LABELS, resolveColorVar, getRecentColors, pushRecentColor, pickScreenColor
+} from "./js/canvas/color.js";
+import {
+  FILL_MODES, GRADIENT_PRESETS as SHAPE_GRAD_PRESETS,
+  mergeEffectFields, applyShapePaint, fillBackgroundCss, resolveShapeColor
+} from "./js/canvas/effects.js";
+import {
+  TEXT_STYLE_IDS, TEXT_STYLE_LABELS, sanitizeTextStyles,
+  mergeTypeFields, resolveShapeTypography, applyTypography, applyStylePreset,
+  applyContentTypography
+} from "./js/canvas/typography.js";
 
 "use strict";
 
@@ -784,21 +1041,29 @@ const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statemen
 const SHAPE_TOOLS = ["box", "ellipse", "frame", "arrow", "highlight", "message"];
 const SHAPE_TYPES = SHAPE_TOOLS.slice();
 function newShape(type, x, y, w, h) {
-  if (type === "frame") return newFrameShape(x, y, w, h);
+  if (type === "frame") {
+    const fr = newFrameShape(x, y, w, h);
+    return mergeEffectFields(fr, fr);
+  }
   const b = { id: uid(), type, x, y, w, h, rot: 0, flipX: false, flipY: false, parentId: null };
-  if (type === "box")       return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
-  if (type === "ellipse")   return Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
-  if (type === "highlight") return Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
-  if (type === "arrow")     return Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a" });
-  if (type === "message")   return Object.assign(b, { fill: "#ffffff", stroke: "#1b1f2a", strokeWidth: 1, opacity: 1, radius: 8, text: "Your message", textColor: "#1b1f2a" });
-  return b;
+  let sh = b;
+  if (type === "box")       sh = Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
+  else if (type === "ellipse")   sh = Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
+  else if (type === "highlight") sh = Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
+  else if (type === "arrow")     sh = Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a" });
+  else if (type === "message")   sh = Object.assign(b, { fill: "#ffffff", stroke: "#1b1f2a", strokeWidth: 1, opacity: 1, radius: 8, text: "Your message", textColor: "#1b1f2a" });
+  sh = mergeEffectFields(sh, sh);
+  if (type === "message") mergeTypeFields(sh, { textStyle: "body" });
+  return sh;
 }
 function hexA(hex, a) { const n = parseInt(safeColor(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + clamp(a, 0, 1) + ")"; }
 
 const BG_MODES = ["solid", "gradient", "image"];
 const BG_FITS = ["cover", "contain", "fill"];
-const DEFAULT_BRAND = { primary: "#6c5ce7", secondary: "#0ea5e9", bg: "#0c0e14", text: "#ffffff",
+const DEFAULT_BRAND = { primary: "#6c5ce7", secondary: "#0ea5e9", accent: "#f59e0b", bg: "#0c0e14", text: "#ffffff",
+  success: "#16a34a", warning: "#d97706", danger: "#e23d4b",
   fontHeading: "system", fontBody: "system",
+  textStyles: sanitizeTextStyles(null),
   bgMode: "solid", bg2: "#1e1b4b", bgAngle: 135, bgImage: null, bgFit: "cover", bgOverlay: 40 };
 const GRADIENT_PRESETS = [
   { from: "#0c0e14", to: "#1e1b4b", angle: 135 },
@@ -819,7 +1084,7 @@ let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | 
 
 function newProject() {
   return { v: 4, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
-    brand: Object.assign({}, DEFAULT_BRAND), assets: [],
+    brand: sanitizeBrand(DEFAULT_BRAND), assets: [],
     steps: [], cta: { enabled: false, text: "Get started", url: "" } };
 }
 function assetById(id) { return project.assets.find(a => a.id === id); }
@@ -865,10 +1130,15 @@ function sanitizeBrand(b) {
   return {
     primary:   safeColor(b.primary, DEFAULT_BRAND.primary),
     secondary: safeColor(b.secondary, DEFAULT_BRAND.secondary),
+    accent:    safeColor(b.accent, b.primary || DEFAULT_BRAND.accent),
     bg:        safeColor(b.bg, DEFAULT_BRAND.bg),
     text:      safeColor(b.text, DEFAULT_BRAND.text),
+    success:   safeColor(b.success, DEFAULT_BRAND.success),
+    warning:   safeColor(b.warning, DEFAULT_BRAND.warning),
+    danger:    safeColor(b.danger, DEFAULT_BRAND.danger),
     fontHeading: safeFont(b.fontHeading),
     fontBody:    safeFont(b.fontBody),
+    textStyles: sanitizeTextStyles(b.textStyles),
     bgMode: mode,
     bg2: safeColor(b.bg2, b.secondary || DEFAULT_BRAND.bg2),
     bgAngle: clamp(b.bgAngle == null ? 135 : b.bgAngle, 0, 360),
@@ -911,6 +1181,8 @@ function sanitizeShapes(raw) {
       opacity: clamp(sh.opacity == null ? 1 : sh.opacity, 0, 1), radius: clamp(sh.radius, 0, 200),
       text: str(sh.text, 300), textColor: safeColor(sh.textColor, "#1b1f2a"),
       parentId: str(sh.parentId, 40) || null };
+    mergeEffectFields(item, sh);
+    mergeTypeFields(item, sh);
     if (sh.type === "frame") {
       item.image = safeImage(sh.image);
       item.imageFit = ["cover", "contain", "fill"].includes(sh.imageFit) ? sh.imageFit : "cover";
@@ -928,8 +1200,10 @@ function brandFromImport(raw) {
   const src = raw.brand || {
     primary:   c.primary || c.accent || raw.primary || raw.accent,
     secondary: c.secondary,
+    accent:    c.accent || raw.accent,
     bg:        bg.color || c.background || c.bg,
     text:      c.text,
+    success:   c.success, warning: c.warning, danger: c.danger,
     fontHeading: f.heading || raw.fontHeading,
     fontBody:    f.body || raw.fontBody,
     bgMode: bg.mode || raw.bgMode,
@@ -937,7 +1211,8 @@ function brandFromImport(raw) {
     bgAngle: bg.angle == null ? raw.bgAngle : bg.angle,
     bgImage: bg.image || raw.bgImage,
     bgFit: bg.fit || raw.bgFit,
-    bgOverlay: bg.overlay == null ? raw.bgOverlay : bg.overlay
+    bgOverlay: bg.overlay == null ? raw.bgOverlay : bg.overlay,
+    textStyles: raw.textStyles || (raw.brand && raw.brand.textStyles)
   };
   return { brand: sanitizeBrand(src), logo: safeImage(raw.logo) };
 }
@@ -1075,6 +1350,7 @@ function buildContentSlideEl(step) {
     if (ul.children.length) d.appendChild(ul);
   }
   if (step.body) { const p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
+  applyContentTypography(d, layout, project.brand, FONTS, resolveColorVar);
   return d;
 }
 
@@ -1398,17 +1674,17 @@ function buildShapeEl(sh) {
   } else if (sh.type === "arrow") {
     el.appendChild(arrowSVG(sh));
   } else if (sh.type === "message") {
-    el.style.background = hexA(sh.fill, sh.opacity);
-    el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
-    el.style.borderRadius = sh.radius + "px"; el.style.color = sh.textColor;
+    el.style.color = sh.textColor;
     const t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
-    t.style.cssText = "padding:.5rem .6rem;font-size:.85rem;line-height:1.4;font-family:var(--font)";
     el.appendChild(t);
-  } else { // box | ellipse | highlight
-    el.style.background = hexA(sh.fill, sh.opacity);
-    el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
-    el.style.borderRadius = sh.type === "ellipse" ? "50%" : sh.radius + "px";
-    if (sh.type === "highlight") el.style.mixBlendMode = "multiply";
+    const resolved = resolveShapeTypography(sh, project.brand, resolveColorVar);
+    applyTypography(t, resolved, project.brand, FONTS);
+  }
+  applyShapePaint(el, sh, project.brand, hexA);
+  if (sh.type === "arrow") {
+    // Keep SVG stroke in sync with resolved brand stroke
+    const stroke = resolveShapeColor(sh, "stroke", project.brand);
+    el.querySelectorAll("line, polyline").forEach(n => n.setAttribute("stroke", stroke));
   }
   return el;
 }
@@ -1597,13 +1873,99 @@ function renderInspector() {
 }
 
 const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box" };
+let selGradStop = 0;
+let fillFmt = "hex";
+
+function formatFillText(hex) {
+  const h = safeHex(hex);
+  if (fillFmt === "rgb") { const { r, g, b } = hexToRgb(h); return "rgb(" + r + ", " + g + ", " + b + ")"; }
+  if (fillFmt === "hsl") { const { r, g, b } = hexToRgb(h); const hsl = rgbToHsl(r, g, b); return "hsl(" + hsl.h + ", " + hsl.s + "%, " + hsl.l + "%)"; }
+  if (fillFmt === "oklch") return hexToOklchString(h);
+  return h;
+}
+
+function renderSwatchRow(el, colors, onPick, asVar) {
+  el.innerHTML = "";
+  colors.forEach(item => {
+    const hex = asVar ? resolveColorVar(project.brand, item, "#6c5ce7") : item;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.title = asVar ? (COLOR_VAR_LABELS[item] || item) : hex;
+    btn.style.background = hex; if (asVar) btn.className = "var";
+    btn.onclick = () => onPick(item, hex);
+    el.appendChild(btn);
+  });
+}
+
+function renderGradUI(sh) {
+  const mode = FILL_MODES.includes(sh.fillMode) ? sh.fillMode : "solid";
+  const isGrad = mode !== "solid";
+  $("sfGradWrap").style.display = isGrad ? "" : "none";
+  $("sfFillAngle").parentElement.style.display = (mode === "linear" || mode === "conic") ? "" : "none";
+  if (!isGrad) return;
+  const stops = Array.isArray(sh.fillStops) && sh.fillStops.length ? sh.fillStops : [{ o: 0, c: sh.fill }, { o: 1, c: project.brand.secondary }];
+  sh.fillStops = stops;
+  if (selGradStop >= stops.length) selGradStop = stops.length - 1;
+  if (selGradStop < 0) selGradStop = 0;
+  const bar = $("sfGradBar");
+  bar.style.background = fillBackgroundCss(Object.assign({}, sh, { fillMode: mode === "diamond" ? "linear" : mode }), project.brand);
+  bar.innerHTML = "";
+  stops.forEach((s, i) => {
+    const d = document.createElement("div");
+    d.className = "grad-stop" + (i === selGradStop ? " on" : "");
+    d.style.left = (s.o * 100) + "%"; d.style.background = s.c;
+    d.title = Math.round(s.o * 100) + "% · " + s.c;
+    d.addEventListener("pointerdown", e => {
+      e.stopPropagation(); e.preventDefault();
+      selGradStop = i; $("sfGradStopColor").value = s.c;
+      try { d.setPointerCapture(e.pointerId); } catch (err) {}
+      const mv = ev => {
+        const rect = bar.getBoundingClientRect();
+        s.o = clamp((ev.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+        stops.sort((a, b) => a.o - b.o);
+        selGradStop = stops.indexOf(s);
+        renderCanvas(); renderGradUI(sh);
+      };
+      const up = () => { d.removeEventListener("pointermove", mv); d.removeEventListener("pointerup", up); scheduleSave(); };
+      d.addEventListener("pointermove", mv); d.addEventListener("pointerup", up);
+    });
+    bar.appendChild(d);
+  });
+  $("sfGradStopColor").value = stops[selGradStop].c;
+  $("sfFillAngle").value = sh.fillAngle == null ? 135 : sh.fillAngle;
+  $("sfFillAngleVal").textContent = (sh.fillAngle == null ? 135 : sh.fillAngle) + "°";
+  const presets = $("sfGradPresets");
+  if (!presets.dataset.ready) {
+    SHAPE_GRAD_PRESETS.forEach(p => {
+      const btn = document.createElement("button"); btn.type = "button"; btn.title = p.label;
+      const cssStops = p.stops.map(s => s.c + " " + Math.round(s.o * 100) + "%").join(", ");
+      btn.style.background = p.mode === "radial" || p.mode === "diamond"
+        ? "radial-gradient(circle, " + cssStops + ")"
+        : p.mode === "conic"
+          ? "conic-gradient(" + cssStops + ")"
+          : "linear-gradient(" + (p.angle || 135) + "deg, " + cssStops + ")";
+      btn.onclick = () => {
+        const sh2 = curShape(); if (!sh2) return;
+        sh2.fillMode = p.mode; sh2.fillAngle = p.angle; sh2.fillStops = p.stops.map(s => ({ o: s.o, c: s.c }));
+        sh2.fill = p.stops[0].c; sh2.fillVar = null; selGradStop = 0;
+        render();
+      };
+      presets.appendChild(btn);
+    });
+    presets.dataset.ready = "1";
+  }
+}
+
 function renderShapeFields(sh) {
-  const isMsg = sh.type === "message", isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isHi = sh.type === "highlight", isFrame = sh.type === "frame";
+  mergeEffectFields(sh, sh);
+  const isMsg = sh.type === "message", isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isFrame = sh.type === "frame";
   $("shapeTitle").textContent = (SHAPE_LABEL[sh.type] || "Shape") + " style";
   $("sfTextWrap").style.display = isMsg ? "" : "none";
   $("sfFrameWrap").style.display = isFrame ? "" : "none";
   $("sfTextColorWrap").style.display = isMsg ? "" : "none";
+  $("sfTypeWrap").style.display = isMsg ? "" : "none";
   $("sfFillCell").style.display = isArrow ? "none" : "";
+  $("sfFillFmtRow").style.display = isArrow ? "none" : "";
+  $("sfFillModeWrap").style.display = isArrow ? "none" : "";
   $("sfOpacityWrap").style.display = isArrow ? "none" : "";
   $("sfRadiusWrap").style.display = (isArrow || isEllipse) ? "none" : "";
   $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
@@ -1614,11 +1976,86 @@ function renderShapeFields(sh) {
     $("sfFrameFit").value = sh.imageFit || "cover";
     $("sfFrameImgClear").style.display = sh.image ? "" : "none";
   }
-  $("sfFill").value = sh.fill; $("sfStroke").value = sh.stroke; $("sfTextColor").value = sh.textColor;
+  const fillHex = resolveShapeColor(sh, "fill", project.brand);
+  $("sfFill").value = fillHex;
+  $("sfFillFmt").value = fillFmt;
+  $("sfFillText").value = formatFillText(fillHex);
+  $("sfStroke").value = resolveShapeColor(sh, "stroke", project.brand);
+  $("sfTextColor").value = sh.textColor;
+  $("sfFillMode").value = FILL_MODES.includes(sh.fillMode) ? sh.fillMode : "solid";
   $("sfOpacity").value = Math.round(sh.opacity * 100); $("sfOpacityVal").textContent = Math.round(sh.opacity * 100) + "%";
   $("sfStrokeW").value = sh.strokeWidth; $("sfStrokeWVal").textContent = sh.strokeWidth + "px";
-  $("sfRadius").value = sh.radius; $("sfRadiusVal").textContent = sh.radius + "px";
   $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
+
+  const linked = sh.radiiLinked !== false;
+  $("sfRadiiLink").textContent = linked ? "🔗" : "🔓";
+  $("sfRadiusSimple").style.display = linked ? "" : "none";
+  $("sfRadiusCorners").style.display = linked ? "none" : "";
+  $("sfRadius").value = sh.radius; $("sfRadiusVal").textContent = sh.radius + "px";
+  $("sfRTL").value = sh.radiusTL; $("sfRTR").value = sh.radiusTR;
+  $("sfRBL").value = sh.radiusBL; $("sfRBR").value = sh.radiusBR;
+
+  renderSwatchRow($("sfBrandSwatches"), COLOR_VARS, (key, hex) => {
+    sh.fillVar = key; sh.fill = hex; pushRecentColor(hex); render();
+  }, true);
+  renderSwatchRow($("sfRecentSwatches"), getRecentColors(), (hex) => {
+    sh.fillVar = null; sh.fill = hex; pushRecentColor(hex); render();
+  }, false);
+
+  renderGradUI(sh);
+
+  $("sfObjOpacity").value = Math.round((sh.objOpacity == null ? 1 : sh.objOpacity) * 100);
+  $("sfObjOpacityVal").textContent = $("sfObjOpacity").value + "%";
+  $("sfBlend").value = sh.blendMode || "normal";
+  $("sfShadowOn").checked = !!sh.shadowOn;
+  $("sfShadowFields").style.opacity = sh.shadowOn ? "1" : ".45";
+  $("sfShadowColor").value = sh.shadowColor || "#000000";
+  $("sfShadowX").value = sh.shadowX || 0; $("sfShadowXVal").textContent = (sh.shadowX || 0) + "px";
+  $("sfShadowY").value = sh.shadowY == null ? 4 : sh.shadowY; $("sfShadowYVal").textContent = $("sfShadowY").value + "px";
+  $("sfShadowBlur").value = sh.shadowBlur == null ? 12 : sh.shadowBlur; $("sfShadowBlurVal").textContent = $("sfShadowBlur").value + "px";
+  $("sfShadowSpread").value = sh.shadowSpread || 0; $("sfShadowSpreadVal").textContent = $("sfShadowSpread").value + "px";
+  $("sfShadowOp").value = Math.round((sh.shadowOpacity == null ? 0.35 : sh.shadowOpacity) * 100); $("sfShadowOpVal").textContent = $("sfShadowOp").value + "%";
+  $("sfShadowInset").checked = !!sh.shadowInset;
+  $("sfGlowOn").checked = !!sh.glowOn;
+  $("sfGlowFields").style.opacity = sh.glowOn ? "1" : ".45";
+  $("sfGlowColor").value = sh.glowColor || "#6c5ce7";
+  $("sfGlowBlur").value = sh.glowBlur == null ? 16 : sh.glowBlur; $("sfGlowBlurVal").textContent = $("sfGlowBlur").value + "px";
+  $("sfGlowSpread").value = sh.glowSpread || 0; $("sfGlowSpreadVal").textContent = $("sfGlowSpread").value + "px";
+  $("sfGlowOp").value = Math.round((sh.glowOpacity == null ? 0.55 : sh.glowOpacity) * 100); $("sfGlowOpVal").textContent = $("sfGlowOp").value + "%";
+  $("sfBlur").value = sh.blur || 0; $("sfBlurVal").textContent = (sh.blur || 0) + "px";
+  $("sfBackdrop").value = sh.backdropBlur || 0; $("sfBackdropVal").textContent = (sh.backdropBlur || 0) + "px";
+
+  if (isMsg) {
+    mergeTypeFields(sh, sh);
+    const resolved = resolveShapeTypography(sh, project.brand, resolveColorVar);
+    const stylesEl = $("sfTypeStyles"); stylesEl.innerHTML = "";
+    TEXT_STYLE_IDS.forEach(id => {
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.className = "type-style-btn" + (sh.textStyle === id ? " on" : "");
+      btn.textContent = TEXT_STYLE_LABELS[id];
+      btn.onclick = () => { applyStylePreset(sh, id); render(); };
+      stylesEl.appendChild(btn);
+    });
+    $("sfFontSize").value = resolved.size; $("sfFontSizeVal").textContent = resolved.size + "px";
+    $("sfFontWeight").value = String(resolved.weight);
+    $("sfLineHeight").value = Math.round(resolved.lineHeight * 100); $("sfLineHeightVal").textContent = resolved.lineHeight.toFixed(2);
+    $("sfLetterSp").value = Math.round(resolved.letterSpacing * 10); $("sfLetterSpVal").textContent = resolved.letterSpacing.toFixed(1) + "px";
+    $("sfTextAlign").value = resolved.align;
+    $("sfTextTransform").value = resolved.transform;
+    $("sfColumns").value = resolved.columns; $("sfColumnsVal").textContent = String(resolved.columns);
+    $("sfTextIndent").value = resolved.textIndent; $("sfTextIndentVal").textContent = resolved.textIndent + "px";
+    $("sfTxShadowOn").checked = !!resolved.textShadowOn;
+    $("sfTxShadowFields").style.opacity = resolved.textShadowOn ? "1" : ".45";
+    $("sfTxShadowColor").value = resolved.textShadowColor;
+    $("sfTxShadowBlur").value = resolved.textShadowBlur; $("sfTxShadowBlurVal").textContent = resolved.textShadowBlur + "px";
+    $("sfTxStrokeOn").checked = !!resolved.textStrokeOn;
+    $("sfTxStrokeFields").style.opacity = resolved.textStrokeOn ? "1" : ".45";
+    $("sfTxStrokeColor").value = resolved.textStrokeColor;
+    $("sfTxStrokeW").value = resolved.textStrokeWidth; $("sfTxStrokeWVal").textContent = resolved.textStrokeWidth + "px";
+    $("sfTxHiOn").checked = !!resolved.textHighlightOn;
+    $("sfTxHiFields").style.opacity = resolved.textHighlightOn ? "1" : ".45";
+    $("sfTxHiColor").value = resolved.textHighlightColor;
+  }
 }
 
 function renderContentFields(step) {
@@ -1952,8 +2389,13 @@ function syncBrandInputs() {
   $("accent").value = b.primary;
   $("bPrimary").value = b.primary; $("cvPrimary").textContent = b.primary;
   $("bSecondary").value = b.secondary; $("cvSecondary").textContent = b.secondary;
+  $("bAccent").value = b.accent || b.primary; $("cvAccent").textContent = b.accent || b.primary;
   $("bText").value = b.text; $("cvText").textContent = b.text;
+  $("bSuccess").value = b.success || DEFAULT_BRAND.success; $("cvSuccess").textContent = b.success || DEFAULT_BRAND.success;
+  $("bWarning").value = b.warning || DEFAULT_BRAND.warning; $("cvWarning").textContent = b.warning || DEFAULT_BRAND.warning;
+  $("bDanger").value = b.danger || DEFAULT_BRAND.danger; $("cvDanger").textContent = b.danger || DEFAULT_BRAND.danger;
   $("bFontH").value = b.fontHeading; $("bFontB").value = b.fontBody;
+  renderBrandTextStyles();
   // Background controls
   const mode = BG_MODES.includes(b.bgMode) ? b.bgMode : "solid";
   [...$("bgMode").children].forEach(btn => btn.classList.toggle("on", btn.dataset.bg === mode));
@@ -2002,29 +2444,49 @@ function openBrand() { syncBrandInputs(); $("brandModal").classList.add("open");
 function closeBrand() { $("brandModal").classList.remove("open"); }
 function setBrand(key, value) { project.brand[key] = value; applyBrand(); syncBrandInputs(); renderSteps(); renderCanvas(); }
 
-function rgbToHex(r, g, b) {
-  return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+function renderBrandTextStyles() {
+  const box = $("bTextStyles");
+  if (!box) return;
+  if (!project.brand.textStyles) project.brand.textStyles = sanitizeTextStyles(null);
+  box.innerHTML = "";
+  TEXT_STYLE_IDS.forEach(id => {
+    const st = project.brand.textStyles[id] || sanitizeTextStyles(null)[id];
+    const row = document.createElement("div"); row.className = "b-style-row";
+    const lab = document.createElement("label"); lab.textContent = TEXT_STYLE_LABELS[id]; row.appendChild(lab);
+    const size = document.createElement("input"); size.type = "number"; size.min = "8"; size.max = "120"; size.value = st.size;
+    size.title = "Size (px)"; size.onchange = () => {
+      project.brand.textStyles[id].size = clamp(size.value, 8, 120);
+      project.brand.textStyles = sanitizeTextStyles(project.brand.textStyles);
+      render();
+    };
+    row.appendChild(size);
+    const weight = document.createElement("select");
+    [300, 400, 500, 600, 700, 800].forEach(w => {
+      const o = document.createElement("option"); o.value = w; o.textContent = w;
+      if (st.weight === w) o.selected = true; weight.appendChild(o);
+    });
+    weight.onchange = () => {
+      project.brand.textStyles[id].weight = +weight.value;
+      project.brand.textStyles = sanitizeTextStyles(project.brand.textStyles);
+      render();
+    };
+    row.appendChild(weight);
+    const role = document.createElement("select");
+    [{ v: "heading", t: "H" }, { v: "body", t: "B" }].forEach(r => {
+      const o = document.createElement("option"); o.value = r.v; o.textContent = r.t;
+      if (st.fontRole === r.v) o.selected = true; role.appendChild(o);
+    });
+    role.title = "Font role: Heading or Body";
+    role.onchange = () => {
+      project.brand.textStyles[id].fontRole = role.value;
+      project.brand.textStyles = sanitizeTextStyles(project.brand.textStyles);
+      render();
+    };
+    row.appendChild(role);
+    box.appendChild(row);
+  });
 }
-function hexToRgb(hex) {
-  const n = parseInt(String(hex).slice(1), 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-function rgbToHsl(r, g, b) {
-  r /= 255; g /= 255; b /= 255;
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-  let h = 0, s = 0; const l = (mx + mn) / 2;
-  if (mx !== mn) {
-    const d = mx - mn;
-    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-    switch (mx) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
-      case g: h = ((b - r) / d + 2); break;
-      default: h = ((r - g) / d + 4); break;
-    }
-    h /= 6;
-  }
-  return { h: h * 360, s: s * 100, l: l * 100 };
-}
+
 function relLuma(r, g, b) { return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }
 function colorDist(a, b) { return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b); }
 
@@ -2209,9 +2671,12 @@ function extractLogoColor() {
 function exportBrand() {
   const b = project.brand;
   const kit = { type: "presentation-brandkit", v: 2, name: (project.title || "Brand") + " kit",
-    colors: { primary: b.primary, secondary: b.secondary, background: b.bg, text: b.text },
+    colors: { primary: b.primary, secondary: b.secondary, accent: b.accent, background: b.bg, text: b.text,
+      success: b.success, warning: b.warning, danger: b.danger },
     background: { mode: b.bgMode, color: b.bg, to: b.bg2, angle: b.bgAngle, image: b.bgImage || null, fit: b.bgFit, overlay: b.bgOverlay },
-    fonts: { heading: b.fontHeading, body: b.fontBody }, logo: project.logo || null };
+    fonts: { heading: b.fontHeading, body: b.fontBody },
+    textStyles: sanitizeTextStyles(b.textStyles),
+    logo: project.logo || null };
   download(slug(project.title) + ".brandkit.json", new Blob([JSON.stringify(kit, null, 2)], { type: "application/json" }));
   toast("Brand kit exported");
 }
@@ -2227,7 +2692,7 @@ function importBrand(file) {
   };
   reader.readAsText(file);
 }
-function resetBrand() { project.brand = Object.assign({}, DEFAULT_BRAND); styleDraft = null; renderStyleDraft(); applyBrand(); render(); toast("Brand reset to default"); }
+function resetBrand() { project.brand = sanitizeBrand(DEFAULT_BRAND); styleDraft = null; renderStyleDraft(); applyBrand(); render(); toast("Brand reset to default"); }
 
 /* ───────────────────────── Save / load ───────────────────────── */
 function download(filename, blob) {
@@ -2404,34 +2869,118 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     svg.appendChild(head); return svg;
   }
   function drawShapes(box, step) {
+    var brand = DATA.brand || {};
+    function vSafeHex(c, fb) { return (typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c)) ? c.toLowerCase() : (fb || "#6c5ce7"); }
+    function vResolve(sh, which) {
+      var key = which === "stroke" ? sh.strokeVar : sh.fillVar;
+      var fb = which === "stroke" ? sh.stroke : sh.fill;
+      if (!key) return vSafeHex(fb, "#6c5ce7");
+      if (key === "primary") return vSafeHex(brand.primary, fb);
+      if (key === "secondary") return vSafeHex(brand.secondary, fb);
+      if (key === "accent") return vSafeHex(brand.accent || brand.primary, fb);
+      if (key === "text") return vSafeHex(brand.text, fb);
+      if (key === "bg") return vSafeHex(brand.bg, fb);
+      if (key === "success") return vSafeHex(brand.success, "#16a34a");
+      if (key === "warning") return vSafeHex(brand.warning, "#d97706");
+      if (key === "danger") return vSafeHex(brand.danger, "#e23d4b");
+      return vSafeHex(fb, "#6c5ce7");
+    }
+    function vStopsCss(stops) {
+      return (stops || []).map(function (s) { return s.c + " " + Math.round((s.o || 0) * 100) + "%"; }).join(", ");
+    }
+    function vFillBg(sh) {
+      var solid = vResolve(sh, "fill"), mode = sh.fillMode || "solid", ang = sh.fillAngle == null ? 135 : sh.fillAngle;
+      var stops = (sh.fillStops && sh.fillStops.length) ? sh.fillStops : [{ o: 0, c: solid }, { o: 1, c: brand.secondary || "#0ea5e9" }];
+      if (mode === "linear") return "linear-gradient(" + ang + "deg, " + vStopsCss(stops) + ")";
+      if (mode === "radial" || mode === "diamond") return "radial-gradient(circle at center, " + vStopsCss(stops) + ")";
+      if (mode === "conic") return "conic-gradient(from " + ang + "deg at center, " + vStopsCss(stops) + ")";
+      return solid;
+    }
+    function vRadius(sh) {
+      if (sh.type === "ellipse") return "50%";
+      if (sh.radiiLinked === false) return (sh.radiusTL || 0) + "px " + (sh.radiusTR || 0) + "px " + (sh.radiusBR || 0) + "px " + (sh.radiusBL || 0) + "px";
+      return (sh.radius || 0) + "px";
+    }
+    function vShadow(sh) {
+      var parts = [];
+      if (sh.shadowOn) {
+        parts.push((sh.shadowInset ? "inset " : "") + (sh.shadowX || 0) + "px " + (sh.shadowY == null ? 4 : sh.shadowY) + "px " +
+          (sh.shadowBlur == null ? 12 : sh.shadowBlur) + "px " + (sh.shadowSpread || 0) + "px " +
+          vHexA(sh.shadowColor || "#000000", sh.shadowOpacity == null ? 0.35 : sh.shadowOpacity));
+      }
+      if (sh.glowOn) {
+        parts.push("0 0 " + (sh.glowBlur == null ? 16 : sh.glowBlur) + "px " + (sh.glowSpread || 0) + "px " +
+          vHexA(sh.glowColor || "#6c5ce7", sh.glowOpacity == null ? 0.55 : sh.glowOpacity));
+      }
+      return parts.join(", ");
+    }
     (step.shapes || []).forEach(function (sh) {
       var el = document.createElement("div"); el.className = "shape";
       el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
       if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
-      if (sh.type === "arrow") { el.appendChild(vArrow(sh)); }
+      var fillOp = sh.opacity == null ? 1 : sh.opacity;
+      var mode = sh.fillMode || "solid";
+      var stroke = vResolve(sh, "stroke");
+      if (sh.type === "arrow") { el.appendChild(vArrow(Object.assign({}, sh, { stroke: stroke }))); }
       else if (sh.type === "frame") {
         el.style.overflow = "hidden";
-        el.style.background = sh.fill || "#fff";
-        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
-        el.style.borderRadius = (sh.radius || 0) + "px";
-        el.style.opacity = sh.opacity == null ? 1 : sh.opacity;
+        if (mode === "solid" || !sh.image) el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
+        else { el.style.backgroundImage = vFillBg(sh); el.style.backgroundColor = "transparent"; el.style.opacity = String(fillOp); }
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
+        el.style.borderRadius = vRadius(sh);
         if (sh.image) {
           var fim = document.createElement("img"); fim.className = "frame-img"; fim.src = sh.image; fim.alt = "";
           fim.style.objectFit = sh.imageFit === "contain" ? "contain" : sh.imageFit === "fill" ? "fill" : "cover";
           el.appendChild(fim);
         }
-      }
-      else if (sh.type === "message") {
-        el.style.background = vHexA(sh.fill, sh.opacity);
-        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
-        el.style.borderRadius = sh.radius + "px"; el.style.color = sh.textColor;
-        var t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || ""; el.appendChild(t);
+      } else if (sh.type === "message") {
+        if (mode === "solid") el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
+        else { el.style.backgroundImage = vFillBg(sh); el.style.backgroundColor = "transparent"; el.style.opacity = String(fillOp); }
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
+        el.style.borderRadius = vRadius(sh); el.style.color = sh.textColor;
+        var t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
+        (function paintType(node, shape) {
+          var styles = brand.textStyles || {};
+          var sid = shape.textStyle || "body";
+          var base = styles[sid] || styles.body || { size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0, align: "left", transform: "none", fontRole: "body", colorVar: "text" };
+          var size = shape.fontSize != null ? shape.fontSize : base.size;
+          var weight = shape.fontWeight != null ? shape.fontWeight : base.weight;
+          var lh = shape.lineHeight != null ? shape.lineHeight : base.lineHeight;
+          var ls = shape.letterSpacing != null ? shape.letterSpacing : base.letterSpacing;
+          var align = shape.textAlign || base.align || "left";
+          var tr = shape.textTransform || base.transform || "none";
+          var role = shape.fontRole || base.fontRole || "body";
+          node.style.fontFamily = role === "heading" ? "var(--b-fh)" : "var(--b-fb)";
+          node.style.fontSize = size + "px"; node.style.fontWeight = String(weight);
+          node.style.lineHeight = String(lh); node.style.letterSpacing = ls + "px";
+          node.style.textAlign = align; node.style.color = shape.textColor || "inherit";
+          node.style.padding = ".5rem .6rem"; node.style.width = "100%"; node.style.height = "100%"; node.style.overflow = "hidden";
+          if (tr === "small-caps") { node.style.fontVariant = "small-caps"; node.style.textTransform = "none"; }
+          else { node.style.textTransform = tr === "none" ? "" : tr; }
+          if (shape.columns > 1) { node.style.columnCount = String(shape.columns); node.style.columnGap = (shape.columnGap || 16) + "px"; }
+          if (shape.textIndent) node.style.textIndent = shape.textIndent + "px";
+          if (shape.textShadowOn) node.style.textShadow = (shape.textShadowX || 0) + "px " + (shape.textShadowY == null ? 1 : shape.textShadowY) + "px " + (shape.textShadowBlur == null ? 2 : shape.textShadowBlur) + "px " + vHexA(shape.textShadowColor || "#000", shape.textShadowOpacity == null ? 0.35 : shape.textShadowOpacity);
+          if (shape.textStrokeOn && shape.textStrokeWidth) { node.style.webkitTextStroke = shape.textStrokeWidth + "px " + (shape.textStrokeColor || "#000"); node.style.paintOrder = "stroke fill"; }
+          if (shape.textHighlightOn) {
+            node.style.backgroundColor = shape.textHighlightColor || "#fef08a";
+            node.style.borderRadius = (shape.textHighlightRadius || 4) + "px";
+            node.style.display = "inline-block"; node.style.width = "auto"; node.style.maxWidth = "100%";
+            node.style.padding = (shape.textHighlightPad || 4) + "px";
+          }
+        })(t, sh);
+        el.appendChild(t);
       } else {
-        el.style.background = vHexA(sh.fill, sh.opacity);
-        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + sh.stroke : "none";
-        el.style.borderRadius = sh.type === "ellipse" ? "50%" : sh.radius + "px";
-        if (sh.type === "highlight") el.style.mixBlendMode = "multiply";
+        if (mode === "solid") el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
+        else { el.style.backgroundImage = vFillBg(sh); el.style.backgroundColor = "transparent"; el.style.opacity = String(fillOp); }
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
+        el.style.borderRadius = vRadius(sh);
+        if (sh.type === "highlight" && (!sh.blendMode || sh.blendMode === "normal")) el.style.mixBlendMode = "multiply";
       }
+      var bs = vShadow(sh); if (bs) el.style.boxShadow = bs;
+      if (sh.blur) el.style.filter = "blur(" + sh.blur + "px)";
+      if (sh.backdropBlur) { el.style.backdropFilter = "blur(" + sh.backdropBlur + "px)"; el.style.webkitBackdropFilter = el.style.backdropFilter; }
+      if (sh.blendMode && sh.blendMode !== "normal") el.style.mixBlendMode = sh.blendMode;
+      if (sh.objOpacity != null && sh.objOpacity < 0.999 && mode === "solid") el.style.opacity = String(sh.objOpacity);
       box.appendChild(el);
     });
   }
@@ -2492,6 +3041,28 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       d.appendChild(ul);
     }
     if (step.body) { var p = document.createElement("p"); p.className = "body"; p.textContent = step.body; d.appendChild(p); }
+    (function applyContentType(root, layout) {
+      var styles = (DATA.brand && DATA.brand.textStyles) || {};
+      var map = layout === "title" ? { h: "h1", s: "body", b: "body" }
+        : layout === "section" ? { h: "h2", s: "caption", b: "body" }
+        : layout === "statement" ? { h: "quote", s: "label", b: "body" }
+        : { h: "h2", s: "body", b: "body" };
+      function paint(el, id) {
+        if (!el) return;
+        var st = styles[id] || styles.body || { size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0, fontRole: "body", transform: "none" };
+        el.style.fontFamily = st.fontRole === "heading" ? "var(--b-fh)" : "var(--b-fb)";
+        el.style.fontSize = "clamp(" + Math.round(st.size * 0.55) + "px, " + (st.size * 0.12) + "vw, " + st.size + "px)";
+        el.style.fontWeight = String(st.weight);
+        el.style.lineHeight = String(st.lineHeight);
+        el.style.letterSpacing = (st.letterSpacing || 0) + "px";
+        if (st.transform === "small-caps") { el.style.fontVariant = "small-caps"; }
+        else if (st.transform && st.transform !== "none") el.style.textTransform = st.transform;
+        if (st.colorVar === "primary") el.style.color = "var(--accent)";
+      }
+      paint(root.querySelector("h1"), map.h);
+      paint(root.querySelector(".sub"), map.s);
+      root.querySelectorAll("li").forEach(function (li) { paint(li, map.b); });
+    })(d, layout);
     drawShapes(d, step); drawOverlays(d, step);
     stage.appendChild(d);
   }
@@ -2626,7 +3197,11 @@ $("brandClose").onclick = closeBrand;
 $("brandModal").addEventListener("click", e => { if (e.target === $("brandModal")) closeBrand(); });
 $("bPrimary").addEventListener("input", e => setBrand("primary", safeColor(e.target.value, project.brand.primary)));
 $("bSecondary").addEventListener("input", e => setBrand("secondary", safeColor(e.target.value, project.brand.secondary)));
+$("bAccent").addEventListener("input", e => setBrand("accent", safeColor(e.target.value, project.brand.accent)));
 $("bText").addEventListener("input", e => setBrand("text", safeColor(e.target.value, project.brand.text)));
+$("bSuccess").addEventListener("input", e => setBrand("success", safeColor(e.target.value, project.brand.success)));
+$("bWarning").addEventListener("input", e => setBrand("warning", safeColor(e.target.value, project.brand.warning)));
+$("bDanger").addEventListener("input", e => setBrand("danger", safeColor(e.target.value, project.brand.danger)));
 $("bFontH").addEventListener("change", e => setBrand("fontHeading", safeFont(e.target.value)));
 $("bFontB").addEventListener("change", e => setBrand("fontBody", safeFont(e.target.value)));
 $("bLogoBtn").onclick = () => $("logoInput").click();
@@ -2707,14 +3282,143 @@ $("animGrid").addEventListener("click", e => {
 
 // shape style
 function curShape() { const s = curSlide(); return (s && s.shapes && selShape >= 0) ? s.shapes[selShape] : null; }
+function touchShape(fn) {
+  const sh = curShape(); if (!sh) return;
+  fn(sh); renderCanvas(); scheduleSave();
+}
 $("sfText").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.text = e.target.value; renderCanvas(); } });
-$("sfFill").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.fill = safeColor(e.target.value, sh.fill); renderCanvas(); } });
-$("sfStroke").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.stroke = safeColor(e.target.value, sh.stroke); renderCanvas(); } });
-$("sfTextColor").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.textColor = safeColor(e.target.value, sh.textColor); renderCanvas(); } });
-$("sfOpacity").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.opacity = clamp(e.target.value / 100, 0, 1); $("sfOpacityVal").textContent = e.target.value + "%"; renderCanvas(); } });
-$("sfStrokeW").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.strokeWidth = clamp(e.target.value, 0, 40); $("sfStrokeWVal").textContent = sh.strokeWidth + "px"; renderCanvas(); } });
-$("sfRadius").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.radius = clamp(e.target.value, 0, 200); $("sfRadiusVal").textContent = sh.radius + "px"; renderCanvas(); } });
-$("sfRotate").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.rot = clamp(e.target.value, -180, 180); $("sfRotateVal").textContent = sh.rot + "°"; renderCanvas(); } });
+$("sfFill").addEventListener("input", e => {
+  touchShape(sh => { sh.fill = safeColor(e.target.value, sh.fill); sh.fillVar = null; pushRecentColor(sh.fill); $("sfFillText").value = formatFillText(sh.fill); });
+});
+$("sfFillFmt").addEventListener("change", e => {
+  fillFmt = e.target.value; const sh = curShape(); if (sh) $("sfFillText").value = formatFillText(resolveShapeColor(sh, "fill", project.brand));
+});
+$("sfFillText").addEventListener("change", e => {
+  touchShape(sh => {
+    const hex = parseColorInput(e.target.value, sh.fill);
+    sh.fill = hex; sh.fillVar = null; pushRecentColor(hex);
+    $("sfFill").value = hex; $("sfFillText").value = formatFillText(hex);
+  });
+});
+$("sfEyeDrop").onclick = async () => {
+  const hex = await pickScreenColor();
+  if (!hex) { toast("Eyedropper unavailable — try Chrome/Edge", true); return; }
+  touchShape(sh => { sh.fill = hex; sh.fillVar = null; pushRecentColor(hex); });
+  renderInspector();
+};
+$("sfStroke").addEventListener("input", e => { touchShape(sh => { sh.stroke = safeColor(e.target.value, sh.stroke); sh.strokeVar = null; }); });
+$("sfTextColor").addEventListener("input", e => { touchShape(sh => { sh.textColor = safeColor(e.target.value, sh.textColor); }); });
+$("sfFontSize").addEventListener("input", e => {
+  touchShape(sh => { sh.fontSize = clamp(e.target.value, 8, 120); $("sfFontSizeVal").textContent = sh.fontSize + "px"; });
+});
+$("sfFontWeight").addEventListener("change", e => { touchShape(sh => { sh.fontWeight = +e.target.value; }); });
+$("sfLineHeight").addEventListener("input", e => {
+  touchShape(sh => { sh.lineHeight = clamp(e.target.value / 100, 0.8, 3); $("sfLineHeightVal").textContent = sh.lineHeight.toFixed(2); });
+});
+$("sfLetterSp").addEventListener("input", e => {
+  touchShape(sh => { sh.letterSpacing = clamp(e.target.value / 10, -4, 20); $("sfLetterSpVal").textContent = sh.letterSpacing.toFixed(1) + "px"; });
+});
+$("sfTextAlign").addEventListener("change", e => { touchShape(sh => { sh.textAlign = e.target.value; }); });
+$("sfTextTransform").addEventListener("change", e => { touchShape(sh => { sh.textTransform = e.target.value; }); });
+$("sfColumns").addEventListener("input", e => {
+  touchShape(sh => { sh.columns = clamp(e.target.value, 1, 4); $("sfColumnsVal").textContent = String(sh.columns); });
+});
+$("sfTextIndent").addEventListener("input", e => {
+  touchShape(sh => { sh.textIndent = clamp(e.target.value, -40, 80); $("sfTextIndentVal").textContent = sh.textIndent + "px"; });
+});
+$("sfTxShadowOn").addEventListener("change", e => { touchShape(sh => { sh.textShadowOn = e.target.checked; }); renderInspector(); });
+$("sfTxShadowColor").addEventListener("input", e => { touchShape(sh => { sh.textShadowColor = safeColor(e.target.value, "#000000"); }); });
+$("sfTxShadowBlur").addEventListener("input", e => {
+  touchShape(sh => { sh.textShadowBlur = clamp(e.target.value, 0, 40); $("sfTxShadowBlurVal").textContent = sh.textShadowBlur + "px"; });
+});
+$("sfTxStrokeOn").addEventListener("change", e => { touchShape(sh => { sh.textStrokeOn = e.target.checked; }); renderInspector(); });
+$("sfTxStrokeColor").addEventListener("input", e => { touchShape(sh => { sh.textStrokeColor = safeColor(e.target.value, "#000000"); }); });
+$("sfTxStrokeW").addEventListener("input", e => {
+  touchShape(sh => { sh.textStrokeWidth = clamp(e.target.value, 0, 8); $("sfTxStrokeWVal").textContent = sh.textStrokeWidth + "px"; });
+});
+$("sfTxHiOn").addEventListener("change", e => { touchShape(sh => { sh.textHighlightOn = e.target.checked; }); renderInspector(); });
+$("sfTxHiColor").addEventListener("input", e => { touchShape(sh => { sh.textHighlightColor = safeColor(e.target.value, "#fef08a"); }); });
+$("sfFillMode").addEventListener("change", e => {
+  touchShape(sh => {
+    sh.fillMode = FILL_MODES.includes(e.target.value) ? e.target.value : "solid";
+    if (!sh.fillStops || sh.fillStops.length < 2) {
+      sh.fillStops = [{ o: 0, c: sh.fill }, { o: 1, c: project.brand.secondary }];
+    }
+  });
+  renderInspector();
+});
+$("sfFillAngle").addEventListener("input", e => {
+  touchShape(sh => { sh.fillAngle = clamp(e.target.value, 0, 360); $("sfFillAngleVal").textContent = sh.fillAngle + "°"; });
+  const sh = curShape(); if (sh) renderGradUI(sh);
+});
+$("sfGradStopColor").addEventListener("input", e => {
+  touchShape(sh => {
+    if (!sh.fillStops || !sh.fillStops[selGradStop]) return;
+    sh.fillStops[selGradStop].c = safeColor(e.target.value, sh.fill);
+    if (selGradStop === 0) { sh.fill = sh.fillStops[0].c; sh.fillVar = null; }
+  });
+  const sh = curShape(); if (sh) renderGradUI(sh);
+});
+$("sfGradBar").addEventListener("click", e => {
+  if (e.target.classList.contains("grad-stop")) return;
+  const sh = curShape(); if (!sh || (sh.fillMode || "solid") === "solid") return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const o = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+  if (!sh.fillStops) sh.fillStops = [{ o: 0, c: sh.fill }, { o: 1, c: project.brand.secondary }];
+  if (sh.fillStops.length >= 8) return;
+  sh.fillStops.push({ o, c: sh.fill });
+  sh.fillStops.sort((a, b) => a.o - b.o);
+  selGradStop = sh.fillStops.findIndex(s => s.o === o);
+  render();
+});
+$("sfGradDelStop").onclick = () => {
+  const sh = curShape(); if (!sh || !sh.fillStops || sh.fillStops.length <= 2) return;
+  sh.fillStops.splice(selGradStop, 1); selGradStop = Math.max(0, selGradStop - 1); render();
+};
+$("sfOpacity").addEventListener("input", e => { touchShape(sh => { sh.opacity = clamp(e.target.value / 100, 0, 1); $("sfOpacityVal").textContent = e.target.value + "%"; }); });
+$("sfStrokeW").addEventListener("input", e => { touchShape(sh => { sh.strokeWidth = clamp(e.target.value, 0, 40); $("sfStrokeWVal").textContent = sh.strokeWidth + "px"; }); });
+$("sfRadius").addEventListener("input", e => {
+  touchShape(sh => {
+    const r = clamp(e.target.value, 0, 200);
+    sh.radius = r; sh.radiusTL = sh.radiusTR = sh.radiusBR = sh.radiusBL = r;
+    $("sfRadiusVal").textContent = r + "px";
+  });
+});
+$("sfRadiiLink").onclick = () => {
+  touchShape(sh => {
+    sh.radiiLinked = sh.radiiLinked === false;
+    if (sh.radiiLinked !== false) {
+      const r = sh.radius || sh.radiusTL || 0;
+      sh.radius = sh.radiusTL = sh.radiusTR = sh.radiusBR = sh.radiusBL = r;
+    }
+  });
+  renderInspector();
+};
+function bindCorner(id, key) {
+  $(id).addEventListener("input", e => {
+    touchShape(sh => { sh.radiiLinked = false; sh[key] = clamp(e.target.value, 0, 200); });
+  });
+}
+bindCorner("sfRTL", "radiusTL"); bindCorner("sfRTR", "radiusTR");
+bindCorner("sfRBL", "radiusBL"); bindCorner("sfRBR", "radiusBR");
+$("sfRotate").addEventListener("input", e => { touchShape(sh => { sh.rot = clamp(e.target.value, -180, 180); $("sfRotateVal").textContent = sh.rot + "°"; }); });
+$("sfObjOpacity").addEventListener("input", e => { touchShape(sh => { sh.objOpacity = clamp(e.target.value / 100, 0, 1); $("sfObjOpacityVal").textContent = e.target.value + "%"; }); });
+$("sfBlend").addEventListener("change", e => { touchShape(sh => { sh.blendMode = e.target.value; }); });
+$("sfShadowOn").addEventListener("change", e => { touchShape(sh => { sh.shadowOn = e.target.checked; }); renderInspector(); });
+$("sfShadowColor").addEventListener("input", e => { touchShape(sh => { sh.shadowColor = safeColor(e.target.value, "#000000"); }); });
+$("sfShadowX").addEventListener("input", e => { touchShape(sh => { sh.shadowX = clamp(e.target.value, -50, 50); $("sfShadowXVal").textContent = sh.shadowX + "px"; }); });
+$("sfShadowY").addEventListener("input", e => { touchShape(sh => { sh.shadowY = clamp(e.target.value, -50, 50); $("sfShadowYVal").textContent = sh.shadowY + "px"; }); });
+$("sfShadowBlur").addEventListener("input", e => { touchShape(sh => { sh.shadowBlur = clamp(e.target.value, 0, 80); $("sfShadowBlurVal").textContent = sh.shadowBlur + "px"; }); });
+$("sfShadowSpread").addEventListener("input", e => { touchShape(sh => { sh.shadowSpread = clamp(e.target.value, -20, 40); $("sfShadowSpreadVal").textContent = sh.shadowSpread + "px"; }); });
+$("sfShadowOp").addEventListener("input", e => { touchShape(sh => { sh.shadowOpacity = clamp(e.target.value / 100, 0, 1); $("sfShadowOpVal").textContent = e.target.value + "%"; }); });
+$("sfShadowInset").addEventListener("change", e => { touchShape(sh => { sh.shadowInset = e.target.checked; }); });
+$("sfGlowOn").addEventListener("change", e => { touchShape(sh => { sh.glowOn = e.target.checked; }); renderInspector(); });
+$("sfGlowColor").addEventListener("input", e => { touchShape(sh => { sh.glowColor = safeColor(e.target.value, "#6c5ce7"); }); });
+$("sfGlowBlur").addEventListener("input", e => { touchShape(sh => { sh.glowBlur = clamp(e.target.value, 0, 80); $("sfGlowBlurVal").textContent = sh.glowBlur + "px"; }); });
+$("sfGlowSpread").addEventListener("input", e => { touchShape(sh => { sh.glowSpread = clamp(e.target.value, 0, 40); $("sfGlowSpreadVal").textContent = sh.glowSpread + "px"; }); });
+$("sfGlowOp").addEventListener("input", e => { touchShape(sh => { sh.glowOpacity = clamp(e.target.value / 100, 0, 1); $("sfGlowOpVal").textContent = e.target.value + "%"; }); });
+$("sfBlur").addEventListener("input", e => { touchShape(sh => { sh.blur = clamp(e.target.value, 0, 40); $("sfBlurVal").textContent = sh.blur + "px"; }); });
+$("sfBackdrop").addEventListener("input", e => { touchShape(sh => { sh.backdropBlur = clamp(e.target.value, 0, 40); $("sfBackdropVal").textContent = sh.backdropBlur + "px"; }); });
 $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
 
 // Frame inspector + view chrome toggles

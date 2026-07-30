@@ -328,6 +328,14 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   width: 18px; height: 18px; font-size: .75rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 0; }
 .shape.symbol-shape { border: 1px dashed rgba(108,92,231,.45); background: rgba(108,92,231,.04); overflow: hidden; }
 .shape.symbol-shape .sym-child { position: absolute; pointer-events: none; }
+.look-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; }
+.look-grid button { padding: .4rem .25rem; border: 1px solid var(--line); border-radius: 7px; background: #fff;
+  font-size: .68rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+.look-grid button.on { border-color: var(--accent); color: var(--accent); background: #f2f0ff; }
+#assetSearch { width: 100%; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 8px; font-size: .82rem; }
+#assetSearch:focus { outline: none; border-color: var(--accent); }
+.asset-cell .sz { position: absolute; left: 3px; bottom: 3px; font-size: .58rem; background: rgba(0,0,0,.55); color: #fff;
+  padding: .05rem .25rem; border-radius: 3px; pointer-events: none; }
 .asset-cell img { max-width: 86%; max-height: 86%; object-fit: contain; pointer-events: none; }
 .asset-cell .x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none;
   background: rgba(12,14,20,.6); color: #fff; cursor: pointer; font-size: .72rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
@@ -573,6 +581,10 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
               <option value="fill">Stretch</option>
             </select>
           </div>
+          <div id="sfFrameLookWrap" style="display:none;margin-top:.55rem">
+            <label>Photo look</label>
+            <div class="look-grid" id="sfFrameLookGrid"></div>
+          </div>
         </div>
         <div class="field">
           <div class="color-grid">
@@ -624,7 +636,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
           <div class="field">
             <label>Text style</label>
             <div class="swatch-row" id="sfTypeStyles" style="gap:.35rem"></div>
-            <div class="hint">Brand styles update everywhere. Tweaking size/weight below creates a local override.</div>
+            <div class="hint">Brand styles update everywhere. Adjust size or weight below to change only this box.</div>
           </div>
           <div class="field">
             <label for="sfFontSize">Size <span id="sfFontSizeVal" class="hint" style="font-weight:400"></span></label>
@@ -812,27 +824,56 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         </details>
 
         <button class="btn ghost sm" id="sfDelete" style="width:100%;margin-top:.6rem">Delete shape</button>
-        <button class="btn sm" id="sfSaveSymbol" style="width:100%;margin-top:.35rem">Save as Symbol</button>
+        <button class="btn sm" id="sfSaveSymbol" style="width:100%;margin-top:.35rem">Save to reuse</button>
         <div id="sfSymbolActions" style="display:none;margin-top:.35rem">
-          <button class="btn sm" id="sfDetachSymbol" style="width:100%">Detach instance</button>
-          <div class="hint" style="margin-top:.35rem">Overrides below apply only to this instance. Edit the master from the Symbols panel.</div>
+          <button class="btn sm" id="sfDetachSymbol" style="width:100%">Unlink this copy</button>
+          <div class="hint" style="margin-top:.35rem">Changes below only affect this copy on this slide.</div>
           <div id="sfSymbolProps"></div>
         </div>
       </div>
 
-      <div class="divider"></div>
-      <h2>Symbols</h2>
-      <div class="field">
-        <div class="asset-grid" id="symbolGrid"></div>
-        <div class="hint">Select a shape (or a Frame with children) and click <strong>Save as Symbol</strong>. Click a symbol to place an instance. Instances stay linked to the master.</div>
+      <!-- Placed image look (when a library image on the slide is selected) -->
+      <div id="ovFields" style="display:none">
+        <div class="divider"></div>
+        <h2>Image on this slide</h2>
+        <div class="field">
+          <label>Look</label>
+          <div class="look-grid" id="ovLookGrid"></div>
+        </div>
+        <div class="field">
+          <label for="ovBright">Brightness <span id="ovBrightVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="ovBright" min="40" max="160" step="1" style="width:100%">
+        </div>
+        <div class="field">
+          <label for="ovContrast">Contrast <span id="ovContrastVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="ovContrast" min="40" max="160" step="1" style="width:100%">
+        </div>
+        <div class="field">
+          <label for="ovSaturate">Colour <span id="ovSaturateVal" class="hint" style="font-weight:400"></span></label>
+          <input type="range" id="ovSaturate" min="0" max="200" step="1" style="width:100%">
+        </div>
+        <button class="btn ghost sm" id="ovResetLook" style="width:100%">Reset look</button>
+        <button class="btn ghost sm" id="ovDelete" style="width:100%;margin-top:.35rem">Remove from slide</button>
       </div>
 
       <div class="divider"></div>
-      <h2>Asset library</h2>
+      <h2>Saved pieces</h2>
       <div class="field">
+        <div class="asset-grid" id="symbolGrid"></div>
+        <div class="hint">Select a shape or a Frame, then click <strong>Save to reuse</strong>. Click a saved piece anytime to drop another copy on the slide.</div>
+      </div>
+
+      <div class="divider"></div>
+      <h2>Your images</h2>
+      <div class="field">
+        <input type="search" id="assetSearch" placeholder="Search images…" maxlength="80" style="margin-bottom:.45rem">
+        <div class="chip-row" id="assetFilters" style="margin-bottom:.45rem">
+          <button type="button" class="chip on" data-af="all">All</button>
+          <button type="button" class="chip" data-af="used">On this slide</button>
+        </div>
         <div class="asset-grid" id="assetGrid"></div>
-        <button class="btn sm" id="addAssetBtn" style="margin-top:.55rem">＋ Upload asset</button>
-        <div class="hint">Click an asset to drop it on the current slide. Drag to move, use the corner handle to scale. Deleting an asset from the library removes it from every slide.</div>
+        <button class="btn sm" id="addAssetBtn" style="margin-top:.55rem">＋ Add images</button>
+        <div class="hint">Add logos, icons, or photos once, then click to place them on any slide. Large photos are shrunk automatically so your file stays shareable.</div>
       </div>
 
       <div class="divider"></div>
@@ -1026,6 +1067,10 @@ import {
   newSymbolInstance, resolveInstanceChildren, detachInstance,
   setPropOverride, getPropOverrideValue, sanitizeOverrides
 } from "./js/canvas/symbols.js";
+import {
+  LOOK_PRESETS, sanitizeImageLook, imageLookCss, compressImageDataUrl,
+  dataUrlSizeLabel, defaultImageLook
+} from "./js/canvas/images.js";
 
 "use strict";
 
@@ -1188,9 +1233,12 @@ function sanitizeOverlays(raw) {
   for (const o of raw) {
     if (!o || typeof o !== "object") continue;
     const aid = str(o.assetId, 40); if (!aid) continue;
+    const look = sanitizeImageLook(o);
     out.push({ id: str(o.id, 40) || uid(), assetId: aid,
       x: clamp(o.x, -50, 150), y: clamp(o.y, -50, 150), w: clamp(o.w, 1, 200),
-      rot: o.rot == null ? 0 : clamp(o.rot, -180, 180) });
+      rot: o.rot == null ? 0 : clamp(o.rot, -180, 180),
+      brightness: look.brightness, contrast: look.contrast, saturate: look.saturate,
+      warmth: look.warmth, look: look.look });
   }
   return out;
 }
@@ -1227,6 +1275,7 @@ function sanitizeShapes(raw) {
       item.imageFit = ["cover", "contain", "fill"].includes(sh.imageFit) ? sh.imageFit : "cover";
       item.layout = FRAME_LAYOUTS.includes(sh.layout) ? sh.layout : "none";
       item.padding = clamp(sh.padding == null ? 4 : sh.padding, 0, 40);
+      Object.assign(item, sanitizeImageLook(sh));
     }
     out.push(item);
   }
@@ -1406,7 +1455,9 @@ function attachOverlays(stageEl, step, sel) {
     ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
     if (o.rot) ov.style.transform = "rotate(" + o.rot + "deg)";
-    const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false; ov.appendChild(img);
+    const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false;
+    img.style.filter = imageLookCss(o);
+    ov.appendChild(img);
     if (!sel) { stageEl.appendChild(ov); return; }
     ov.addEventListener("click", e => e.stopPropagation());
 
@@ -1732,6 +1783,8 @@ function buildShapeEl(sh) {
   if (sh.type === "frame") {
     el.classList.add("frame-shape");
     applyFrameVisual(el, sh);
+    const fim = el.querySelector(".frame-img");
+    if (fim) fim.style.filter = imageLookCss(sh);
   } else if (sh.type === "arrow") {
     el.appendChild(arrowSVG(sh));
   } else if (sh.type === "message") {
@@ -1919,6 +1972,10 @@ function renderInspector() {
   $("shapeFields").style.display = showShape ? "" : "none";
   if (showShape) renderShapeFields(step.shapes[selShape]);
 
+  const showOv = selAsset >= 0 && step.overlays && step.overlays[selAsset];
+  $("ovFields").style.display = showOv ? "" : "none";
+  if (showOv) renderOverlayFields(step.overlays[selAsset]);
+
   renderAssetLibrary();
   renderSymbolLibrary();
 
@@ -1933,15 +1990,40 @@ function renderInspector() {
   scheduleSave();
 }
 
-const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box", symbol: "Symbol" };
+const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box", symbol: "Saved piece" };
 let selGradStop = 0;
 let fillFmt = "hex";
+let assetFilter = "all";
+
+function curOverlay() {
+  const s = curSlide();
+  return (s && s.overlays && selAsset >= 0) ? s.overlays[selAsset] : null;
+}
+function renderLookGrid(gridEl, current, onPick) {
+  gridEl.innerHTML = "";
+  LOOK_PRESETS.forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = p.label;
+    if ((current || "none") === p.id) b.className = "on";
+    b.onclick = () => onPick(p.id);
+    gridEl.appendChild(b);
+  });
+}
+function renderOverlayFields(o) {
+  const look = sanitizeImageLook(o);
+  renderLookGrid($("ovLookGrid"), look.look, id => {
+    o.look = id; renderCanvas(); renderOverlayFields(o); scheduleSave();
+  });
+  $("ovBright").value = look.brightness; $("ovBrightVal").textContent = look.brightness + "%";
+  $("ovContrast").value = look.contrast; $("ovContrastVal").textContent = look.contrast + "%";
+  $("ovSaturate").value = look.saturate; $("ovSaturateVal").textContent = look.saturate + "%";
+}
 
 function renderSymbolProps(sh) {
   const box = $("sfSymbolProps"); box.innerHTML = "";
   const master = symbolById(project.symbols, sh.symbolId);
   if (!master) {
-    const e = document.createElement("div"); e.className = "hint"; e.textContent = "Master missing."; box.appendChild(e); return;
+    const e = document.createElement("div"); e.className = "hint"; e.textContent = "Saved piece is missing."; box.appendChild(e); return;
   }
   (master.props || []).forEach(prop => {
     const wrap = document.createElement("div"); wrap.className = "field"; wrap.style.marginTop = ".45rem";
@@ -1974,7 +2056,7 @@ function renderSymbolProps(sh) {
     box.appendChild(wrap);
   });
   if (!(master.props || []).length) {
-    const e = document.createElement("div"); e.className = "hint"; e.textContent = "No swappable properties on this symbol."; box.appendChild(e);
+    const e = document.createElement("div"); e.className = "hint"; e.textContent = "Nothing to customize on this piece."; box.appendChild(e);
   }
 }
 
@@ -2085,6 +2167,14 @@ function renderShapeFields(sh) {
     $("sfFrameLayout").value = FRAME_LAYOUTS.includes(sh.layout) ? sh.layout : "none";
     $("sfFrameFit").value = sh.imageFit || "cover";
     $("sfFrameImgClear").style.display = sh.image ? "" : "none";
+    $("sfFrameLookWrap").style.display = sh.image ? "" : "none";
+    if (sh.image) {
+      const look = sanitizeImageLook(sh);
+      renderLookGrid($("sfFrameLookGrid"), look.look, id => {
+        Object.assign(sh, sanitizeImageLook(Object.assign({}, sh, { look: id })));
+        renderCanvas(); scheduleSave(); renderShapeFields(sh);
+      });
+    }
   }
   const fillHex = resolveShapeColor(sh, "fill", project.brand);
   $("sfFill").value = fillHex;
@@ -2424,10 +2514,13 @@ function addImages(fileList) {
   let pending = files.length;
   files.forEach(file => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const data = safeImage(reader.result);
-      if (data) project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [], overlays: [], shapes: [] });
-      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast(files.length + " slide(s) added"); }
+    reader.onload = async () => {
+      let data = safeImage(reader.result);
+      if (data) {
+        try { data = safeImage(await compressImageDataUrl(data, { maxEdge: 1920 })) || data; } catch (e) {}
+        project.steps.push({ id: uid(), type: "image", name: file.name.replace(/\.[^.]+$/, ""), image: data, hotspots: [], redactions: [], overlays: [], shapes: [] });
+      }
+      if (--pending === 0) { selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast(files.length + " slide" + (files.length === 1 ? "" : "s") + " added"); }
     };
     reader.onerror = () => { if (--pending === 0) render(); };
     reader.readAsDataURL(file);
@@ -2439,17 +2532,21 @@ function setLogo(file) {
   reader.readAsDataURL(file);
 }
 
-/* ───────────────────────── Asset library ───────────────────────── */
+/* ───────────────────────── Your images + saved pieces ───────────────────────── */
 function addAssets(fileList) {
   const files = [...fileList].filter(f => f.type.startsWith("image/"));
   if (!files.length) { toast("Please choose image files", true); return; }
   let pending = files.length, added = 0;
   files.forEach(file => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const data = safeImage(reader.result);
-      if (data) { project.assets.push({ id: uid(), name: file.name.replace(/\.[^.]+$/, ""), image: data }); added++; }
-      if (--pending === 0) { render(); toast(added + " asset(s) added to library"); }
+    reader.onload = async () => {
+      let data = safeImage(reader.result);
+      if (data) {
+        try { data = safeImage(await compressImageDataUrl(data)) || data; } catch (e) { /* keep original */ }
+        project.assets.push({ id: uid(), name: file.name.replace(/\.[^.]+$/, ""), image: data });
+        added++;
+      }
+      if (--pending === 0) { render(); toast(added + " image" + (added === 1 ? "" : "s") + " added"); }
     };
     reader.onerror = () => { if (--pending === 0) render(); };
     reader.readAsDataURL(file);
@@ -2459,30 +2556,47 @@ function placeAsset(assetId) {
   const s = curSlide();
   if (!s) { toast("Add a slide first", true); return; }
   if (!s.overlays) s.overlays = [];
-  s.overlays.push({ id: uid(), assetId, x: 38, y: 38, w: 24, rot: 0 });
-  selHotspot = -1; selAsset = s.overlays.length - 1; render();
-  toast("Asset placed — drag to move, corner handle to scale");
+  s.overlays.push(Object.assign({ id: uid(), assetId, x: 38, y: 38, w: 24, rot: 0 }, defaultImageLook()));
+  selHotspot = -1; selAsset = s.overlays.length - 1; selShape = -1; render();
+  toast("Image added — drag to move it");
 }
 function deleteAsset(assetId) {
-  if (!confirm("Delete this asset from the library? It will be removed from every slide.")) return;
+  if (!confirm("Remove this image from Your images? It will also disappear from every slide that uses it.")) return;
   project.assets = project.assets.filter(a => a.id !== assetId);
   for (const s of project.steps) if (s.overlays) s.overlays = s.overlays.filter(o => o.assetId !== assetId);
-  selAsset = -1; render(); toast("Asset deleted");
+  selAsset = -1; render(); toast("Image removed");
+}
+function usedAssetIdsOnSlide(step) {
+  const ids = new Set();
+  (step && step.overlays || []).forEach(o => ids.add(o.assetId));
+  return ids;
 }
 function renderAssetLibrary() {
   const g = $("assetGrid"); g.innerHTML = "";
+  const q = (($("assetSearch") && $("assetSearch").value) || "").trim().toLowerCase();
+  const used = usedAssetIdsOnSlide(curSlide());
+  let list = project.assets.slice();
+  if (assetFilter === "used") list = list.filter(a => used.has(a.id));
+  if (q) list = list.filter(a => (a.name || "").toLowerCase().indexOf(q) >= 0);
   if (!project.assets.length) {
     const e = document.createElement("div"); e.className = "hint"; e.style.gridColumn = "1 / -1";
-    e.textContent = "No assets yet. Upload logos, icons or images to reuse across slides."; g.appendChild(e); return;
+    e.textContent = "No images yet. Click Add images to upload logos, icons, or photos."; g.appendChild(e); return;
   }
-  project.assets.forEach(a => {
-    const cell = document.createElement("div"); cell.className = "asset-cell"; cell.title = a.name || "asset";
+  if (!list.length) {
+    const e = document.createElement("div"); e.className = "hint"; e.style.gridColumn = "1 / -1";
+    e.textContent = assetFilter === "used" ? "None of these images are on this slide yet." : "No images match that search.";
+    g.appendChild(e); return;
+  }
+  list.forEach(a => {
+    const cell = document.createElement("div"); cell.className = "asset-cell"; cell.title = (a.name || "Image") + " — click to place";
     const im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; cell.appendChild(im);
+    const sz = document.createElement("span"); sz.className = "sz"; sz.textContent = dataUrlSizeLabel(a.image); cell.appendChild(sz);
     cell.onclick = () => placeAsset(a.id);
-    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete from library";
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Remove image";
     x.onclick = e => { e.stopPropagation(); deleteAsset(a.id); };
     cell.appendChild(x); g.appendChild(cell);
   });
+  [...$("assetFilters").querySelectorAll("[data-af]")].forEach(b => b.classList.toggle("on", b.dataset.af === assetFilter));
 }
 
 function placeSymbol(symbolId) {
@@ -2492,58 +2606,58 @@ function placeSymbol(symbolId) {
   const inst = newSymbolInstance(master, 36, 28);
   s.shapes.push(inst);
   selShape = s.shapes.length - 1; selHotspot = -1; selAsset = -1;
-  tool = "select"; render(); toast("Symbol placed");
+  tool = "select"; render(); toast("Added to the slide");
 }
 function deleteSymbol(symbolId) {
-  if (!confirm("Delete this symbol? All instances will be removed from every slide.")) return;
+  if (!confirm("Delete this saved piece? Copies on slides will be removed too.")) return;
   project.symbols = project.symbols.filter(s => s.id !== symbolId);
   for (const st of project.steps) {
     if (!st.shapes) continue;
     st.shapes = st.shapes.filter(sh => !(sh.type === "symbol" && sh.symbolId === symbolId));
   }
-  selShape = -1; render(); toast("Symbol deleted");
+  selShape = -1; render(); toast("Saved piece deleted");
 }
 function saveSelectionAsSymbol() {
   const s = curSlide(); const sh = curShape();
   if (!s || !sh) { toast("Select a shape first", true); return; }
   const group = collectForSymbol(sh, s.shapes || []);
-  if (!group || !group.length) { toast("Can't turn that into a symbol", true); return; }
-  const name = prompt("Symbol name", sh.type === "frame" ? "Frame symbol" : (SHAPE_LABEL[sh.type] || "Symbol"));
+  if (!group || !group.length) { toast("That can't be saved for reuse", true); return; }
+  const name = prompt("Name this piece", sh.type === "frame" ? "My layout" : (SHAPE_LABEL[sh.type] || "My piece"));
   if (name == null) return;
-  const created = createSymbolFromShapes(group, name.trim() || "Symbol");
+  const created = createSymbolFromShapes(group, name.trim() || "My piece");
   if (!created) return;
   project.symbols.push(created.master);
   const remove = new Set(created.removeIds);
   s.shapes = (s.shapes || []).filter(x => !remove.has(x.id));
   s.shapes.push(created.instance);
   selShape = s.shapes.length - 1;
-  render(); toast("Saved as symbol — place more from the Symbols panel");
+  render(); toast("Saved — find it under Saved pieces");
 }
 function detachSelectedSymbol() {
   const s = curSlide(); const sh = curShape();
   if (!s || !sh || sh.type !== "symbol") return;
   const master = symbolById(project.symbols, sh.symbolId);
   const det = detachInstance(master, sh);
-  if (!det) { toast("Can't detach — master missing", true); return; }
+  if (!det) { toast("Can't unlink — the saved piece is missing", true); return; }
   s.shapes = (s.shapes || []).filter(x => x.id !== det.removeId).concat(det.shapes);
   selShape = s.shapes.length - det.shapes.length;
-  render(); toast("Detached — shapes are now independent");
+  render(); toast("Unlinked — you can edit the parts freely now");
 }
 function renderSymbolLibrary() {
   const g = $("symbolGrid"); if (!g) return;
   g.innerHTML = "";
   if (!project.symbols.length) {
     const e = document.createElement("div"); e.className = "hint"; e.style.gridColumn = "1 / -1";
-    e.textContent = "No symbols yet."; g.appendChild(e); return;
+    e.textContent = "Nothing saved yet."; g.appendChild(e); return;
   }
   project.symbols.forEach(sym => {
-    const cell = document.createElement("div"); cell.className = "sym-cell"; cell.title = "Place “" + sym.name + "”";
+    const cell = document.createElement("div"); cell.className = "sym-cell"; cell.title = "Add “" + sym.name + "” to this slide";
     cell.appendChild(document.createTextNode(sym.name));
     const meta = document.createElement("span"); meta.className = "meta";
     meta.textContent = (sym.shapes || []).length + " part" + ((sym.shapes || []).length === 1 ? "" : "s");
     cell.appendChild(meta);
     cell.onclick = () => placeSymbol(sym.id);
-    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete symbol";
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete";
     x.onclick = e => { e.stopPropagation(); deleteSymbol(sym.id); };
     cell.appendChild(x); g.appendChild(cell);
   });
@@ -3160,6 +3274,15 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
         if (sh.image) {
           var fim = document.createElement("img"); fim.className = "frame-img"; fim.src = sh.image; fim.alt = "";
           fim.style.objectFit = sh.imageFit === "contain" ? "contain" : sh.imageFit === "fill" ? "fill" : "cover";
+          var lb = (sh.brightness == null ? 100 : sh.brightness) / 100, lc = (sh.contrast == null ? 100 : sh.contrast) / 100, ls = (sh.saturate == null ? 100 : sh.saturate) / 100;
+          var lf = ["brightness(" + lb + ")", "contrast(" + lc + ")", "saturate(" + ls + ")"];
+          if (sh.look === "bw") lf.push("grayscale(1)");
+          else if (sh.look === "sepia") lf.push("sepia(.85)");
+          else if (sh.look === "warm") lf.push("sepia(.35)");
+          else if (sh.look === "cool") lf.push("hue-rotate(195deg)");
+          else if (sh.look === "vivid") lf.push("saturate(1.55)");
+          else if (sh.look === "drama") lf.push("contrast(1.35)");
+          fim.style.filter = lf.join(" ");
           el.appendChild(fim);
         }
       } else if (sh.type === "message") {
@@ -3214,12 +3337,31 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
     });
   }
   function drawOverlays(box, step) {
+    function vLookFilter(o) {
+      var b = (o.brightness == null ? 100 : o.brightness) / 100;
+      var c = (o.contrast == null ? 100 : o.contrast) / 100;
+      var s = (o.saturate == null ? 100 : o.saturate) / 100;
+      var parts = ["brightness(" + b + ")", "contrast(" + c + ")", "saturate(" + s + ")"];
+      var look = o.look || "none";
+      if (look === "bw") parts.push("grayscale(1)");
+      else if (look === "sepia") parts.push("sepia(.85)");
+      else if (look === "warm") parts.push("sepia(.35)", "saturate(1.15)");
+      else if (look === "cool") parts.push("hue-rotate(195deg)");
+      else if (look === "vivid") parts.push("saturate(1.55)", "contrast(1.1)");
+      else if (look === "soft") parts.push("contrast(.9)", "brightness(1.05)");
+      else if (look === "drama") parts.push("contrast(1.35)");
+      else if (look === "fade") parts.push("contrast(.85)", "brightness(1.08)");
+      else if (look === "sharp") parts.push("contrast(1.2)");
+      return parts.join(" ");
+    }
     (step.overlays || []).forEach(function (o) {
       var a = vAsset(o.assetId); if (!a) return;
       var d = document.createElement("div"); d.className = "ov";
       d.style.left = o.x + "%"; d.style.top = o.y + "%"; d.style.width = o.w + "%";
       if (o.rot) d.style.transform = "rotate(" + o.rot + "deg)";
-      var im = document.createElement("img"); im.src = a.image; im.alt = a.name || ""; d.appendChild(im);
+      var im = document.createElement("img"); im.src = a.image; im.alt = a.name || "";
+      im.style.filter = vLookFilter(o);
+      d.appendChild(im);
       box.appendChild(d);
     });
   }
@@ -3482,6 +3624,33 @@ $("logoBtn").onclick = () => $("logoInput").click();
 $("logoInput").addEventListener("change", e => { if (e.target.files[0]) setLogo(e.target.files[0]); e.target.value = ""; });
 $("addAssetBtn").onclick = () => $("assetInput").click();
 $("assetInput").addEventListener("change", e => { addAssets(e.target.files); e.target.value = ""; });
+$("assetSearch").addEventListener("input", () => renderAssetLibrary());
+$("assetFilters").addEventListener("click", e => {
+  const b = e.target.closest("[data-af]"); if (!b) return;
+  assetFilter = b.dataset.af === "used" ? "used" : "all";
+  renderAssetLibrary();
+});
+function touchOverlay(fn) {
+  const o = curOverlay(); if (!o) return;
+  fn(o); renderCanvas(); scheduleSave();
+}
+$("ovBright").addEventListener("input", e => {
+  touchOverlay(o => { o.brightness = clamp(e.target.value, 40, 160); $("ovBrightVal").textContent = o.brightness + "%"; });
+});
+$("ovContrast").addEventListener("input", e => {
+  touchOverlay(o => { o.contrast = clamp(e.target.value, 40, 160); $("ovContrastVal").textContent = o.contrast + "%"; });
+});
+$("ovSaturate").addEventListener("input", e => {
+  touchOverlay(o => { o.saturate = clamp(e.target.value, 0, 200); $("ovSaturateVal").textContent = o.saturate + "%"; });
+});
+$("ovResetLook").onclick = () => {
+  touchOverlay(o => Object.assign(o, defaultImageLook()));
+  renderInspector();
+};
+$("ovDelete").onclick = () => {
+  const s = curSlide(); if (!s || !s.overlays || selAsset < 0) return;
+  s.overlays.splice(selAsset, 1); selAsset = -1; render();
+};
 $("logoClear").onclick = () => { project.logo = null; render(); };
 $("loadBtn").onclick = () => $("projInput").click();
 $("projInput").addEventListener("change", e => { if (e.target.files[0]) loadProject(e.target.files[0]); e.target.value = ""; });

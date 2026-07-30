@@ -23,30 +23,21 @@ No accounts. No backend. No data ever leaves the browser.
   fonts, logo) and every slide *and* the exported presentation pick up your look
   and feel automatically. Drop logos or brand images to auto-build a colour
   palette and suggested free system font pairs.
-- **Reusable asset library** — upload logos, icons or images once, then drop them
-  onto any slide and drag/scale them into place. Deleting an asset from the
-  library removes it from every slide it appears on.
-- **Vector annotation tools** — on any slide, draw boxes, ellipses, **frames**, arrows,
-  highlight areas and message-box callouts… Hotspots are customizable too (colour & size).
-  Everything is movable, scalable, **rotatable** and deletable, and renders in the export.
-  Shape fills support solid or multi-stop gradients, brand colour variables, HEX/RGB/HSL/OKLCH
-  entry, eyedropper, and effects (shadow, glow, blur, blend, per-corner radius).
-- **Text styles** — Brand Kit defines Heading 1/2, Body, Caption, Quote, Label. Apply to
-  message boxes in one click; override size, weight, tracking, case, columns, stroke,
-  shadow, or highlight locally. Content slides pick up the type scale automatically.
-- **Symbols** — save a shape or Frame (+ children) as a reusable Symbol. Place instances
-  from the Symbols panel; override text/colours/images per instance, or Detach to edit freely.
-- **Smart Guides** — while dragging, red dashed alignment lines snap to edges, centers,
-  slide midlines, and equal spacing (hold **Alt** to free-move). Toggle **Grid**, **Rulers**,
-  and **Safe** area from the canvas toolbar. Drag from a ruler to add a blue guide;
-  double-click a guide to remove it.
-- **Frames** — draw a Frame, drop an image to mask it, and optionally enable Smart Layout
-  (vertical / horizontal / grid) for child shapes linked via `parentId`.
-- **On-canvas text** — double-click a message box to type directly on the slide;
-  move, resize and rotate it like any other object.
-- **Autosave** — your work is continuously saved in the browser (localStorage) and
-  restored automatically next time you open the tool. A "Saved ✓" indicator shows
-  status; use **Save**/**Open** for portable `.presentation.json` files.
+- **Your images** — add logos, icons, or photos once, then click to place them on any
+  slide. Search or filter to “On this slide.” Large photos shrink automatically.
+  Select a placed image to try Looks (black & white, warm, vivid…) and brightness.
+- **Drawing tools** — boxes, circles, frames, arrows, highlights, and message boxes.
+  Move, resize, and rotate them. Fills can be solid or gradient, with shadow and glow.
+- **Text styles** — pick Heading or Body styles from your Brand kit. Change size and
+  spacing on one message box without breaking the rest.
+- **Saved pieces** — save a shape or Frame to reuse on other slides. Tweak text or
+  colours on one copy, or unlink it to edit freely.
+- **Smart guides** — while dragging, red lines help you line things up (hold **Alt**
+  to move freely). Toggle **Grid**, **Rulers**, and **Safe** area from the toolbar.
+- **Frames** — draw a Frame, add a photo, and optionally stack children inside it.
+- **Type on the slide** — double-click a message box to edit text in place.
+- **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
+  for portable `.presentation.json` files.
 
 ## Use it
 

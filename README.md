@@ -12,18 +12,29 @@ No accounts. No backend. No data ever leaves the browser.
 
 - **From-scratch content slides** — Title, Section divider, Bulleted list, and
   Statement/quote layouts, plus plain text slides. No screenshot required.
+- **Paste an outline** — drop in a numbered list, bullets, markdown headings, or a
+  `.txt` / `.md` / `.pdf` / `.docx` file and get a full slide deck in one click.
+  Text is extracted locally in your browser.
 - **Screenshot slides** — drop in images and overlay clickable hotspots and
   redactions for guided product tours.
+- **Hotspot animation presets** — Pulse, Bounce, Glow, Spotlight, or None — pick
+  per hotspot, no timeline to learn.
 - **One brand kit, applied everywhere** — import your brand standards (colours,
   fonts, logo) and every slide *and* the exported presentation pick up your look
-  and feel automatically.
+  and feel automatically. Drop logos or brand images to auto-build a colour
+  palette and suggested free system font pairs.
 - **Reusable asset library** — upload logos, icons or images once, then drop them
   onto any slide and drag/scale them into place. Deleting an asset from the
   library removes it from every slide it appears on.
-- **Vector annotation tools** — on any slide, draw boxes, ellipses, arrows,
-  highlight areas and message-box callouts, each with customizable fill colour,
-  border colour/width and opacity. Hotspots are customizable too (colour & size).
+- **Vector annotation tools** — on any slide, draw boxes, ellipses, **frames**, arrows,
+  highlight areas and message-box callouts… Hotspots are customizable too (colour & size).
   Everything is movable, scalable, **rotatable** and deletable, and renders in the export.
+- **Smart Guides** — while dragging, red dashed alignment lines snap to edges, centers,
+  slide midlines, and equal spacing (hold **Alt** to free-move). Toggle **Grid**, **Rulers**,
+  and **Safe** area from the canvas toolbar. Drag from a ruler to add a blue guide;
+  double-click a guide to remove it.
+- **Frames** — draw a Frame, drop an image to mask it, and optionally enable Smart Layout
+  (vertical / horizontal / grid) for child shapes linked via `parentId`.
 - **On-canvas text** — double-click a message box to type directly on the slide;
   move, resize and rotate it like any other object.
 - **Autosave** — your work is continuously saved in the browser (localStorage) and
@@ -32,11 +43,17 @@ No accounts. No backend. No data ever leaves the browser.
 
 ## Use it
 
-Open `index.html` in any browser. That's the whole tool.
+Open the editor with a local static server (ES modules require it):
 
-To give it away to a company, just hand them `index.html` (or host it on any
-static host — GitHub Pages, Netlify, S3, a plain web server). It needs nothing
-else.
+```bash
+npx --yes serve .
+```
+
+Then visit the URL it prints (usually `http://localhost:3000`).
+
+Exported presentations remain a **single offline `.html` file** — no server needed to view or share them.
+
+To give the tool away to a company, hand them this folder (or host it on any static host). The editor needs nothing but a static file server; exports need nothing at all.
 
 ## Build a presentation
 
@@ -51,10 +68,15 @@ else.
    - ≣ **Bulleted list** — heading + bullet points (one per line)
    - ❝ **Statement / quote** — a large centred statement with attribution
    - 📝 **Plain text** — simple heading + body
+   - ☰ **Import content…** — paste a list or import `.txt` / `.md` / `.pdf` /
+     `.docx` to generate slides
 
    …or click **+ Screenshots** (or drag-and-drop images) to add image slides.
+   On an empty canvas you can also **Start from scratch**, **Import an outline**,
+   or **Add screenshots**.
 3. **Place hotspots** (image slides) — with the **Hotspot** tool, click anywhere
-   on a slide to drop a pulsing hotspot. Each gets its own tooltip.
+   on a slide to drop a hotspot. Each gets its own tooltip. Pick an animation
+   (Pulse, Bounce, Glow, Spotlight, or None) in the inspector.
 4. **Write tooltips** — select a hotspot, type its text, and choose where the
    tooltip sits (top / bottom / left / right).
 5. **Redact sensitive info** — with the **Redact** tool, drag a box over emails,
@@ -77,7 +99,14 @@ primary colour.)
 The brand kit is the single source of truth for your presentation's look and
 feel, applied live in the editor and baked into every export:
 
-- **Colours** — primary (accent), secondary, slide background, and slide text.
+- **Style from images** — drop logos, screenshots or brand assets into the brand
+  kit to pull a colour palette and get free system font-pair suggestions. Click
+  **Apply style guide** when it looks right (optionally set the first image as
+  the logo).
+- **Slide background** — solid colour, two-colour gradient (with angle + presets),
+  or a full-bleed background image (cover / contain / stretch) with optional
+  darken overlay for readable text.
+- **Colours** — primary (accent), secondary, and slide text.
 - **Fonts** — heading and body, chosen from a set of **web-safe font stacks**, so
   exported presentations stay 100% offline (no font CDN, no network requests).
 - **Logo** — shown in the viewer bar and on content slides.
@@ -93,7 +122,7 @@ slides.
 | Tool | What it does |
 |---|---|
 | **↖ Select** | Click any item to select it, then drag to move, use the corner handle to resize, and restyle it in the inspector. `Delete`/`Backspace` removes it; `Esc` deselects. |
-| **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize its colour and size. |
+| **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize its colour, size and animation (Pulse / Bounce / Glow / Spotlight / None). |
 | **▦ Redact** *(image)* | Drag to cover an area (blur or black out). |
 | **▭ Box / ◯ Ellipse** | Drag to draw a shape with fill colour, border colour/width, opacity (and corner radius for boxes). |
 | **➶ Arrow** | Drag to draw an arrow in any direction; set its colour and thickness. |

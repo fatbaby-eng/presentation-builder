@@ -45,6 +45,10 @@ No accounts. No backend. No data ever leaves the browser.
   In a normal export, press **N** to peek at notes.
 - **Export menu** — download the offline `.html`, speaker notes as `.txt`, or **Print / PDF…**
   (use your browser’s Save as PDF).
+- **Command menu** — press **Ctrl/⌘ K** (or the ⌘K button) to search actions: new slides, export,
+  tools, brand kit, shape layering, and more.
+- **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
+  Shadow, Reuse, and Delete.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files.
 

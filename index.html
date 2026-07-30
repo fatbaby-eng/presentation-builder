@@ -397,6 +397,31 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .export-menu button:hover { background: var(--bg); }
 .notes-field textarea { min-height: 88px; resize: vertical; }
 
+/* Command palette */
+.cmd-overlay { position: fixed; inset: 0; z-index: 80; display: none; align-items: flex-start;
+  justify-content: center; padding-top: 12vh; background: rgba(12,14,20,.45); }
+.cmd-overlay.open { display: flex; }
+.cmd-box { width: min(520px, 92vw); background: #fff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.28);
+  border: 1px solid var(--line); overflow: hidden; }
+.cmd-box input { width: 100%; border: none; border-bottom: 1px solid var(--line); padding: .9rem 1rem;
+  font-size: 1rem; font-weight: 600; outline: none; background: #fff; color: var(--ink); }
+.cmd-list { max-height: 320px; overflow: auto; padding: .35rem; }
+.cmd-item { display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left; border: none;
+  background: transparent; padding: .55rem .7rem; border-radius: 8px; cursor: pointer; font-family: inherit; color: var(--ink); }
+.cmd-item:hover, .cmd-item.on { background: #f2f0ff; }
+.cmd-item .lab { flex: 1; font-size: .88rem; font-weight: 600; }
+.cmd-item .sc { font-size: .68rem; color: var(--muted); font-weight: 600; background: #f3f4f6; padding: .15rem .4rem; border-radius: 5px; }
+.cmd-foot { padding: .45rem .85rem .65rem; font-size: .68rem; color: var(--muted); border-top: 1px solid var(--line); }
+
+/* Floating selection bar */
+.float-bar { position: fixed; z-index: 35; display: none; gap: .25rem; align-items: center; padding: .3rem;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.float-bar.open { display: flex; }
+.float-bar button { border: none; background: transparent; padding: .35rem .5rem; border-radius: 7px;
+  font-size: .72rem; font-weight: 700; cursor: pointer; color: var(--ink); font-family: inherit; white-space: nowrap; }
+.float-bar button:hover { background: var(--bg); }
+.float-bar button.danger:hover { color: var(--danger); background: #fef2f2; }
+
 /* ── Toast ─────────────────────────────── */
 .toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(20px);
   background: var(--ink); color: #fff; padding: .6rem 1rem; border-radius: 9px; font-size: .82rem; opacity: 0;
@@ -420,6 +445,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <span id="saveState" class="save-state" title="Your work is auto-saved in this browser"></span>
     <button class="btn ghost" id="loadBtn">Open</button>
     <button class="btn ghost" id="saveBtn">Save</button>
+    <button class="btn ghost" id="cmdBtn" title="Command menu (Ctrl/⌘ K)">⌘K</button>
     <button class="btn" id="previewBtn">▶ Preview</button>
     <button class="btn" id="presentBtn" title="Open presenter view with notes and timer">Present</button>
     <div class="export-menu-wrap">
@@ -997,6 +1023,25 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   </div>
 </div>
 
+<!-- Command palette -->
+<div class="cmd-overlay" id="cmdPalette" aria-hidden="true">
+  <div class="cmd-box" role="dialog" aria-label="Command menu">
+    <input type="text" id="cmdInput" placeholder="Type a command…" autocomplete="off" spellcheck="false">
+    <div class="cmd-list" id="cmdList"></div>
+    <div class="cmd-foot">↑↓ move · Enter run · Esc close · Tip: Ctrl/⌘ K anytime</div>
+  </div>
+</div>
+
+<!-- Floating selection toolbar -->
+<div class="float-bar" id="floatBar" aria-hidden="true">
+  <button type="button" data-float="dup" title="Duplicate">Duplicate</button>
+  <button type="button" data-float="front" title="Bring to front">Front</button>
+  <button type="button" data-float="back" title="Send to back">Back</button>
+  <button type="button" data-float="shadow" title="Toggle shadow">Shadow</button>
+  <button type="button" data-float="reuse" title="Save to reuse">Reuse</button>
+  <button type="button" class="danger" data-float="del" title="Delete">Delete</button>
+</div>
+
 <!-- Preview / Present overlay -->
 <div class="overlay" id="overlay">
   <div class="overlay-bar"><span class="ttl" id="overlayTitle">Preview</span><button class="btn" id="closePreview">✕ Close</button></div>
@@ -1177,6 +1222,7 @@ import {
 import {
   sanitizeNotes, sanitizeTimingMs, notesTextFile, presenterStylesheet
 } from "./js/canvas/presenter.js";
+import { filterCommands } from "./js/canvas/commands.js";
 
 "use strict";
 
@@ -2433,7 +2479,9 @@ function render() {
   renderSteps(); renderCanvas(); renderInspector();
   const has = project.steps.length > 0;
   $("previewBtn").disabled = !has; $("exportBtn").disabled = !has; $("saveBtn").disabled = !has;
+  if ($("presentBtn")) $("presentBtn").disabled = !has;
   scheduleSave();
+  updateFloatBar();
 }
 
 /* ───────────────────────── Slide ops ───────────────────────── */
@@ -2449,6 +2497,48 @@ function moveStep(i, d) {
 }
 function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
 function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function bringShapeFront() {
+  const s = curSlide(); if (!s || !s.shapes || selShape < 0) return;
+  const [sh] = s.shapes.splice(selShape, 1); s.shapes.push(sh); selShape = s.shapes.length - 1; render();
+}
+function sendShapeBack() {
+  const s = curSlide(); if (!s || !s.shapes || selShape < 0) return;
+  const [sh] = s.shapes.splice(selShape, 1); s.shapes.unshift(sh); selShape = 0; render();
+}
+function dupSelectedShape() {
+  const s = curSlide(); if (!s || !s.shapes || selShape < 0) return;
+  const c = JSON.parse(JSON.stringify(s.shapes[selShape]));
+  c.id = uid();
+  c.x = clamp((c.x || 0) + 3, 0, 92); c.y = clamp((c.y || 0) + 3, 0, 92);
+  s.shapes.splice(selShape + 1, 0, c); selShape += 1; render();
+}
+function deleteSelectedShape() {
+  const s = curSlide(); if (!s || !s.shapes || selShape < 0) return;
+  s.shapes.splice(selShape, 1); selShape = -1; render();
+}
+function toggleSelectedShadow() {
+  const sh = curShape(); if (!sh) return;
+  sh.shadowOn = !sh.shadowOn;
+  if (sh.shadowOn && sh.shadowBlur == null) { sh.shadowY = 4; sh.shadowBlur = 12; sh.shadowOpacity = 0.35; }
+  render();
+}
+function updateFloatBar() {
+  const bar = $("floatBar"); if (!bar) return;
+  const sh = curShape();
+  if (!sh || $("cmdPalette").classList.contains("open") || $("overlay").classList.contains("open")) {
+    bar.classList.remove("open"); bar.setAttribute("aria-hidden", "true"); return;
+  }
+  const target = canvasWrap.querySelector(".shape.sel");
+  if (!target) { bar.classList.remove("open"); bar.setAttribute("aria-hidden", "true"); return; }
+  const r = target.getBoundingClientRect();
+  bar.classList.add("open"); bar.setAttribute("aria-hidden", "false");
+  const bw = bar.offsetWidth || 280, bh = bar.offsetHeight || 36;
+  let left = r.left + r.width / 2 - bw / 2;
+  let top = r.top - bh - 8;
+  if (top < 8) top = r.bottom + 8;
+  left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+  bar.style.left = left + "px"; bar.style.top = top + "px";
+}
 function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [], shapes: [] }); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
 function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
 // "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
@@ -4298,6 +4388,7 @@ $("logoClear").onclick = () => { project.logo = null; render(); };
 $("loadBtn").onclick = () => $("projInput").click();
 $("projInput").addEventListener("change", e => { if (e.target.files[0]) loadProject(e.target.files[0]); e.target.value = ""; });
 $("saveBtn").onclick = saveProject;
+$("cmdBtn").onclick = openCommandPalette;
 $("exportBtn").onclick = (e) => {
   e.stopPropagation();
   $("exportMenu").classList.toggle("open");
@@ -4579,6 +4670,12 @@ canvasWrap.addEventListener("drop", e => { if (e.dataTransfer.files.length) { e.
 
 // Keyboard: Delete/Backspace removes the selected shape or stage asset; Escape clears selection.
 document.addEventListener("keydown", e => {
+  if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    openCommandPalette();
+    return;
+  }
+  if (e.key === "Escape" && $("cmdPalette").classList.contains("open")) { closeCommandPalette(); return; }
   if (e.key === "Escape" && $("outlineModal").classList.contains("open")) { closeOutline(); return; }
   if (e.key === "Escape" && $("brandModal").classList.contains("open")) { closeBrand(); return; }
   if (editing) return;
@@ -4593,6 +4690,110 @@ document.addEventListener("keydown", e => {
   if (selShape >= 0 && s.shapes && s.shapes[selShape]) { e.preventDefault(); s.shapes.splice(selShape, 1); selShape = -1; render(); }
   else if (selAsset >= 0 && s.overlays && s.overlays[selAsset]) { e.preventDefault(); s.overlays.splice(selAsset, 1); selAsset = -1; render(); }
 });
+
+/* ───────────────────────── Command palette + floating bar ───────────────────────── */
+let cmdIndex = 0;
+let cmdFiltered = [];
+function editorCommands() {
+  return [
+    { id: "new-title", label: "New title slide", keywords: "add slide cover", run: () => addContentSlide("title") },
+    { id: "new-section", label: "New section divider", keywords: "add slide", run: () => addContentSlide("section") },
+    { id: "new-bullets", label: "New bulleted list slide", keywords: "add slide bullets", run: () => addContentSlide("bullets") },
+    { id: "new-statement", label: "New statement slide", keywords: "add slide quote", run: () => addContentSlide("statement") },
+    { id: "new-text", label: "New plain text slide", keywords: "add slide", run: () => addTextSlide() },
+    { id: "import", label: "Import content…", keywords: "outline pdf docx markdown", shortcut: "", run: () => openOutline() },
+    { id: "screenshots", label: "Add screenshots…", keywords: "image upload", run: () => $("imgInput").click() },
+    { id: "dup-slide", label: "Duplicate this slide", keywords: "copy slide", run: () => { if (project.steps[selected]) dupStep(selected); } },
+    { id: "del-slide", label: "Delete this slide", keywords: "remove slide", run: () => { if (project.steps[selected]) delStep(selected); } },
+    { id: "preview", label: "Preview presentation", keywords: "play view", shortcut: "", run: () => openPreview() },
+    { id: "present", label: "Present (with notes)", keywords: "presenter speaker", run: () => openPresent() },
+    { id: "export-html", label: "Export presentation (.html)", keywords: "download share", run: () => exportDemo() },
+    { id: "export-notes", label: "Export speaker notes (.txt)", keywords: "download notes", run: () => exportNotes() },
+    { id: "export-print", label: "Print / PDF…", keywords: "export pdf print", run: () => exportPrint() },
+    { id: "save", label: "Save project file", keywords: "download json", shortcut: "", run: () => saveProject() },
+    { id: "open", label: "Open project file", keywords: "load json", run: () => $("projInput").click() },
+    { id: "brand", label: "Open brand kit", keywords: "colors fonts logo", run: () => openBrand() },
+    { id: "grid", label: "Toggle grid", keywords: "guides columns", run: () => toggleSlideFlag("showGrid") },
+    { id: "rulers", label: "Toggle rulers", keywords: "guides", run: () => toggleSlideFlag("showRulers") },
+    { id: "safe", label: "Toggle safe area", keywords: "margin", run: () => toggleSlideFlag("showSafe") },
+    { id: "tool-select", label: "Select tool", keywords: "cursor", run: () => { tool = "select"; render(); } },
+    { id: "tool-box", label: "Draw a box", keywords: "shape rectangle", run: () => { tool = "box"; render(); } },
+    { id: "tool-ellipse", label: "Draw a circle", keywords: "shape ellipse", run: () => { tool = "ellipse"; render(); } },
+    { id: "tool-arrow", label: "Draw an arrow", keywords: "shape", run: () => { tool = "arrow"; render(); } },
+    { id: "tool-message", label: "Draw a message box", keywords: "text shape", run: () => { tool = "message"; render(); } },
+    { id: "tool-frame", label: "Draw a frame", keywords: "image container", run: () => { tool = "frame"; render(); } },
+    { id: "tool-highlight", label: "Draw a highlight", keywords: "shape", run: () => { tool = "highlight"; render(); } },
+    { id: "tool-hotspot", label: "Hotspot tool", keywords: "click tip", run: () => { tool = "hotspot"; render(); } },
+    { id: "tool-redact", label: "Redact tool", keywords: "blur blackout", run: () => { tool = "redact"; render(); } },
+    { id: "motion", label: "Open Motion panel", keywords: "animate appear", run: () => { motionPanelOpen = true; renderMotionPanel(); } },
+    { id: "dup-shape", label: "Duplicate selected shape", keywords: "copy object", run: () => dupSelectedShape() },
+    { id: "front", label: "Bring shape to front", keywords: "layer order", run: () => bringShapeFront() },
+    { id: "back", label: "Send shape to back", keywords: "layer order", run: () => sendShapeBack() },
+    { id: "shadow", label: "Toggle shadow on shape", keywords: "effect", run: () => toggleSelectedShadow() },
+    { id: "reuse", label: "Save shape to reuse", keywords: "symbol component", run: () => saveSelectionAsSymbol() },
+    { id: "del-shape", label: "Delete selected shape", keywords: "remove", shortcut: "Del", run: () => deleteSelectedShape() },
+    { id: "commands", label: "Open this command menu", keywords: "palette search", shortcut: "Ctrl/⌘ K", run: () => openCommandPalette() }
+  ];
+}
+function paintCmdList() {
+  const list = $("cmdList"); list.innerHTML = "";
+  cmdFiltered.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "cmd-item" + (i === cmdIndex ? " on" : "");
+    const lab = document.createElement("span"); lab.className = "lab"; lab.textContent = c.label; b.appendChild(lab);
+    if (c.shortcut) { const sc = document.createElement("span"); sc.className = "sc"; sc.textContent = c.shortcut; b.appendChild(sc); }
+    b.onmouseenter = () => { cmdIndex = i; paintCmdList(); };
+    b.onclick = () => runCommand(c);
+    list.appendChild(b);
+  });
+  if (!cmdFiltered.length) {
+    const empty = document.createElement("div"); empty.className = "cmd-item"; empty.style.cursor = "default";
+    empty.textContent = "No matching commands"; list.appendChild(empty);
+  }
+}
+function refreshCmdFilter() {
+  cmdFiltered = filterCommands(editorCommands(), $("cmdInput").value, 14);
+  if (cmdIndex >= cmdFiltered.length) cmdIndex = Math.max(0, cmdFiltered.length - 1);
+  paintCmdList();
+}
+function openCommandPalette() {
+  $("cmdPalette").classList.add("open");
+  $("cmdPalette").setAttribute("aria-hidden", "false");
+  $("cmdInput").value = "";
+  cmdIndex = 0;
+  refreshCmdFilter();
+  updateFloatBar();
+  setTimeout(() => $("cmdInput").focus(), 0);
+}
+function closeCommandPalette() {
+  $("cmdPalette").classList.remove("open");
+  $("cmdPalette").setAttribute("aria-hidden", "true");
+  updateFloatBar();
+}
+function runCommand(c) {
+  closeCommandPalette();
+  try { c.run(); } catch (err) { toast("Couldn’t run that command", true); }
+}
+$("cmdInput").addEventListener("input", () => { cmdIndex = 0; refreshCmdFilter(); });
+$("cmdInput").addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); cmdIndex = Math.min(cmdFiltered.length - 1, cmdIndex + 1); paintCmdList(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); cmdIndex = Math.max(0, cmdIndex - 1); paintCmdList(); }
+  else if (e.key === "Enter") { e.preventDefault(); if (cmdFiltered[cmdIndex]) runCommand(cmdFiltered[cmdIndex]); }
+  else if (e.key === "Escape") { e.preventDefault(); closeCommandPalette(); }
+});
+$("cmdPalette").addEventListener("click", e => { if (e.target === $("cmdPalette")) closeCommandPalette(); });
+$("floatBar").addEventListener("click", e => {
+  const b = e.target.closest("button[data-float]"); if (!b) return;
+  const act = b.dataset.float;
+  if (act === "dup") dupSelectedShape();
+  else if (act === "front") bringShapeFront();
+  else if (act === "back") sendShapeBack();
+  else if (act === "shadow") toggleSelectedShadow();
+  else if (act === "reuse") saveSelectionAsSymbol();
+  else if (act === "del") deleteSelectedShape();
+});
+window.addEventListener("resize", () => updateFloatBar());
+window.addEventListener("scroll", () => updateFloatBar(), true);
 
 // With autosave on, only warn about losing work if autosave failed (e.g. storage full).
 window.addEventListener("beforeunload", e => { if (autosaveOff && project.steps.length) { e.preventDefault(); e.returnValue = ""; } });

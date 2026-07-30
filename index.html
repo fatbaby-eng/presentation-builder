@@ -320,6 +320,14 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .asset-cell { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; aspect-ratio: 1;
   background: #f3f4f7; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .asset-cell:hover { border-color: var(--accent); }
+.sym-cell { position: relative; border: 1px solid var(--line); border-radius: 8px; padding: .45rem .5rem; background: #fff;
+  cursor: pointer; font-size: .72rem; font-weight: 600; color: var(--ink); text-align: left; min-height: 48px; }
+.sym-cell:hover { border-color: var(--accent); }
+.sym-cell .meta { display: block; font-weight: 400; color: var(--muted); font-size: .65rem; margin-top: .15rem; }
+.sym-cell .x { position: absolute; top: 2px; right: 2px; border: none; background: #fff; border-radius: 4px;
+  width: 18px; height: 18px; font-size: .75rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 0; }
+.shape.symbol-shape { border: 1px dashed rgba(108,92,231,.45); background: rgba(108,92,231,.04); overflow: hidden; }
+.shape.symbol-shape .sym-child { position: absolute; pointer-events: none; }
 .asset-cell img { max-width: 86%; max-height: 86%; object-fit: contain; pointer-events: none; }
 .asset-cell .x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none;
   background: rgba(12,14,20,.6); color: #fff; cursor: pointer; font-size: .72rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
@@ -804,6 +812,19 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         </details>
 
         <button class="btn ghost sm" id="sfDelete" style="width:100%;margin-top:.6rem">Delete shape</button>
+        <button class="btn sm" id="sfSaveSymbol" style="width:100%;margin-top:.35rem">Save as Symbol</button>
+        <div id="sfSymbolActions" style="display:none;margin-top:.35rem">
+          <button class="btn sm" id="sfDetachSymbol" style="width:100%">Detach instance</button>
+          <div class="hint" style="margin-top:.35rem">Overrides below apply only to this instance. Edit the master from the Symbols panel.</div>
+          <div id="sfSymbolProps"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <h2>Symbols</h2>
+      <div class="field">
+        <div class="asset-grid" id="symbolGrid"></div>
+        <div class="hint">Select a shape (or a Frame with children) and click <strong>Save as Symbol</strong>. Click a symbol to place an instance. Instances stay linked to the master.</div>
       </div>
 
       <div class="divider"></div>
@@ -1000,6 +1021,11 @@ import {
   mergeTypeFields, resolveShapeTypography, applyTypography, applyStylePreset,
   applyContentTypography
 } from "./js/canvas/typography.js";
+import {
+  sanitizeSymbols, symbolById, collectForSymbol, createSymbolFromShapes,
+  newSymbolInstance, resolveInstanceChildren, detachInstance,
+  setPropOverride, getPropOverrideValue, sanitizeOverrides
+} from "./js/canvas/symbols.js";
 
 "use strict";
 
@@ -1039,7 +1065,7 @@ const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statemen
 
 // Vector annotation / drawing tools (work on every slide type)
 const SHAPE_TOOLS = ["box", "ellipse", "frame", "arrow", "highlight", "message"];
-const SHAPE_TYPES = SHAPE_TOOLS.slice();
+const SHAPE_TYPES = SHAPE_TOOLS.concat(["symbol"]);
 function newShape(type, x, y, w, h) {
   if (type === "frame") {
     const fr = newFrameShape(x, y, w, h);
@@ -1084,7 +1110,7 @@ let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | 
 
 function newProject() {
   return { v: 4, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
-    brand: sanitizeBrand(DEFAULT_BRAND), assets: [],
+    brand: sanitizeBrand(DEFAULT_BRAND), assets: [], symbols: [],
     steps: [], cta: { enabled: false, text: "Get started", url: "" } };
 }
 function assetById(id) { return project.assets.find(a => a.id === id); }
@@ -1172,6 +1198,19 @@ function sanitizeShapes(raw) {
   const out = []; if (!Array.isArray(raw)) return out;
   for (const sh of raw) {
     if (!sh || typeof sh !== "object" || !SHAPE_TYPES.includes(sh.type)) continue;
+    if (sh.type === "symbol") {
+      out.push({
+        id: str(sh.id, 40) || uid(), type: "symbol",
+        x: clamp(sh.x, -50, 150), y: clamp(sh.y, -50, 150), w: clamp(sh.w, 1, 200), h: clamp(sh.h, 1, 200),
+        rot: sh.rot == null ? 0 : clamp(sh.rot, -180, 180), flipX: !!sh.flipX, flipY: !!sh.flipY,
+        symbolId: str(sh.symbolId, 40),
+        overrides: sanitizeOverrides(sh.overrides),
+        parentId: null,
+        fill: "#ffffff", stroke: "#94a3b8", strokeWidth: 0, opacity: 1, radius: 0,
+        text: "", textColor: "#1b1f2a"
+      });
+      continue;
+    }
     const item = { id: str(sh.id, 40) || uid(), type: sh.type,
       x: clamp(sh.x, -50, 150), y: clamp(sh.y, -50, 150), w: clamp(sh.w, 0, 200), h: clamp(sh.h, 0, 200),
       rot: sh.rot == null ? 0 : clamp(sh.rot, -180, 180), flipX: !!sh.flipX, flipY: !!sh.flipY,
@@ -1277,10 +1316,14 @@ function sanitizeProject(raw) {
   p.accent = p.brand.primary; // kept in sync for back-compat
   p.logo = safeImage(raw.logo);
   p.assets = sanitizeAssets(raw.assets);
+  p.symbols = sanitizeSymbols(raw.symbols, sanitizeShapes);
   if (Array.isArray(raw.steps)) for (const s of raw.steps) { const st = sanitizeStep(s); if (st) p.steps.push(st); }
   // Drop overlays that point at assets which no longer exist.
   const assetIds = new Set(p.assets.map(a => a.id));
   for (const s of p.steps) if (s.overlays) s.overlays = s.overlays.filter(o => assetIds.has(o.assetId));
+  // Drop symbol instances whose master is gone
+  const symIds = new Set(p.symbols.map(s => s.id));
+  for (const s of p.steps) if (s.shapes) s.shapes = s.shapes.filter(sh => sh.type !== "symbol" || symIds.has(sh.symbolId));
   const cta = raw.cta || {};
   p.cta = { enabled: !!cta.enabled, text: str(cta.text, 60) || "Get started", url: safeUrl(cta.url) };
   return p;
@@ -1668,6 +1711,24 @@ function buildShapeEl(sh) {
   const el = document.createElement("div");
   el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
   if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
+  if (sh.type === "symbol") {
+    el.classList.add("symbol-shape");
+    const master = symbolById(project.symbols, sh.symbolId);
+    if (master) {
+      resolveInstanceChildren(master, sh).forEach(ch => {
+        const child = buildShapeEl(Object.assign({}, ch, { x: ch.x, y: ch.y, w: ch.w, h: ch.h, rot: ch.rot || 0 }));
+        child.className = "shape sym-child" + (ch.type === "frame" ? " frame-shape" : "");
+        child.style.pointerEvents = "none";
+        el.appendChild(child);
+      });
+    } else {
+      const ph = document.createElement("div");
+      ph.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#94a3b8;font-weight:600";
+      ph.textContent = "Missing symbol";
+      el.appendChild(ph);
+    }
+    return el;
+  }
   if (sh.type === "frame") {
     el.classList.add("frame-shape");
     applyFrameVisual(el, sh);
@@ -1682,7 +1743,6 @@ function buildShapeEl(sh) {
   }
   applyShapePaint(el, sh, project.brand, hexA);
   if (sh.type === "arrow") {
-    // Keep SVG stroke in sync with resolved brand stroke
     const stroke = resolveShapeColor(sh, "stroke", project.brand);
     el.querySelectorAll("line, polyline").forEach(n => n.setAttribute("stroke", stroke));
   }
@@ -1750,7 +1810,7 @@ function startEditMessage(t, sh) {
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
     const el = buildShapeEl(sh);
-    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
+    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
       if (sh.type === "message") {
@@ -1860,6 +1920,7 @@ function renderInspector() {
   if (showShape) renderShapeFields(step.shapes[selShape]);
 
   renderAssetLibrary();
+  renderSymbolLibrary();
 
   // branding
   const lp = $("logoPrev");
@@ -1872,9 +1933,50 @@ function renderInspector() {
   scheduleSave();
 }
 
-const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box" };
+const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box", symbol: "Symbol" };
 let selGradStop = 0;
 let fillFmt = "hex";
+
+function renderSymbolProps(sh) {
+  const box = $("sfSymbolProps"); box.innerHTML = "";
+  const master = symbolById(project.symbols, sh.symbolId);
+  if (!master) {
+    const e = document.createElement("div"); e.className = "hint"; e.textContent = "Master missing."; box.appendChild(e); return;
+  }
+  (master.props || []).forEach(prop => {
+    const wrap = document.createElement("div"); wrap.className = "field"; wrap.style.marginTop = ".45rem";
+    const lab = document.createElement("label"); lab.textContent = prop.label; wrap.appendChild(lab);
+    const val = getPropOverrideValue(master, sh, prop);
+    if (prop.kind === "text") {
+      const ta = document.createElement("textarea"); ta.maxLength = 300; ta.value = val || "";
+      ta.addEventListener("input", () => { setPropOverride(sh, prop, ta.value); renderCanvas(); scheduleSave(); });
+      wrap.appendChild(ta);
+    } else if (prop.kind === "color") {
+      const inp = document.createElement("input"); inp.type = "color"; inp.value = safeColor(val, "#6c5ce7");
+      inp.addEventListener("input", () => { setPropOverride(sh, prop, inp.value); renderCanvas(); scheduleSave(); });
+      wrap.appendChild(inp);
+    } else if (prop.kind === "image") {
+      const row = document.createElement("div"); row.style.cssText = "display:flex;gap:.35rem;flex-wrap:wrap";
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn sm"; btn.textContent = val ? "Replace image" : "Set image";
+      const file = document.createElement("input"); file.type = "file"; file.accept = "image/*"; file.className = "hidden-file";
+      btn.onclick = () => file.click();
+      file.onchange = () => {
+        const f = file.files[0]; file.value = ""; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => { const d = safeImage(reader.result); if (d) { setPropOverride(sh, prop, d); render(); } };
+        reader.readAsDataURL(f);
+      };
+      const clr = document.createElement("button"); clr.type = "button"; clr.className = "btn ghost sm"; clr.textContent = "Clear";
+      clr.style.display = val ? "" : "none";
+      clr.onclick = () => { setPropOverride(sh, prop, null); render(); };
+      row.appendChild(btn); row.appendChild(clr); row.appendChild(file); wrap.appendChild(row);
+    }
+    box.appendChild(wrap);
+  });
+  if (!(master.props || []).length) {
+    const e = document.createElement("div"); e.className = "hint"; e.textContent = "No swappable properties on this symbol."; box.appendChild(e);
+  }
+}
 
 function formatFillText(hex) {
   const h = safeHex(hex);
@@ -1956,18 +2058,26 @@ function renderGradUI(sh) {
 }
 
 function renderShapeFields(sh) {
-  mergeEffectFields(sh, sh);
   const isMsg = sh.type === "message", isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isFrame = sh.type === "frame";
+  const isSym = sh.type === "symbol";
+  if (!isSym) mergeEffectFields(sh, sh);
   $("shapeTitle").textContent = (SHAPE_LABEL[sh.type] || "Shape") + " style";
   $("sfTextWrap").style.display = isMsg ? "" : "none";
   $("sfFrameWrap").style.display = isFrame ? "" : "none";
   $("sfTextColorWrap").style.display = isMsg ? "" : "none";
   $("sfTypeWrap").style.display = isMsg ? "" : "none";
-  $("sfFillCell").style.display = isArrow ? "none" : "";
-  $("sfFillFmtRow").style.display = isArrow ? "none" : "";
-  $("sfFillModeWrap").style.display = isArrow ? "none" : "";
-  $("sfOpacityWrap").style.display = isArrow ? "none" : "";
-  $("sfRadiusWrap").style.display = (isArrow || isEllipse) ? "none" : "";
+  $("sfFillCell").style.display = (isArrow || isSym) ? "none" : "";
+  $("sfFillFmtRow").style.display = (isArrow || isSym) ? "none" : "";
+  $("sfFillModeWrap").style.display = (isArrow || isSym) ? "none" : "";
+  $("sfOpacityWrap").style.display = (isArrow || isSym) ? "none" : "";
+  $("sfRadiusWrap").style.display = (isArrow || isEllipse || isSym) ? "none" : "";
+  $("sfEffectsFold").style.display = isSym ? "none" : "";
+  $("sfStroke").closest(".color-grid").style.display = isSym ? "none" : "";
+  $("sfStrokeW").closest(".field").style.display = isSym ? "none" : "";
+  $("sfSaveSymbol").style.display = isSym ? "none" : "";
+  $("sfSymbolActions").style.display = isSym ? "" : "none";
+  $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
+  if (isSym) { renderSymbolProps(sh); return; }
   $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
   $("sfStrokeWLbl").firstChild.textContent = (isArrow ? "Line width " : "Border width ");
   if (isMsg) $("sfText").value = sh.text || "";
@@ -2371,6 +2481,70 @@ function renderAssetLibrary() {
     cell.onclick = () => placeAsset(a.id);
     const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete from library";
     x.onclick = e => { e.stopPropagation(); deleteAsset(a.id); };
+    cell.appendChild(x); g.appendChild(cell);
+  });
+}
+
+function placeSymbol(symbolId) {
+  const s = curSlide(); if (!s) { toast("Add a slide first", true); return; }
+  const master = symbolById(project.symbols, symbolId); if (!master) return;
+  if (!s.shapes) s.shapes = [];
+  const inst = newSymbolInstance(master, 36, 28);
+  s.shapes.push(inst);
+  selShape = s.shapes.length - 1; selHotspot = -1; selAsset = -1;
+  tool = "select"; render(); toast("Symbol placed");
+}
+function deleteSymbol(symbolId) {
+  if (!confirm("Delete this symbol? All instances will be removed from every slide.")) return;
+  project.symbols = project.symbols.filter(s => s.id !== symbolId);
+  for (const st of project.steps) {
+    if (!st.shapes) continue;
+    st.shapes = st.shapes.filter(sh => !(sh.type === "symbol" && sh.symbolId === symbolId));
+  }
+  selShape = -1; render(); toast("Symbol deleted");
+}
+function saveSelectionAsSymbol() {
+  const s = curSlide(); const sh = curShape();
+  if (!s || !sh) { toast("Select a shape first", true); return; }
+  const group = collectForSymbol(sh, s.shapes || []);
+  if (!group || !group.length) { toast("Can't turn that into a symbol", true); return; }
+  const name = prompt("Symbol name", sh.type === "frame" ? "Frame symbol" : (SHAPE_LABEL[sh.type] || "Symbol"));
+  if (name == null) return;
+  const created = createSymbolFromShapes(group, name.trim() || "Symbol");
+  if (!created) return;
+  project.symbols.push(created.master);
+  const remove = new Set(created.removeIds);
+  s.shapes = (s.shapes || []).filter(x => !remove.has(x.id));
+  s.shapes.push(created.instance);
+  selShape = s.shapes.length - 1;
+  render(); toast("Saved as symbol — place more from the Symbols panel");
+}
+function detachSelectedSymbol() {
+  const s = curSlide(); const sh = curShape();
+  if (!s || !sh || sh.type !== "symbol") return;
+  const master = symbolById(project.symbols, sh.symbolId);
+  const det = detachInstance(master, sh);
+  if (!det) { toast("Can't detach — master missing", true); return; }
+  s.shapes = (s.shapes || []).filter(x => x.id !== det.removeId).concat(det.shapes);
+  selShape = s.shapes.length - det.shapes.length;
+  render(); toast("Detached — shapes are now independent");
+}
+function renderSymbolLibrary() {
+  const g = $("symbolGrid"); if (!g) return;
+  g.innerHTML = "";
+  if (!project.symbols.length) {
+    const e = document.createElement("div"); e.className = "hint"; e.style.gridColumn = "1 / -1";
+    e.textContent = "No symbols yet."; g.appendChild(e); return;
+  }
+  project.symbols.forEach(sym => {
+    const cell = document.createElement("div"); cell.className = "sym-cell"; cell.title = "Place “" + sym.name + "”";
+    cell.appendChild(document.createTextNode(sym.name));
+    const meta = document.createElement("span"); meta.className = "meta";
+    meta.textContent = (sym.shapes || []).length + " part" + ((sym.shapes || []).length === 1 ? "" : "s");
+    cell.appendChild(meta);
+    cell.onclick = () => placeSymbol(sym.id);
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Delete symbol";
+    x.onclick = e => { e.stopPropagation(); deleteSymbol(sym.id); };
     cell.appendChild(x); g.appendChild(cell);
   });
 }
@@ -2915,6 +3089,61 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
       return parts.join(", ");
     }
     (step.shapes || []).forEach(function (sh) {
+      if (sh.type === "symbol") {
+        var el = document.createElement("div"); el.className = "shape";
+        el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
+        el.style.overflow = "hidden";
+        if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
+        var master = null, syms = DATA.symbols || [];
+        for (var si = 0; si < syms.length; si++) { if (syms[si].id === sh.symbolId) { master = syms[si]; break; } }
+        if (master && master.shapes) {
+          master.shapes.forEach(function (ch0) {
+            var ch = JSON.parse(JSON.stringify(ch0));
+            var ov = (sh.overrides || {})[ch.id] || {};
+            if (ov.text != null) ch.text = ov.text;
+            if (ov.fill) ch.fill = ov.fill;
+            if (ov.stroke) ch.stroke = ov.stroke;
+            if (ov.textColor) ch.textColor = ov.textColor;
+            if (ov.image !== undefined) ch.image = ov.image;
+            Object.keys(sh.overrides || {}).forEach(function (k) {
+              if (k.indexOf(ch.id + ":") !== 0) return;
+              var o2 = sh.overrides[k];
+              if (o2.fill) ch.fill = o2.fill;
+              if (o2.stroke) ch.stroke = o2.stroke;
+              if (o2.image !== undefined) ch.image = o2.image;
+              if (o2.text != null) ch.text = o2.text;
+            });
+            var cel = document.createElement("div"); cel.className = "shape";
+            cel.style.left = ch.x + "%"; cel.style.top = ch.y + "%"; cel.style.width = ch.w + "%"; cel.style.height = ch.h + "%";
+            if (ch.rot) cel.style.transform = "rotate(" + ch.rot + "deg)";
+            if (ch.type === "arrow") cel.appendChild(vArrow(ch));
+            else if (ch.type === "frame") {
+              cel.style.overflow = "hidden";
+              cel.style.background = vHexA(ch.fill || "#fff", ch.opacity == null ? 1 : ch.opacity);
+              cel.style.border = ch.strokeWidth > 0 ? ch.strokeWidth + "px solid " + ch.stroke : "none";
+              cel.style.borderRadius = (ch.radius || 0) + "px";
+              if (ch.image) {
+                var fim = document.createElement("img"); fim.className = "frame-img"; fim.src = ch.image; fim.alt = "";
+                fim.style.objectFit = ch.imageFit === "contain" ? "contain" : ch.imageFit === "fill" ? "fill" : "cover";
+                cel.appendChild(fim);
+              }
+            } else if (ch.type === "message") {
+              cel.style.background = vHexA(ch.fill, ch.opacity == null ? 1 : ch.opacity);
+              cel.style.border = ch.strokeWidth > 0 ? ch.strokeWidth + "px solid " + ch.stroke : "none";
+              cel.style.borderRadius = (ch.radius || 0) + "px"; cel.style.color = ch.textColor;
+              var mt = document.createElement("div"); mt.className = "msg-text"; mt.textContent = ch.text || ""; cel.appendChild(mt);
+            } else {
+              cel.style.background = vHexA(ch.fill, ch.opacity == null ? 1 : ch.opacity);
+              cel.style.border = ch.strokeWidth > 0 ? ch.strokeWidth + "px solid " + ch.stroke : "none";
+              cel.style.borderRadius = ch.type === "ellipse" ? "50%" : (ch.radius || 0) + "px";
+              if (ch.type === "highlight") cel.style.mixBlendMode = "multiply";
+            }
+            el.appendChild(cel);
+          });
+        }
+        box.appendChild(el);
+        return;
+      }
       var el = document.createElement("div"); el.className = "shape";
       el.style.left = sh.x + "%"; el.style.top = sh.y + "%"; el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
       if (sh.rot) el.style.transform = "rotate(" + sh.rot + "deg)";
@@ -3420,6 +3649,8 @@ $("sfGlowOp").addEventListener("input", e => { touchShape(sh => { sh.glowOpacity
 $("sfBlur").addEventListener("input", e => { touchShape(sh => { sh.blur = clamp(e.target.value, 0, 40); $("sfBlurVal").textContent = sh.blur + "px"; }); });
 $("sfBackdrop").addEventListener("input", e => { touchShape(sh => { sh.backdropBlur = clamp(e.target.value, 0, 40); $("sfBackdropVal").textContent = sh.backdropBlur + "px"; }); });
 $("sfDelete").onclick = () => { const s = curSlide(); if (s && s.shapes && selShape >= 0) { s.shapes.splice(selShape, 1); selShape = -1; render(); } };
+$("sfSaveSymbol").onclick = saveSelectionAsSymbol;
+$("sfDetachSymbol").onclick = detachSelectedSymbol;
 
 // Frame inspector + view chrome toggles
 $("sfFrameLayout").addEventListener("change", e => {

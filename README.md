@@ -34,6 +34,8 @@ No accounts. No backend. No data ever leaves the browser.
 - **Text styles** — Brand Kit defines Heading 1/2, Body, Caption, Quote, Label. Apply to
   message boxes in one click; override size, weight, tracking, case, columns, stroke,
   shadow, or highlight locally. Content slides pick up the type scale automatically.
+- **Symbols** — save a shape or Frame (+ children) as a reusable Symbol. Place instances
+  from the Symbols panel; override text/colours/images per instance, or Detach to edit freely.
 - **Smart Guides** — while dragging, red dashed alignment lines snap to edges, centers,
   slide midlines, and equal spacing (hold **Alt** to free-move). Toggle **Grid**, **Rulers**,
   and **Safe** area from the canvas toolbar. Drag from a ruler to add a blue guide;

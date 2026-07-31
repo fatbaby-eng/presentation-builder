@@ -53,6 +53,10 @@ No accounts. No backend. No data ever leaves the browser.
   (fake project cards so you can poke shapes, motion, and transitions), or blank starters:
   Pitch, Product tour, Training, Status. Save your own templates in the browser and export
   a `.template.json`.
+- **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
+  build Heading/Body sizes from one body size and a ratio.
+- **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
+  for portable `.presentation.json` files.
 
 ### Try the Atlas samples
 
@@ -60,10 +64,6 @@ No accounts. No backend. No data ever leaves the browser.
 2. Click **Start from a template…** (empty canvas card, **＋ New slide** menu, or **Ctrl/⌘ K → template**).
 3. Under **Try a sample**, pick **Try Atlas (desktop)** or **Try Atlas (phone)**.
 4. Preview or Present to walk the demo; tweak anything — it’s regular project JSON in your browser.
-- **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
-  build Heading/Body sizes from one body size and a ratio.
-- **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
-  for portable `.presentation.json` files.
 
 ## Use it
 

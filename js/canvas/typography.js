@@ -79,7 +79,8 @@ export function defaultShapeType() {
     textStrokeOn: false,
     textStrokeColor: "#000000", textStrokeWidth: 1,
     textHighlightOn: false,
-    textHighlightColor: "#fef08a", textHighlightPad: 4, textHighlightRadius: 4
+    textHighlightColor: "#fef08a", textHighlightPad: 4, textHighlightRadius: 4,
+    textArcOn: false, textArc: 35, textOpacity: 1
   };
 }
 
@@ -111,7 +112,10 @@ export function sanitizeShapeType(sh) {
     textHighlightOn: !!sh.textHighlightOn,
     textHighlightColor: safeHex(sh.textHighlightColor, "#fef08a"),
     textHighlightPad: clamp(sh.textHighlightPad == null ? 4 : sh.textHighlightPad, 0, 24),
-    textHighlightRadius: clamp(sh.textHighlightRadius == null ? 4 : sh.textHighlightRadius, 0, 24)
+    textHighlightRadius: clamp(sh.textHighlightRadius == null ? 4 : sh.textHighlightRadius, 0, 24),
+    textArcOn: !!sh.textArcOn,
+    textArc: clamp(sh.textArc == null ? d.textArc : sh.textArc, -100, 100),
+    textOpacity: clamp(sh.textOpacity == null ? d.textOpacity : sh.textOpacity, 0, 1)
   };
 }
 
@@ -167,7 +171,10 @@ export function resolveShapeTypography(sh, brand, resolveColor) {
     textHighlightOn: local.textHighlightOn,
     textHighlightColor: local.textHighlightColor,
     textHighlightPad: local.textHighlightPad,
-    textHighlightRadius: local.textHighlightRadius
+    textHighlightRadius: local.textHighlightRadius,
+    textArcOn: local.textArcOn,
+    textArc: local.textArc,
+    textOpacity: local.textOpacity
   };
 }
 

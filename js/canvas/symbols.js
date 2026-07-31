@@ -78,7 +78,7 @@ export function toAbsoluteShapes(relShapes, box) {
 export function deriveProps(shapes) {
   const props = [];
   (shapes || []).forEach(sh => {
-    if (sh.type === "message") {
+    if (sh.type === "message" || sh.type === "text") {
       props.push({ id: sh.id, kind: "text", label: "Text: " + str(sh.text || "Message", 24), field: "text" });
       props.push({ id: sh.id + ":fill", kind: "color", label: "Text box fill", field: "fill", shapeId: sh.id });
     } else if (sh.type === "frame") {

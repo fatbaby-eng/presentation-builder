@@ -56,7 +56,8 @@ No accounts. No backend. No data ever leaves the browser.
 - **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
   build Heading/Body sizes from one body size and a ratio.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
-  for portable `.presentation.json` files.
+  for portable `.presentation.json` files. **Close** clears the canvas (keeps a copy under
+  **Open → Recent**). **T Type** places free text with size, colour, transparency, and bend (arc).
 
 ### Try the Atlas samples
 
@@ -158,6 +159,7 @@ slides.
 | **➶ Arrow** | Drag to draw an arrow in any direction; set its colour and thickness. |
 | **▨ Highlight** | Drag to draw a translucent highlight that emphasizes part of the slide. |
 | **💬 Message** | Drag to draw a text callout box with its own background, border and text colour. |
+| **T Type** | Drag to place free text. Set size, weight, colour, transparency, and **Bend text (arc)**. Double-click to edit (straight text). |
 
 Selecting a shape opens a **Shape style** panel in the inspector for fill/border
 colours, opacity, border width, corner radius and (for message boxes) the text.

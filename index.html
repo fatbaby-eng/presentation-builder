@@ -461,8 +461,17 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
     <div class="spacer"></div>
     <span id="saveState" class="save-state" title="Your work is auto-saved in this browser"></span>
-    <button class="btn ghost" id="loadBtn">Open</button>
+    <div class="export-menu-wrap">
+      <button class="btn ghost" id="loadBtn">Open ▾</button>
+      <div class="export-menu" id="openMenu">
+        <button type="button" data-open="file">Open file…</button>
+        <div class="hint" style="padding:.35rem .65rem .15rem;font-size:.68rem">Recent in this browser</div>
+        <div id="recentList"></div>
+        <div class="hint" id="recentEmpty" style="padding:.35rem .65rem .55rem;display:none">No recent presentations yet</div>
+      </div>
+    </div>
     <button class="btn ghost" id="saveBtn">Save</button>
+    <button class="btn ghost" id="closeBtn" title="Close this presentation and return to start">Close</button>
     <button class="btn ghost" id="cmdBtn" title="Command menu (Ctrl/⌘ K)">⌘K</button>
     <button class="btn" id="previewBtn">▶ Preview</button>
     <button class="btn" id="presentBtn" title="Open presenter view with notes and timer">Present</button>
@@ -512,6 +521,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <button class="tool" data-tool="arrow">➶ Arrow</button>
         <button class="tool" data-tool="highlight">▨ Highlight</button>
         <button class="tool" data-tool="message">💬 Message</button>
+        <button class="tool" data-tool="text" title="Click or drag to add text — bend, colour, size…">T Type</button>
         <div class="view-tools" title="Hold Alt while dragging to disable snap">
           <button type="button" class="tool" id="toggleGrid" title="Column grid">Grid</button>
           <button type="button" class="tool" id="toggleRulers" title="Rulers &amp; guides — drag from ruler to add a guide">Rulers</button>
@@ -699,8 +709,8 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <div class="divider"></div>
         <h2 id="shapeTitle">Shape style</h2>
         <div class="field" id="sfTextWrap">
-          <label for="sfText">Message text</label>
-          <textarea id="sfText" maxlength="300" placeholder="Type your message…"></textarea>
+          <label for="sfText" id="sfTextLbl">Message text</label>
+          <textarea id="sfText" maxlength="800" placeholder="Type here…"></textarea>
         </div>
         <div class="field" id="sfFrameWrap" style="display:none">
           <label for="sfFrameLayout">Smart layout</label>
@@ -822,6 +832,19 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
               <option value="capitalize">Title Case</option>
               <option value="small-caps">Small Caps</option>
             </select>
+          </div>
+          <div class="field" id="sfTextOpacityWrap">
+            <label for="sfTextOpacity">Text transparency <span id="sfTextOpacityVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfTextOpacity" min="0" max="100" step="1" style="width:100%">
+          </div>
+          <div class="field toggle-row" id="sfArcWrap">
+            <span style="font-size:.82rem;font-weight:600">Bend text (arc)</span>
+            <label class="switch"><input type="checkbox" id="sfArcOn"><span class="slider"></span></label>
+          </div>
+          <div class="field" id="sfArcFields" style="display:none">
+            <label for="sfArcBend">Bend amount <span id="sfArcBendVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfArcBend" min="-100" max="100" step="1" style="width:100%">
+            <div class="hint">Positive arches up · negative smiles down</div>
           </div>
           <details class="pro-fold" id="sfTypeFxFold">
             <summary>Text effects <span class="hint" style="font-weight:400">stroke, shadow, highlight, columns</span></summary>
@@ -1287,6 +1310,12 @@ import {
 import {
   sanitizeNotes, sanitizeTimingMs, notesTextFile, presenterStylesheet
 } from "./js/canvas/presenter.js";
+import {
+  listRecents, upsertRecent, getRecent, removeRecent, formatRecentWhen
+} from "./js/canvas/recents.js";
+import {
+  isTextualShape, defaultTypeShape, sanitizeTextArc, paintTextualContent
+} from "./js/canvas/textTool.js";
 import { filterCommands } from "./js/canvas/commands.js";
 import {
   BUILTIN_TEMPLATES, listCustomTemplates, saveCustomTemplate, deleteCustomTemplate,
@@ -1331,7 +1360,7 @@ const LAYOUT_LABELS = { title: "Title", section: "Section", bullets: "Bullets", 
 const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statement: "❝" };
 
 // Vector annotation / drawing tools (work on every slide type)
-const SHAPE_TOOLS = ["box", "ellipse", "frame", "arrow", "highlight", "message"];
+const SHAPE_TOOLS = ["box", "ellipse", "frame", "arrow", "highlight", "message", "text"];
 const SHAPE_TYPES = SHAPE_TOOLS.concat(["symbol"]);
 function newShape(type, x, y, w, h) {
   if (type === "frame") {
@@ -1345,8 +1374,16 @@ function newShape(type, x, y, w, h) {
   else if (type === "highlight") sh = Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
   else if (type === "arrow")     sh = Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a" });
   else if (type === "message")   sh = Object.assign(b, { fill: "#ffffff", stroke: "#1b1f2a", strokeWidth: 1, opacity: 1, radius: 8, text: "Your message", textColor: "#1b1f2a" });
+  else if (type === "text") {
+    sh = Object.assign(b, defaultTypeShape(project && project.brand));
+    sh.id = b.id; sh.type = "text"; sh.x = x; sh.y = y; sh.w = Math.max(w, 12); sh.h = Math.max(h, 8);
+  }
   sh = mergeEffectFields(sh, sh);
   if (type === "message") mergeTypeFields(sh, { textStyle: "body" });
+  if (type === "text") {
+    mergeTypeFields(sh, { textStyle: "h2", textArcOn: false, textArc: 35, textOpacity: 1 });
+    Object.assign(sh, sanitizeTextArc(sh));
+  }
   return sh;
 }
 function hexA(hex, a) { const n = parseInt(safeColor(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + clamp(a, 0, 1) + ")"; }
@@ -1376,7 +1413,7 @@ let editing = false;     // true while typing directly into an on-canvas text bo
 let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | highlight | message
 
 function newProject() {
-  return { v: 4, title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
+  return { v: 4, id: uid(), title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
     brand: sanitizeBrand(DEFAULT_BRAND), assets: [], symbols: [],
     steps: [], cta: { enabled: false, text: "Get started", url: "" } };
 }
@@ -1490,10 +1527,11 @@ function sanitizeShapes(raw) {
       stroke: safeColor(sh.stroke, sh.type === "frame" ? "#94a3b8" : "#6c5ce7"),
       strokeWidth: clamp(sh.strokeWidth == null ? (sh.type === "frame" ? 1 : 2) : sh.strokeWidth, 0, 40),
       opacity: clamp(sh.opacity == null ? 1 : sh.opacity, 0, 1), radius: clamp(sh.radius, 0, 200),
-      text: str(sh.text, 300), textColor: safeColor(sh.textColor, "#1b1f2a"),
+      text: str(sh.text, sh.type === "text" ? 800 : 300), textColor: safeColor(sh.textColor, "#1b1f2a"),
       parentId: str(sh.parentId, 40) || null };
     mergeEffectFields(item, sh);
     mergeTypeFields(item, sh);
+    if (sh.type === "text" || sh.type === "message") Object.assign(item, sanitizeTextArc(sh));
     item.motion = sanitizeMotion(sh.motion);
     if (sh.type === "frame") {
       item.image = safeImage(sh.image);
@@ -1590,6 +1628,7 @@ function sanitizeStep(s) {
 function sanitizeProject(raw) {
   const p = newProject();
   if (!raw || typeof raw !== "object") return p;
+  p.id = str(raw.id, 40) || p.id;
   p.title = str(raw.title, 120) || "Untitled Presentation";
   // Brand: prefer an explicit brand object, fall back to the legacy single accent colour.
   p.brand = sanitizeBrand(raw.brand || { primary: safeColor(raw.accent, DEFAULT_BRAND.primary) });
@@ -1806,6 +1845,7 @@ function renderCanvas() {
     : tool === "redact"   ? "Drag to cover an area"
     : tool === "frame"    ? "Drag to draw a frame — then drop an image into it"
     : tool === "message"  ? "Drag to draw a message box"
+    : tool === "text"     ? "Drag to place text — then set size, colour, bend…"
     : SHAPE_TOOLS.includes(tool) ? "Drag to draw a " + tool
     : "Select tool — drag snaps to guides (hold Alt to free-move)";
 
@@ -2020,12 +2060,8 @@ function buildShapeEl(sh) {
     if (fim) fim.style.filter = imageLookCss(sh);
   } else if (sh.type === "arrow") {
     el.appendChild(arrowSVG(sh));
-  } else if (sh.type === "message") {
-    el.style.color = sh.textColor;
-    const t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
-    el.appendChild(t);
-    const resolved = resolveShapeTypography(sh, project.brand, resolveColorVar);
-    applyTypography(t, resolved, project.brand, FONTS);
+  } else if (sh.type === "message" || sh.type === "text") {
+    paintTextualContent(el, sh, project.brand, FONTS, resolveColorVar);
   }
   applyShapePaint(el, sh, project.brand, hexA);
   if (sh.type === "arrow") {
@@ -2100,9 +2136,14 @@ function attachShapes(stage, step, sel) {
     el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
-      if (sh.type === "message") {
+      if (isTextualShape(sh)) {
         el.style.cursor = "text";
-        el.addEventListener("dblclick", e => { e.stopPropagation(); startEditMessage(el.querySelector(".msg-text"), sh); });
+        el.addEventListener("dblclick", e => {
+          e.stopPropagation();
+          if (sh.textArcOn) { renderInspector(); $("sfText").focus(); return; }
+          const node = el.querySelector(".msg-text");
+          if (node) startEditMessage(node, sh);
+        });
       }
       el.addEventListener("pointerdown", e => {
         if (editing || e.target.classList.contains("sh") || e.target.classList.contains("shx") || e.target.classList.contains("rot")) return;
@@ -2258,7 +2299,7 @@ function renderInspector() {
   scheduleSave();
 }
 
-const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box", symbol: "Saved piece" };
+const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Frame", arrow: "Arrow", highlight: "Highlight", message: "Message box", text: "Text", symbol: "Saved piece" };
 let selGradStop = 0;
 let fillFmt = "hex";
 let assetFilter = "all";
@@ -2408,29 +2449,42 @@ function renderGradUI(sh) {
 }
 
 function renderShapeFields(sh) {
-  const isMsg = sh.type === "message", isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isFrame = sh.type === "frame";
+  const isMsg = isTextualShape(sh), isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isFrame = sh.type === "frame";
+  const isType = sh.type === "text";
   const isSym = sh.type === "symbol";
   if (!isSym) mergeEffectFields(sh, sh);
+  if (isMsg) Object.assign(sh, sanitizeTextArc(sh));
   $("shapeTitle").textContent = (SHAPE_LABEL[sh.type] || "Shape") + " style";
   $("sfTextWrap").style.display = isMsg ? "" : "none";
+  $("sfTextLbl").textContent = isType ? "Text" : "Message text";
   $("sfFrameWrap").style.display = isFrame ? "" : "none";
   $("sfTextColorWrap").style.display = isMsg ? "" : "none";
   $("sfTypeWrap").style.display = isMsg ? "" : "none";
   $("sfFillCell").style.display = (isArrow || isSym) ? "none" : "";
   $("sfFillFmtRow").style.display = (isArrow || isSym) ? "none" : "";
-  $("sfFillModeWrap").style.display = (isArrow || isSym) ? "none" : "";
+  $("sfFillModeWrap").style.display = (isArrow || isSym || isType) ? "none" : "";
   $("sfOpacityWrap").style.display = (isArrow || isSym) ? "none" : "";
-  $("sfRadiusWrap").style.display = (isArrow || isEllipse || isSym) ? "none" : "";
+  $("sfRadiusWrap").style.display = (isArrow || isEllipse || isSym || isType) ? "none" : "";
   $("sfEffectsFold").style.display = isSym ? "none" : "";
   $("sfStroke").closest(".color-grid").style.display = isSym ? "none" : "";
   $("sfStrokeW").closest(".field").style.display = isSym ? "none" : "";
   $("sfSaveSymbol").style.display = isSym ? "none" : "";
   $("sfSymbolActions").style.display = isSym ? "" : "none";
+  if ($("sfArcWrap")) $("sfArcWrap").style.display = isMsg ? "" : "none";
+  if ($("sfTextOpacityWrap")) $("sfTextOpacityWrap").style.display = isMsg ? "" : "none";
+  if ($("sfArcFields")) $("sfArcFields").style.display = (isMsg && sh.textArcOn) ? "" : "none";
   $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
   if (isSym) { renderSymbolProps(sh); return; }
   $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
   $("sfStrokeWLbl").firstChild.textContent = (isArrow ? "Line width " : "Border width ");
   if (isMsg) $("sfText").value = sh.text || "";
+  if (isMsg && $("sfArcOn")) {
+    $("sfArcOn").checked = !!sh.textArcOn;
+    $("sfArcBend").value = sh.textArc || 0;
+    $("sfArcBendVal").textContent = (sh.textArc || 0) + "";
+    $("sfTextOpacity").value = Math.round((sh.textOpacity == null ? 1 : sh.textOpacity) * 100);
+    $("sfTextOpacityVal").textContent = $("sfTextOpacity").value + "%";
+  }
   if (isFrame) {
     $("sfFrameLayout").value = FRAME_LAYOUTS.includes(sh.layout) ? sh.layout : "none";
     $("sfFrameFit").value = sh.imageFit || "cover";
@@ -2549,6 +2603,7 @@ function render() {
   renderSteps(); renderCanvas(); renderInspector();
   const has = project.steps.length > 0;
   $("previewBtn").disabled = !has; $("exportBtn").disabled = !has; $("saveBtn").disabled = !has;
+  if ($("closeBtn")) $("closeBtn").disabled = !has && !(project.assets && project.assets.length);
   if ($("presentBtn")) $("presentBtn").disabled = !has;
   scheduleSave();
   updateFloatBar();
@@ -3562,8 +3617,67 @@ function slug(s) { return (s || "presentation").toLowerCase().replace(/[^a-z0-9]
 function saveProject() { download(slug(project.title) + ".presentation.json", new Blob([JSON.stringify(project, null, 2)], { type: "application/json" })); toast("Project saved"); }
 function loadProject(file) {
   const reader = new FileReader();
-  reader.onload = () => { try { project = sanitizeProject(JSON.parse(reader.result)); selected = 0; selHotspot = -1; selAsset = -1; selShape = -1; render(); toast("Project loaded"); } catch (e) { toast("That file isn't a valid project", true); } };
+  reader.onload = () => {
+    try {
+      project = sanitizeProject(JSON.parse(reader.result));
+      if (!project.id) project.id = uid();
+      selected = 0; selHotspot = -1; selAsset = -1; selShape = -1;
+      upsertRecent(project, sanitizeProject);
+      render(); toast("Project loaded");
+    } catch (e) { toast("That file isn't a valid project", true); }
+  };
   reader.readAsText(file);
+}
+
+function closePresentation() {
+  const hasWork = !!(project.steps.length || (project.assets && project.assets.length));
+  if (hasWork) {
+    if (!confirm("Close this presentation? It will stay under Recent in this browser.")) return;
+    upsertRecent(project, sanitizeProject);
+  }
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  project = newProject();
+  selected = 0; selHotspot = -1; selAsset = -1; selShape = -1; tool = "select";
+  render();
+  toast(hasWork ? "Closed — find it under Open → Recent" : "Ready for a new presentation");
+}
+
+function openRecent(id) {
+  const entry = getRecent(id);
+  if (!entry || !entry.payload) { toast("Couldn’t open that recent item", true); return; }
+  if (project.steps.length && !confirm("Replace the current presentation with “" + (entry.title || "Recent") + "”?")) return;
+  project = sanitizeProject(entry.payload);
+  project.id = entry.id;
+  selected = 0; selHotspot = -1; selAsset = -1; selShape = -1;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(project)); } catch (e) {}
+  $("openMenu").classList.remove("open");
+  render();
+  toast("Opened: " + (entry.title || "Recent"));
+}
+
+function paintRecentList() {
+  const host = $("recentList"); const empty = $("recentEmpty");
+  if (!host) return;
+  host.innerHTML = "";
+  const list = listRecents();
+  if (empty) empty.style.display = list.length ? "none" : "";
+  list.forEach(entry => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:.25rem;align-items:stretch";
+    const b = document.createElement("button");
+    b.type = "button";
+    b.style.cssText = "flex:1;text-align:left;border:none;background:transparent;padding:.55rem .65rem;border-radius:7px;cursor:pointer;font-family:inherit";
+    const t = document.createElement("strong"); t.style.cssText = "display:block;font-size:.82rem"; t.textContent = entry.title || "Untitled";
+    const s = document.createElement("span"); s.style.cssText = "display:block;font-size:.68rem;color:var(--muted)";
+    s.textContent = (entry.slideCount || 0) + " slides · " + formatRecentWhen(entry.updatedAt);
+    b.appendChild(t); b.appendChild(s);
+    b.onclick = () => openRecent(entry.id);
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn ghost sm"; del.textContent = "✕"; del.title = "Remove from recent";
+    del.onclick = () => { removeRecent(entry.id); paintRecentList(); };
+    row.appendChild(b); row.appendChild(del);
+    host.appendChild(row);
+  });
 }
 
 /* ───────────────────────── Autosave (localStorage) ─────────────────────────
@@ -3576,6 +3690,7 @@ function autosaveNow() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(project));
     setSaveState("Saved ✓");
+    upsertRecent(project, sanitizeProject);
   } catch (e) {
     autosaveOff = true; setSaveState("Autosave off");
     toast("Autosave off — browser storage is full", true);
@@ -4104,13 +4219,51 @@ ${presenterStylesheet()}
           fim.style.filter = lf.join(" ");
           el.appendChild(fim);
         }
-      } else if (sh.type === "message") {
-        if (mode === "solid") el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
+      } else if (sh.type === "message" || sh.type === "text") {
+        if (sh.type === "text") {
+          el.style.background = "transparent";
+          el.style.border = "none";
+        } else if (mode === "solid") el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
         else { el.style.backgroundImage = vFillBg(sh); el.style.backgroundColor = "transparent"; el.style.opacity = String(fillOp); }
-        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
-        el.style.borderRadius = vRadius(sh); el.style.color = sh.textColor;
-        var t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
-        (function paintType(node, shape) {
+        if (sh.type !== "text") {
+          el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
+          el.style.borderRadius = vRadius(sh);
+        }
+        el.style.color = sh.textColor;
+        var tOp = (sh.textOpacity == null ? 1 : sh.textOpacity);
+        if (sh.textArcOn && Math.abs(sh.textArc || 0) > 2) {
+          var NS2 = "http://www.w3.org/2000/svg";
+          var svgT = document.createElementNS(NS2, "svg");
+          svgT.setAttribute("viewBox", "0 0 1000 400");
+          svgT.setAttribute("preserveAspectRatio", "xMidYMid meet");
+          svgT.style.cssText = "display:block;width:100%;height:100%;overflow:visible";
+          var bend = Math.max(-100, Math.min(100, sh.textArc || 0));
+          var midY = 200 - (bend / 100) * 160;
+          var pth = document.createElementNS(NS2, "path");
+          var pid = "a" + Math.random().toString(36).slice(2, 8);
+          pth.setAttribute("id", pid);
+          pth.setAttribute("d", "M 40 " + midY + " Q 500 " + (400 - midY) + " 960 " + midY);
+          pth.setAttribute("fill", "none");
+          var defs = document.createElementNS(NS2, "defs"); defs.appendChild(pth); svgT.appendChild(defs);
+          var styles = brand.textStyles || {};
+          var sid = sh.textStyle || "body";
+          var base = styles[sid] || styles.body || { size: 28, weight: 700 };
+          var size = sh.fontSize != null ? sh.fontSize : base.size;
+          var weight = sh.fontWeight != null ? sh.fontWeight : base.weight;
+          var tx = document.createElementNS(NS2, "text");
+          tx.setAttribute("font-size", String(Math.max(18, Math.min(120, size * 2.2))));
+          tx.setAttribute("font-weight", String(weight));
+          tx.setAttribute("fill", vHexA(sh.textColor || "#fff", tOp));
+          tx.setAttribute("font-family", "var(--b-fh)");
+          var tp = document.createElementNS(NS2, "textPath");
+          tp.setAttribute("href", "#" + pid);
+          tp.setAttribute("startOffset", "50%");
+          tp.setAttribute("text-anchor", "middle");
+          tp.textContent = sh.text || "";
+          tx.appendChild(tp); svgT.appendChild(tx); el.appendChild(svgT);
+        } else {
+          var t = document.createElement("div"); t.className = "msg-text"; t.textContent = sh.text || "";
+          (function paintType(node, shape) {
           var styles = brand.textStyles || {};
           var sid = shape.textStyle || "body";
           var base = styles[sid] || styles.body || { size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0, align: "left", transform: "none", fontRole: "body", colorVar: "text" };
@@ -4124,8 +4277,8 @@ ${presenterStylesheet()}
           node.style.fontFamily = role === "heading" ? "var(--b-fh)" : "var(--b-fb)";
           node.style.fontSize = size + "px"; node.style.fontWeight = String(weight);
           node.style.lineHeight = String(lh); node.style.letterSpacing = ls + "px";
-          node.style.textAlign = align; node.style.color = shape.textColor || "inherit";
-          node.style.padding = ".5rem .6rem"; node.style.width = "100%"; node.style.height = "100%"; node.style.overflow = "hidden";
+          node.style.textAlign = align; node.style.color = vHexA(shape.textColor || "#ffffff", shape.textOpacity == null ? 1 : shape.textOpacity);
+          node.style.padding = shape.type === "text" ? ".15rem .25rem" : ".5rem .6rem"; node.style.width = "100%"; node.style.height = "100%"; node.style.overflow = "hidden";
           if (tr === "small-caps") { node.style.fontVariant = "small-caps"; node.style.textTransform = "none"; }
           else { node.style.textTransform = tr === "none" ? "" : tr; }
           if (shape.columns > 1) { node.style.columnCount = String(shape.columns); node.style.columnGap = (shape.columnGap || 16) + "px"; }
@@ -4140,6 +4293,7 @@ ${presenterStylesheet()}
           }
         })(t, sh);
         el.appendChild(t);
+        }
       } else {
         if (mode === "solid") el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
         else { el.style.backgroundImage = vFillBg(sh); el.style.backgroundColor = "transparent"; el.style.opacity = String(fillOp); }
@@ -4596,12 +4750,31 @@ $("ovDelete").onclick = () => {
   s.overlays.splice(selAsset, 1); selAsset = -1; render();
 };
 $("logoClear").onclick = () => { project.logo = null; render(); };
-$("loadBtn").onclick = () => $("projInput").click();
+$("loadBtn").onclick = (e) => {
+  e.stopPropagation();
+  paintRecentList();
+  $("openMenu").classList.toggle("open");
+  $("exportMenu").classList.remove("open");
+};
+$("openMenu").querySelectorAll("button[data-open]").forEach(b => {
+  b.onclick = () => {
+    $("openMenu").classList.remove("open");
+    if (b.dataset.open === "file") $("projInput").click();
+  };
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest(".export-menu-wrap")) {
+    $("exportMenu").classList.remove("open");
+    if ($("openMenu")) $("openMenu").classList.remove("open");
+  }
+});
+$("closeBtn").onclick = closePresentation;
 $("projInput").addEventListener("change", e => { if (e.target.files[0]) loadProject(e.target.files[0]); e.target.value = ""; });
 $("saveBtn").onclick = saveProject;
 $("cmdBtn").onclick = openCommandPalette;
 $("exportBtn").onclick = (e) => {
   e.stopPropagation();
+  $("openMenu").classList.remove("open");
   $("exportMenu").classList.toggle("open");
 };
 $("exportMenu").querySelectorAll("button[data-export]").forEach(b => {
@@ -4612,9 +4785,6 @@ $("exportMenu").querySelectorAll("button[data-export]").forEach(b => {
     else if (kind === "notes") exportNotes();
     else if (kind === "print") exportPrint();
   };
-});
-document.addEventListener("click", e => {
-  if (!e.target.closest(".export-menu-wrap")) $("exportMenu").classList.remove("open");
 });
 $("previewBtn").onclick = openPreview;
 $("presentBtn").onclick = openPresent;
@@ -4715,6 +4885,24 @@ $("sfLetterSp").addEventListener("input", e => {
 });
 $("sfTextAlign").addEventListener("change", e => { touchShape(sh => { sh.textAlign = e.target.value; }); });
 $("sfTextTransform").addEventListener("change", e => { touchShape(sh => { sh.textTransform = e.target.value; }); });
+$("sfTextOpacity").addEventListener("input", e => {
+  touchShape(sh => {
+    sh.textOpacity = clamp(Number(e.target.value) / 100, 0, 1);
+    $("sfTextOpacityVal").textContent = Math.round(sh.textOpacity * 100) + "%";
+  });
+});
+$("sfArcOn").addEventListener("change", e => {
+  touchShape(sh => {
+    sh.textArcOn = !!e.target.checked;
+    $("sfArcFields").style.display = sh.textArcOn ? "" : "none";
+  });
+});
+$("sfArcBend").addEventListener("input", e => {
+  touchShape(sh => {
+    sh.textArc = clamp(e.target.value, -100, 100);
+    $("sfArcBendVal").textContent = String(sh.textArc);
+  });
+});
 $("sfColumns").addEventListener("input", e => {
   touchShape(sh => { sh.columns = clamp(e.target.value, 1, 4); $("sfColumnsVal").textContent = String(sh.columns); });
 });
@@ -4924,8 +5112,9 @@ function editorCommands() {
     { id: "export-html", label: "Export presentation (.html)", keywords: "download share", run: () => exportDemo() },
     { id: "export-notes", label: "Export speaker notes (.txt)", keywords: "download notes", run: () => exportNotes() },
     { id: "export-print", label: "Print / PDF…", keywords: "export pdf print", run: () => exportPrint() },
+    { id: "close", label: "Close presentation", keywords: "reset new empty recent", run: () => closePresentation() },
     { id: "save", label: "Save project file", keywords: "download json", shortcut: "", run: () => saveProject() },
-    { id: "open", label: "Open project file", keywords: "load json", run: () => $("projInput").click() },
+    { id: "open", label: "Open project or recent…", keywords: "load json recent", run: () => { paintRecentList(); $("openMenu").classList.add("open"); } },
     { id: "brand", label: "Open brand kit", keywords: "colors fonts logo", run: () => openBrand() },
     { id: "grid", label: "Toggle grid", keywords: "guides columns", run: () => toggleSlideFlag("showGrid") },
     { id: "rulers", label: "Toggle rulers", keywords: "guides", run: () => toggleSlideFlag("showRulers") },
@@ -4934,7 +5123,8 @@ function editorCommands() {
     { id: "tool-box", label: "Draw a box", keywords: "shape rectangle", run: () => { tool = "box"; render(); } },
     { id: "tool-ellipse", label: "Draw a circle", keywords: "shape ellipse", run: () => { tool = "ellipse"; render(); } },
     { id: "tool-arrow", label: "Draw an arrow", keywords: "shape", run: () => { tool = "arrow"; render(); } },
-    { id: "tool-message", label: "Draw a message box", keywords: "text shape", run: () => { tool = "message"; render(); } },
+    { id: "tool-type", label: "Type tool", keywords: "text font arc bend", run: () => { tool = "text"; render(); } },
+    { id: "tool-message", label: "Draw a message box", keywords: "text shape callout", run: () => { tool = "message"; render(); } },
     { id: "tool-frame", label: "Draw a frame", keywords: "image container", run: () => { tool = "frame"; render(); } },
     { id: "tool-highlight", label: "Draw a highlight", keywords: "shape", run: () => { tool = "highlight"; render(); } },
     { id: "tool-hotspot", label: "Hotspot tool", keywords: "click tip", run: () => { tool = "hotspot"; render(); } },

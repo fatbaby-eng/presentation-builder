@@ -2,77 +2,107 @@
  * Starter templates + custom template save/load (local only).
  * Plain language: "Start from a template", "Save as template".
  *
- * Atlas samples use fictional project cards (Work / Freelance / Personal)
- * so people can try shapes, notes, motion, and transitions with real-feeling copy.
+ * Samples (group: "sample") are full demo decks with sample data.
+ * Starters (group: "starter") are blank-ish outlines to fill in.
  */
 
+function mot(appear, delay, duration) {
+  return {
+    appear: appear || "none",
+    appearDelay: delay == null ? 0 : delay,
+    appearDuration: duration == null ? 0.5 : duration,
+    attention: "none",
+    attentionDelay: 0.6,
+    disappear: "none",
+    disappearDelay: 2.5,
+    disappearDuration: 0.45,
+    easing: "ease-out"
+  };
+}
+
+function tx(type, duration) {
+  return { type: type || "fade", duration: duration == null ? 0.45 : duration };
+}
+
+function box(opts) {
+  return Object.assign({
+    type: "box", x: 0, y: 0, w: 20, h: 20, rot: 0, flipX: false, flipY: false,
+    fill: "#ffffff", stroke: "#ffffff", strokeWidth: 0, opacity: 1, radius: 10,
+    text: "", textColor: "#1b1f2a", parentId: null,
+    fillMode: "solid", shadowOn: false, glowOn: false
+  }, opts);
+}
+
+function msg(opts) {
+  return Object.assign({
+    type: "message", x: 0, y: 0, w: 30, h: 12, rot: 0, flipX: false, flipY: false,
+    fill: "#fffaf5", stroke: "#d6c7b5", strokeWidth: 1, opacity: 1, radius: 10,
+    text: "", textColor: "#1a2332", parentId: null, textStyle: "body",
+    fillMode: "solid", shadowOn: true, shadowY: 4, shadowBlur: 10, shadowOpacity: 0.2,
+    glowOn: false
+  }, opts);
+}
+
+function highlight(opts) {
+  return Object.assign({
+    type: "highlight", x: 0, y: 0, w: 20, h: 8, rot: 0, flipX: false, flipY: false,
+    fill: "#e0a84a", stroke: "#e0a84a", strokeWidth: 0, opacity: 0.35, radius: 4,
+    text: "", textColor: "#1b1f2a", parentId: null,
+    fillMode: "solid", shadowOn: false, glowOn: false
+  }, opts);
+}
+
+function ellipse(opts) {
+  return Object.assign({
+    type: "ellipse", x: 0, y: 0, w: 4, h: 7, rot: 0, flipX: false, flipY: false,
+    fill: "#c9783f", stroke: "#c9783f", strokeWidth: 0, opacity: 1, radius: 0,
+    text: "", textColor: "#1b1f2a", parentId: null,
+    fillMode: "solid", shadowOn: false, glowOn: false
+  }, opts);
+}
+
+/** Warm map / curious-builder palette — not purple-AI default. */
 const ATLAS_BRAND = {
-  primary: "#c45c26",
-  secondary: "#2a9d8f",
-  accent: "#e9c46a",
-  bg: "#12151c",
-  text: "#f4f1ea",
-  bg2: "#1c2430",
+  primary: "#c9783f",
+  secondary: "#4a7c6f",
+  accent: "#e0a84a",
+  bg: "#1a2332",
+  text: "#f4efe6",
+  success: "#5b8f6b",
+  warning: "#d4a017",
+  danger: "#c45c4a",
+  bg2: "#2a3548",
   bgMode: "gradient",
   bgAngle: 155,
   fontHeading: "georgia",
   fontBody: "system"
 };
 
-/** Compact message “card” for sample decks. */
-function msg(id, x, y, w, h, text, extra) {
-  return Object.assign({
-    id,
-    type: "message",
-    x, y, w, h,
-    rot: 0,
-    fill: "#1a222e",
-    stroke: "#2d3a4d",
-    strokeWidth: 1,
-    opacity: 1,
-    radius: 12,
-    text,
-    textColor: "#f4f1ea",
-    fontSize: 13,
-    fontWeight: 500,
-    lineHeight: 1.35,
-    textAlign: "left",
-    shadowOn: true,
-    shadowX: 0,
-    shadowY: 6,
-    shadowBlur: 18,
-    shadowOpacity: 0.4,
-    shadowColor: "#000000"
-  }, extra || {});
-}
+const ATLAS_CTA = {
+  enabled: true,
+  text: "Visit toddboswell.com",
+  url: "https://toddboswell.com"
+};
 
-function chip(id, x, y, w, h, text, fill) {
-  return msg(id, x, y, w, h, text, {
-    fill: fill || "#c45c26",
-    strokeWidth: 0,
-    radius: 8,
-    fontSize: 11,
-    fontWeight: 700,
-    textAlign: "center",
-    shadowOn: false
-  });
-}
-
-const ATLAS_DESKTOP = {
-  id: "atlas-desktop",
-  name: "Try Atlas (desktop)",
-  blurb: "Sample deck from fake project cards — widescreen layout",
-  brand: ATLAS_BRAND,
-  steps: [
+/** Desktop widescreen sample — denser layout, side-by-side cards. */
+function atlasDesktopSteps() {
+  return [
     {
-      type: "content", layout: "title", name: "Atlas",
+      type: "content", layout: "title", name: "Cover",
       heading: "Atlas",
-      subhead: "Project map for a curious person",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.5 },
-      notes: "Demo deck with sample data. Atlas is a project map across Work, Freelance, and Personal.",
+      subhead: "Project map for a curious person.",
+      bullets: [],
+      notes: "Demo deck with sample data — nothing here is live product data.",
+      transition: tx("fade", 0.5),
       shapes: [
-        chip("d0a", 8, 82, 14, 6, "DEMO DATA", "#2a9d8f")
+        ellipse({ x: 8, y: 18, w: 2.2, h: 4, fill: "#c9783f", motion: mot("pop", 0.2, 0.4) }),
+        ellipse({ x: 12, y: 28, w: 1.6, h: 2.8, fill: "#e0a84a", opacity: 0.85, motion: mot("pop", 0.35, 0.4) }),
+        ellipse({ x: 6, y: 36, w: 1.8, h: 3.2, fill: "#4a7c6f", motion: mot("pop", 0.5, 0.4) }),
+        msg({
+          x: 62, y: 62, w: 32, h: 18, text: "Demo with sample data\nWork · Freelance · Personal",
+          textStyle: "caption", fill: "#243044", stroke: "#3d4f66", textColor: "#f4efe6",
+          shadowOn: false, motion: mot("fade", 0.55, 0.5)
+        })
       ]
     },
     {
@@ -81,232 +111,376 @@ const ATLAS_DESKTOP = {
       subhead: "",
       bullets: [
         "Projects across Work, Freelance, and Personal lanes",
-        "Each card: dossier, activity log, AI reflection",
-        "Reflection asks what’s stuck, what’s next, what to let go",
-        "Dashboard: workload forecast + tech spread"
+        "Each card has a dossier, an activity log, and an AI reflection tool",
+        "Reflection thinks through what’s stuck, what’s next, and what to let go",
+        "Dashboard shows workload forecasting and tech spread"
       ],
-      body: "",
-      transition: { type: "push-left", duration: 0.45 },
-      notes: "This is a demo with sample data — not a live account."
-    },
-    {
-      type: "content", layout: "section", name: "Work",
-      heading: "Work · 3 projects",
-      subhead: "Active client and product work",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.4 },
+      transition: tx("push-left", 0.45),
       shapes: [
-        msg("dw1", 6, 28, 28, 52,
-          "Brand Strategist  ·  active  ·  PINNED\n\nQ3 Campaign — Summer Push\nNext: Finalize hero photography direction\n\nbrand · campaign · q3\n2400 XP",
-          { motion: { appear: "fade", appearDelay: 0.05, appearDuration: 0.5, attention: "none", disappear: "none", easing: "ease-out" } }),
-        msg("dw2", 36, 28, 28, 52,
-          "Training Architect  ·  shipped\n\nOnboarding Emulator — Mobile\nNext: Hand off to training team\n\ntraining · emulator · mobile\n3100 XP",
-          { motion: { appear: "fade", appearDelay: 0.15, appearDuration: 0.5, attention: "none", disappear: "none", easing: "ease-out" } }),
-        msg("dw3", 66, 28, 28, 52,
-          "Compliance Ranger  ·  planning\n\nAccessibility Audit — Public Site\nNext: Run axe-core on top 20 pages\n\na11y · audit · compliance\n1800 XP",
-          { motion: { appear: "fade", appearDelay: 0.25, appearDuration: 0.5, attention: "none", disappear: "none", easing: "ease-out" } })
+        highlight({ x: 6, y: 78, w: 28, h: 6, motion: mot("fade", 0.4, 0.4) })
       ]
     },
     {
-      type: "content", layout: "bullets", name: "Work spotlight",
-      heading: "Spotlight: Summer Push",
-      subhead: "Brand Strategist · pinned",
+      type: "content", layout: "section", name: "Lanes",
+      heading: "Three lanes",
+      subhead: "Same map. Different kinds of work.",
+      bullets: [],
+      transition: tx("fade", 0.4),
+      shapes: [
+        box({
+          x: 6, y: 42, w: 28, h: 44, fill: "#243044", stroke: "#3d4f66", strokeWidth: 1, radius: 12,
+          shadowOn: true, shadowY: 6, shadowBlur: 14, shadowOpacity: 0.28,
+          motion: mot("fly-up", 0.1, 0.45)
+        }),
+        msg({
+          x: 8, y: 46, w: 24, h: 34, fill: "#243044", stroke: "#243044", strokeWidth: 0, shadowOn: false,
+          text: "WORK\n3 projects\n\nActive + shipped\n+ planning",
+          textColor: "#f4efe6", textStyle: "body", motion: mot("fade", 0.25, 0.4)
+        }),
+        box({
+          x: 36, y: 42, w: 28, h: 44, fill: "#243044", stroke: "#3d4f66", strokeWidth: 1, radius: 12,
+          shadowOn: true, shadowY: 6, shadowBlur: 14, shadowOpacity: 0.28,
+          motion: mot("fly-up", 0.22, 0.45)
+        }),
+        msg({
+          x: 38, y: 46, w: 24, h: 34, fill: "#243044", stroke: "#243044", strokeWidth: 0, shadowOn: false,
+          text: "FREELANCE\n2 projects\n\nClient work\n+ pauses",
+          textColor: "#f4efe6", textStyle: "body", motion: mot("fade", 0.35, 0.4)
+        }),
+        box({
+          x: 66, y: 42, w: 28, h: 44, fill: "#243044", stroke: "#3d4f66", strokeWidth: 1, radius: 12,
+          shadowOn: true, shadowY: 6, shadowBlur: 14, shadowOpacity: 0.28,
+          motion: mot("fly-up", 0.34, 0.45)
+        }),
+        msg({
+          x: 68, y: 46, w: 24, h: 34, fill: "#243044", stroke: "#243044", strokeWidth: 0, shadowOn: false,
+          text: "PERSONAL\n3 projects\n\nBuilds, dogs,\nand bread",
+          textColor: "#f4efe6", textStyle: "body", motion: mot("fade", 0.45, 0.4)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "section", name: "Work",
+      heading: "Work lane",
+      subhead: "Pinned work sits at the top of the map.",
+      bullets: [],
+      transition: tx("wipe-left", 0.4),
+      shapes: [
+        msg({
+          x: 4, y: 38, w: 30, h: 48,
+          text: "📌 Brand Strategist\nactive · 2400 XP\n\nQ3 Campaign — Summer Push\nNext: Finalize hero photography\n#brand #campaign #q3",
+          textStyle: "caption", motion: mot("fly-up", 0.08, 0.45)
+        }),
+        msg({
+          x: 35, y: 38, w: 30, h: 48,
+          text: "Training Architect\nshipped · 3100 XP\n\nOnboarding Emulator — Mobile\nNext: Hand off to training team\n#training #emulator #mobile",
+          textStyle: "caption", motion: mot("fly-up", 0.2, 0.45)
+        }),
+        msg({
+          x: 66, y: 38, w: 30, h: 48,
+          text: "Compliance Ranger\nplanning · 1800 XP\n\nAccessibility Audit — Public Site\nNext: axe-core on top 20 pages\n#a11y #audit #compliance",
+          textStyle: "caption", motion: mot("fly-up", 0.32, 0.45)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "section", name: "Dossier",
+      heading: "Open a dossier",
+      subhead: "Brand Strategist · Q3 Campaign",
+      bullets: [],
+      notes: "Point out PINNED, status, and the Next line — those are the map’s wayfinding cues.",
+      transition: tx("zoom", 0.45),
+      shapes: [
+        box({
+          x: 8, y: 36, w: 54, h: 52, fill: "#fffaf5", stroke: "#d6c7b5", strokeWidth: 1, radius: 14,
+          shadowOn: true, shadowY: 8, shadowBlur: 18, shadowOpacity: 0.25,
+          motion: mot("zoom", 0.1, 0.5)
+        }),
+        msg({
+          x: 11, y: 40, w: 48, h: 44, fill: "#fffaf5", stroke: "#fffaf5", strokeWidth: 0, shadowOn: false,
+          text: "PINNED · active · 2400 XP\n\nSummer Push\nNext: Finalize hero photography direction\n\nTags: brand, campaign, q3\nActivity log + AI reflection live here.",
+          textColor: "#1a2332", textStyle: "body", motion: mot("fade", 0.3, 0.45)
+        }),
+        box({
+          x: 66, y: 36, w: 26, h: 52, fill: "#243044", stroke: "#4a7c6f", strokeWidth: 2, radius: 14,
+          motion: mot("fly-right", 0.25, 0.5)
+        }),
+        msg({
+          x: 68, y: 42, w: 22, h: 40, fill: "#243044", stroke: "#243044", strokeWidth: 0, shadowOn: false,
+          text: "AI reflection\n\nStuck?\nWhat’s next?\nWhat to let go?",
+          textColor: "#f4efe6", textStyle: "caption", motion: mot("fade", 0.45, 0.4)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "bullets", name: "Reflection",
+      heading: "AI reflection — Brand Strategist",
+      subhead: "Sample thoughts on this project",
       bullets: [
-        "Status: active",
-        "Next: Finalize hero photography direction",
-        "Tags: brand, campaign, q3",
-        "2400 XP earned on this card"
+        "Stuck: hero photography direction still open",
+        "Next: lock the visual direction before copy finalizes",
+        "Let go: extra mood boards that aren’t moving the campaign"
       ],
-      body: "",
-      transition: { type: "wipe-left", duration: 0.45 },
-      notes: "Deep-dive slide — good place to demo Present notes (N in export)."
+      transition: tx("fade", 0.4),
+      shapes: [
+        ellipse({ x: 88, y: 18, w: 3, h: 5.5, fill: "#c9783f", motion: mot("bounce", 0.2, 0.55) })
+      ]
     },
     {
       type: "content", layout: "section", name: "Freelance",
-      heading: "Freelance · 2 projects",
-      subhead: "Client work on the side",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.4 },
+      heading: "Freelance lane",
+      subhead: "Client work with honest pauses.",
+      bullets: [],
+      transition: tx("push-left", 0.4),
       shapes: [
-        msg("df1", 10, 30, 38, 48,
-          "Freelance Artisan  ·  active\n\nPortfolio Site — River City Barber\nNext: Send comp 2 for review\n\nfreelance · portfolio · local\n1200 XP"),
-        msg("df2", 52, 30, 38, 48,
-          "Identity Shaper  ·  paused\n\nLogo + Brand Kit — Sunrise Yoga\nNext: Client on retreat until July\n\nfreelance · brand · paused\n900 XP")
+        msg({
+          x: 8, y: 40, w: 40, h: 44,
+          text: "Freelance Artisan · active · 1200 XP\n\nPortfolio Site — River City Barber\nNext: Send comp 2 for review\n#freelance #portfolio #local",
+          textStyle: "caption", motion: mot("fly-up", 0.1, 0.45)
+        }),
+        msg({
+          x: 52, y: 40, w: 40, h: 44,
+          text: "Identity Shaper · paused · 900 XP\n\nLogo + Brand Kit — Sunrise Yoga\nNext: Client on retreat until July\n#freelance #brand #paused",
+          textStyle: "caption", motion: mot("fly-up", 0.24, 0.45)
+        })
       ]
     },
     {
       type: "content", layout: "section", name: "Personal",
-      heading: "Personal · 3 projects",
-      subhead: "Builds, dogs, and bread diplomacy",
-      bullets: [], body: "",
-      transition: { type: "push-up", duration: 0.45 },
+      heading: "Personal lane",
+      subhead: "The curious stuff that still counts as work.",
+      bullets: [],
+      transition: tx("push-left", 0.4),
       shapes: [
-        msg("dp1", 6, 28, 28, 52,
-          "Firebrick Wrangler  ·  active  ·  PINNED\n\nBackyard Pizza Oven — Phase 2\nNext: Source firebrick, 46 count\n\nbuild · pizza · outdoor\n1600 XP"),
-        msg("dp2", 36, 28, 28, 52,
-          "Canine UX Lead  ·  active\n\nTeach the Dog to Use Slack\nNext: He keeps reacting with the wrong emoji\n\ndog · slack · experiment\n750 XP"),
-        msg("dp3", 66, 28, 28, 52,
-          "Fermentation Diplomat  ·  paused\n\nSourdough Starter Custody Agreement\nNext: Mediation scheduled for Thursday\n\nbread · fermentation · diplomacy")
+        msg({
+          x: 3, y: 38, w: 30, h: 48,
+          text: "📌 Firebrick Wrangler\nactive · 1600 XP\n\nBackyard Pizza Oven — Phase 2\nNext: Source firebrick, 46 count\n#build #pizza #outdoor",
+          textStyle: "caption", motion: mot("fly-up", 0.08, 0.45)
+        }),
+        msg({
+          x: 35, y: 38, w: 30, h: 48,
+          text: "Canine UX Lead\nactive · 750 XP\n\nTeach the Dog to Use Slack\nNext: Wrong emoji reactions\n#dog #slack #experiment",
+          textStyle: "caption", motion: mot("fly-up", 0.2, 0.45)
+        }),
+        msg({
+          x: 67, y: 38, w: 30, h: 48,
+          text: "Fermentation Diplomat\npaused\n\nSourdough Starter Custody\nNext: Mediation Thursday\n#bread #fermentation #diplomacy",
+          textStyle: "caption", motion: mot("fly-up", 0.32, 0.45)
+        })
       ]
-    },
-    {
-      type: "content", layout: "statement", name: "Fun card",
-      heading: "Teach the Dog to Use Slack",
-      subhead: "Next: He keeps reacting with the wrong emoji",
-      bullets: [], body: "",
-      transition: { type: "zoom", duration: 0.5 },
-      notes: "Personality slide — shows statement layout with Atlas sample humor."
     },
     {
       type: "content", layout: "bullets", name: "Dashboard",
-      heading: "Dashboard teaser",
-      subhead: "What the sample data implies",
+      heading: "Dashboard signals",
+      subhead: "Sample forecasting & tech spread",
       bullets: [
-        "Workload forecast across three lanes",
-        "Tech spread: brand, training, a11y, build…",
-        "XP totals help spot what’s getting energy",
-        "Pinned cards rise to the top of each lane"
+        "Workload: Work heavy this week; Freelance paused item waiting on client",
+        "Forecast: pizza oven sourcing + campaign photo direction collide mid-week",
+        "Tech spread: brand systems, a11y tooling, mobile emulator, local portfolio"
       ],
-      body: "",
-      transition: { type: "fade", duration: 0.4 }
+      transition: tx("fade", 0.4),
+      shapes: [
+        box({
+          x: 72, y: 70, w: 22, h: 16, fill: "#4a7c6f", strokeWidth: 0, radius: 10, opacity: 0.9,
+          motion: mot("pop", 0.35, 0.4)
+        }),
+        msg({
+          x: 73, y: 72, w: 20, h: 12, fill: "#4a7c6f", stroke: "#4a7c6f", strokeWidth: 0, shadowOn: false,
+          text: "8 projects\non the map",
+          textColor: "#f4efe6", textStyle: "caption"
+        })
+      ]
     },
     {
       type: "content", layout: "statement", name: "Close",
-      heading: "A map for work you actually care about",
-      subhead: "Remix these cards — try Motion, Present, and Export",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.45 },
-      notes: "Invite viewers to open Present mode or tweak a card shape."
+      heading: "A project map for anyone curious enough to keep score.",
+      subhead: "— Atlas · sample data demo",
+      bullets: [],
+      transition: tx("fade", 0.55),
+      shapes: [
+        ellipse({
+          x: 48, y: 78, w: 2.4, h: 4.4, fill: "#c9783f",
+          motion: Object.assign(mot("pop", 0.15, 0.45), { attention: "pulse", attentionDelay: 0.7 })
+        })
+      ]
     }
-  ],
-  cta: { enabled: true, text: "Explore Atlas", url: "https://toddboswell.com" }
-};
+  ];
+}
 
-const ATLAS_MOBILE = {
-  id: "atlas-mobile",
-  name: "Try Atlas (phone)",
-  blurb: "Same fake project cards — one card per slide, easy to tap through",
-  brand: Object.assign({}, ATLAS_BRAND, { bgAngle: 180, bg: "#0e1116", bg2: "#1a2330" }),
-  steps: [
+/** Phone-friendly sample — narrow content column, larger cards, one idea per slide. */
+function atlasMobileSteps() {
+  const bezelL = box({
+    x: 0, y: 0, w: 16, h: 100, fill: "#0f141c", strokeWidth: 0, radius: 0, opacity: 1, shadowOn: false
+  });
+  const bezelR = box({
+    x: 84, y: 0, w: 16, h: 100, fill: "#0f141c", strokeWidth: 0, radius: 0, opacity: 1, shadowOn: false
+  });
+  const frame = [bezelL, bezelR];
+
+  return [
     {
-      type: "content", layout: "title", name: "Atlas",
+      type: "content", layout: "title", name: "Cover",
       heading: "Atlas",
-      subhead: "Project map for a curious person",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.45 },
-      notes: "Phone-friendly sample: fewer cards per slide, larger type.",
+      subhead: "Project map for a curious person.",
+      bullets: [],
+      notes: "Phone sample: taller framing, fewer items, bigger tap targets.",
+      transition: tx("fade", 0.5),
       shapes: [
-        chip("m0a", 30, 78, 40, 8, "SAMPLE · PHONE LAYOUT", "#2a9d8f")
+        ...frame,
+        ellipse({ x: 22, y: 22, w: 3.5, h: 6.5, fill: "#c9783f", motion: mot("pop", 0.25, 0.45) }),
+        msg({
+          x: 20, y: 72, w: 60, h: 16,
+          text: "Tap through — sample data only",
+          textStyle: "caption", fill: "#243044", stroke: "#3d4f66", textColor: "#f4efe6",
+          shadowOn: false, radius: 12, motion: mot("fly-up", 0.4, 0.45)
+        })
       ]
     },
     {
-      type: "content", layout: "bullets", name: "Lanes",
-      heading: "Three lanes",
+      type: "content", layout: "bullets", name: "What",
+      heading: "One map. Three lanes.",
       subhead: "",
       bullets: [
-        "Work — 3 projects",
-        "Freelance — 2 projects",
-        "Personal — 3 projects"
+        "Work, Freelance, Personal",
+        "Dossier + activity + AI reflection",
+        "Forecasting on the dashboard"
       ],
-      body: "",
-      transition: { type: "push-up", duration: 0.4 }
+      transition: tx("push-up", 0.45),
+      shapes: [...frame]
     },
     {
-      type: "content", layout: "section", name: "Card anatomy",
-      heading: "What’s on a card",
-      subhead: "Dossier · activity log · AI reflection",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.4 },
+      type: "content", layout: "section", name: "Lanes",
+      heading: "Pick a lane",
+      subhead: "Big targets — easy to tap.",
+      bullets: [],
+      transition: tx("push-up", 0.4),
       shapes: [
-        msg("ma1", 12, 32, 76, 48,
-          "Stuck?\nWhat’s next?\nWhat to let go?\n\nReflection lives on every card.",
-          { fontSize: 16, textAlign: "center", fill: "#18202b" })
+        ...frame,
+        msg({
+          x: 20, y: 36, w: 60, h: 16,
+          text: "WORK — 3 projects",
+          textStyle: "h2", fill: "#c9783f", stroke: "#c9783f", textColor: "#1a2332",
+          radius: 14, motion: mot("fly-up", 0.08, 0.4)
+        }),
+        msg({
+          x: 20, y: 55, w: 60, h: 16,
+          text: "FREELANCE — 2 projects",
+          textStyle: "h2", fill: "#4a7c6f", stroke: "#4a7c6f", textColor: "#f4efe6",
+          radius: 14, motion: mot("fly-up", 0.2, 0.4)
+        }),
+        msg({
+          x: 20, y: 74, w: 60, h: 16,
+          text: "PERSONAL — 3 projects",
+          textStyle: "h2", fill: "#e0a84a", stroke: "#e0a84a", textColor: "#1a2332",
+          radius: 14, motion: mot("fly-up", 0.32, 0.4)
+        })
       ]
     },
     {
-      type: "content", layout: "section", name: "Work card",
+      type: "content", layout: "section", name: "Work",
       heading: "Work",
-      subhead: "Pinned",
-      bullets: [], body: "",
-      transition: { type: "push-left", duration: 0.4 },
+      subhead: "Three cards. One lane.",
+      bullets: [],
+      transition: tx("push-up", 0.4),
       shapes: [
-        msg("mw1", 10, 26, 80, 58,
-          "Brand Strategist\nactive · PINNED\n\nQ3 Campaign — Summer Push\n\nNext: Finalize hero photography direction\n\nbrand · campaign · q3\n2400 XP",
-          { fontSize: 15 })
-      ],
-      notes: "One full card — good for mobile demos."
-    },
-    {
-      type: "content", layout: "section", name: "Work shipped",
-      heading: "Work",
-      subhead: "Shipped",
-      bullets: [], body: "",
-      transition: { type: "push-left", duration: 0.35 },
-      shapes: [
-        msg("mw2", 10, 26, 80, 58,
-          "Training Architect\nshipped\n\nOnboarding Emulator — Mobile\n\nNext: Hand off to training team\n\ntraining · emulator · mobile\n3100 XP",
-          { fontSize: 15 })
+        ...frame,
+        msg({
+          x: 19, y: 34, w: 62, h: 18,
+          text: "📌 Brand Strategist · active\nQ3 Campaign — Summer Push · 2400 XP",
+          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.08, 0.4)
+        }),
+        msg({
+          x: 19, y: 54, w: 62, h: 18,
+          text: "Training Architect · shipped\nOnboarding Emulator — Mobile · 3100 XP",
+          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.2, 0.4)
+        }),
+        msg({
+          x: 19, y: 74, w: 62, h: 18,
+          text: "Compliance Ranger · planning\nAccessibility Audit · 1800 XP",
+          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.32, 0.4)
+        })
       ]
     },
     {
-      type: "content", layout: "section", name: "Freelance card",
-      heading: "Freelance",
-      subhead: "Active",
-      bullets: [], body: "",
-      transition: { type: "push-left", duration: 0.35 },
+      type: "content", layout: "section", name: "Dossier",
+      heading: "Dossier",
+      subhead: "Brand Strategist",
+      bullets: [],
+      transition: tx("zoom", 0.4),
       shapes: [
-        msg("mf1", 10, 26, 80, 58,
-          "Freelance Artisan\nactive\n\nPortfolio Site — River City Barber\n\nNext: Send comp 2 for review\n\nfreelance · portfolio · local\n1200 XP",
-          { fontSize: 15 })
+        ...frame,
+        msg({
+          x: 19, y: 36, w: 62, h: 50,
+          text: "PINNED · active · 2400 XP\n\nSummer Push\nNext: Finalize hero photography direction\n\nTags: brand · campaign · q3",
+          textStyle: "body", radius: 14, motion: mot("zoom", 0.12, 0.5)
+        })
       ]
     },
     {
-      type: "content", layout: "section", name: "Personal card",
-      heading: "Personal",
-      subhead: "Pinned",
-      bullets: [], body: "",
-      transition: { type: "push-left", duration: 0.35 },
-      shapes: [
-        msg("mp1", 10, 26, 80, 58,
-          "Firebrick Wrangler\nactive · PINNED\n\nBackyard Pizza Oven — Phase 2\n\nNext: Source firebrick, 46 count\n\nbuild · pizza · outdoor\n1600 XP",
-          { fontSize: 15 })
-      ]
-    },
-    {
-      type: "content", layout: "statement", name: "Wild card",
-      heading: "Canine UX Lead",
-      subhead: "Teach the Dog to Use Slack — 750 XP",
-      bullets: [], body: "",
-      transition: { type: "zoom", duration: 0.45 }
-    },
-    {
-      type: "content", layout: "bullets", name: "Also in Atlas",
-      heading: "Also in the sample",
-      subhead: "",
+      type: "content", layout: "bullets", name: "Reflect",
+      heading: "AI reflection",
+      subhead: "What’s stuck · next · let go",
       bullets: [
-        "Compliance Ranger — Accessibility Audit (planning)",
-        "Identity Shaper — Sunrise Yoga brand kit (paused)",
-        "Fermentation Diplomat — sourdough custody (paused)"
+        "Stuck: photo direction",
+        "Next: lock the hero look",
+        "Let go: unused mood boards"
       ],
-      body: "",
-      transition: { type: "fade", duration: 0.4 }
+      transition: tx("fade", 0.4),
+      shapes: [...frame]
+    },
+    {
+      type: "content", layout: "section", name: "Personal",
+      heading: "Personal pin",
+      subhead: "Because curiosity counts.",
+      bullets: [],
+      transition: tx("push-up", 0.4),
+      shapes: [
+        ...frame,
+        msg({
+          x: 19, y: 38, w: 62, h: 44,
+          text: "📌 Firebrick Wrangler\nactive · 1600 XP\n\nBackyard Pizza Oven — Phase 2\nNext: Source firebrick, 46 count\n#build #pizza #outdoor",
+          textStyle: "body", radius: 14, motion: mot("fly-up", 0.15, 0.45)
+        })
+      ]
     },
     {
       type: "content", layout: "statement", name: "Close",
-      heading: "Tap through. Remix a card.",
-      subhead: "Try Present, Motion, and Export on this sample",
-      bullets: [], body: "",
-      transition: { type: "fade", duration: 0.4 }
+      heading: "You’re on the map.",
+      subhead: "Atlas · phone sample · toddboswell.com",
+      bullets: [],
+      transition: tx("fade", 0.5),
+      shapes: [
+        ...frame,
+        ellipse({ x: 48, y: 72, w: 4, h: 7.5, fill: "#c9783f", motion: mot("pop", 0.2, 0.45) })
+      ]
     }
-  ],
-  cta: { enabled: true, text: "Explore Atlas", url: "https://toddboswell.com" }
-};
+  ];
+}
 
 export const BUILTIN_TEMPLATES = [
-  ATLAS_DESKTOP,
-  ATLAS_MOBILE,
+  {
+    id: "atlas-desktop",
+    group: "sample",
+    name: "Try Atlas (desktop)",
+    title: "Atlas — Desktop",
+    blurb: "Widescreen product demo with sample Work, Freelance & Personal projects",
+    brand: Object.assign({}, ATLAS_BRAND),
+    steps: atlasDesktopSteps(),
+    cta: Object.assign({}, ATLAS_CTA)
+  },
+  {
+    id: "atlas-mobile",
+    group: "sample",
+    name: "Try Atlas (phone)",
+    title: "Atlas — Mobile",
+    blurb: "Narrow framing, larger cards, one idea per slide — same sample data",
+    brand: Object.assign({}, ATLAS_BRAND),
+    steps: atlasMobileSteps(),
+    cta: Object.assign({}, ATLAS_CTA)
+  },
   {
     id: "pitch",
+    group: "starter",
     name: "Pitch deck",
     blurb: "Title, problem, solution, traction, and ask",
     brand: {
@@ -324,6 +498,7 @@ export const BUILTIN_TEMPLATES = [
   },
   {
     id: "tour",
+    group: "starter",
     name: "Product tour",
     blurb: "Welcome, walkthrough sections, and next steps",
     brand: {
@@ -341,6 +516,7 @@ export const BUILTIN_TEMPLATES = [
   },
   {
     id: "training",
+    group: "starter",
     name: "Training outline",
     blurb: "Agenda, lessons, practice, and recap",
     brand: {
@@ -358,6 +534,7 @@ export const BUILTIN_TEMPLATES = [
   },
   {
     id: "status",
+    group: "starter",
     name: "Status update",
     blurb: "Wins, risks, and next week’s plan",
     brand: {
@@ -397,9 +574,14 @@ export function deleteCustomTemplate(id) {
 
 export function templateToProjectPayload(tpl) {
   return {
-    title: tpl.name || "Untitled",
+    title: tpl.title || tpl.name || "Untitled",
     brand: Object.assign({}, tpl.brand || {}),
-    steps: (tpl.steps || []).map(s => JSON.parse(JSON.stringify(s))),
+    steps: (tpl.steps || []).map(s => Object.assign({}, s, {
+      shapes: (s.shapes || []).map(sh => Object.assign({}, sh)),
+      bullets: Array.isArray(s.bullets) ? s.bullets.slice() : [],
+      transition: s.transition ? Object.assign({}, s.transition) : undefined,
+      notes: s.notes
+    })),
     cta: Object.assign({ enabled: false, text: "Get started", url: "" }, tpl.cta || {}),
     assets: [],
     symbols: [],

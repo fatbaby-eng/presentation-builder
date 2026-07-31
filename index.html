@@ -426,8 +426,14 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .tpl-card { text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: .75rem; background: #fafbfc;
   cursor: pointer; font-family: inherit; color: var(--ink); transition: border-color .12s, background .12s; }
 .tpl-card:hover { border-color: var(--accent); background: #f2f0ff; }
+.tpl-card.sample { border-color: #e0c9b0; background: #fffaf5; }
+.tpl-card.sample:hover { border-color: #c9783f; background: #faf0e6; }
+.tpl-card .tpl-badge { display: inline-block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: #c9783f; margin-bottom: .3rem; }
 .tpl-card strong { display: block; font-size: .88rem; margin-bottom: .25rem; }
 .tpl-card span { font-size: .72rem; color: var(--muted); line-height: 1.35; }
+.tpl-section-label { font-size: .78rem; font-weight: 700; color: var(--ink); margin: .85rem 0 .15rem; }
+.tpl-section-hint { font-size: .72rem; color: var(--muted); margin: 0 0 .35rem; }
 .harmony-block { margin: .55rem 0; }
 .harmony-block .lab { font-size: .72rem; font-weight: 700; color: var(--muted); margin-bottom: .3rem; }
 .harmony-row { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
@@ -532,7 +538,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <button type="button" class="empty-card" id="emptyTplBtn">
               <span class="ec-icon">▦</span>
               <strong>Start from a template</strong>
-              <span class="ec-desc">Try Atlas samples, pitch, tour, training…</span>
+              <span class="ec-desc">Atlas samples with project cards, or blank starters</span>
             </button>
             <button type="button" class="empty-card" id="emptyAddBtn">
               <span class="ec-icon">🖼</span>
@@ -1071,8 +1077,12 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <div class="modal">
     <div class="modal-head"><strong>▦ Start from a template</strong><button class="btn sm" id="tplClose">✕ Close</button></div>
     <div class="modal-body">
-      <p class="hint">Pick a starter deck — including <strong>Try Atlas</strong> samples built from fake project cards. Your brand kit can still be applied after. Nothing leaves your browser.</p>
-      <h3>Built-in</h3>
+      <p class="hint">Pick a sample to explore features, or a blank starter to fill in. Your brand kit can still be applied after. Nothing leaves your browser.</p>
+      <div class="tpl-section-label">Try a sample</div>
+      <p class="tpl-section-hint">Real demo decks with sample data — shapes, motion, and transitions included.</p>
+      <div class="tpl-grid" id="tplSamples"></div>
+      <div class="tpl-section-label">Starters</div>
+      <p class="tpl-section-hint">Empty outlines: pitch, product tour, training, status.</p>
       <div class="tpl-grid" id="tplBuiltin"></div>
       <h3>Saved by you</h3>
       <div class="tpl-grid" id="tplCustom"></div>
@@ -3220,14 +3230,23 @@ function openTemplates() {
   $("tplModal").classList.add("open");
 }
 function closeTemplates() { $("tplModal").classList.remove("open"); }
+function paintTplCard(tpl, sample) {
+  const b = document.createElement("button"); b.type = "button";
+  b.className = "tpl-card" + (sample ? " sample" : "");
+  if (sample) {
+    const badge = document.createElement("span"); badge.className = "tpl-badge"; badge.textContent = "Sample"; b.appendChild(badge);
+  }
+  const t = document.createElement("strong"); t.textContent = tpl.name; b.appendChild(t);
+  const s = document.createElement("span"); s.textContent = tpl.blurb; b.appendChild(s);
+  b.onclick = () => applyTemplatePayload(templateToProjectPayload(tpl), tpl.title || tpl.name);
+  return b;
+}
 function paintTemplateGallery() {
+  const samples = $("tplSamples"); samples.innerHTML = "";
   const builtin = $("tplBuiltin"); builtin.innerHTML = "";
   BUILTIN_TEMPLATES.forEach(tpl => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "tpl-card";
-    const t = document.createElement("strong"); t.textContent = tpl.name; b.appendChild(t);
-    const s = document.createElement("span"); s.textContent = tpl.blurb; b.appendChild(s);
-    b.onclick = () => applyTemplatePayload(templateToProjectPayload(tpl), tpl.name);
-    builtin.appendChild(b);
+    const isSample = tpl.group === "sample";
+    (isSample ? samples : builtin).appendChild(paintTplCard(tpl, isSample));
   });
   const customHost = $("tplCustom"); customHost.innerHTML = "";
   const customs = listCustomTemplates();

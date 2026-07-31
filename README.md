@@ -49,9 +49,17 @@ No accounts. No backend. No data ever leaves the browser.
   tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
-- **Templates** — start from **Try Atlas (desktop / phone)** sample decks (fake project cards),
-  or Pitch, Product tour, Training, or Status. Save your own templates in the browser and export
+- **Templates** — start from **Try Atlas (desktop)** / **Try Atlas (phone)** sample decks
+  (fake project cards so you can poke shapes, motion, and transitions), or blank starters:
+  Pitch, Product tour, Training, Status. Save your own templates in the browser and export
   a `.template.json`.
+
+### Try the Atlas samples
+
+1. Open the editor (`npx --yes serve .`, then the local URL).
+2. Click **Start from a template…** (empty canvas card, **＋ New slide** menu, or **Ctrl/⌘ K → template**).
+3. Under **Try a sample**, pick **Try Atlas (desktop)** or **Try Atlas (phone)**.
+4. Preview or Present to walk the demo; tweak anything — it’s regular project JSON in your browser.
 - **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
   build Heading/Body sizes from one body size and a ratio.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**

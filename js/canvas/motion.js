@@ -238,14 +238,323 @@ function animateCss(el, className, duration, delaySec, easing, preview) {
 
 export function clearMotionPlayback(el) {
   if (!el) return;
-  if (el._pbMotTimer) clearTimeout(el._pbMotTimer);
+  if (el._pbMotTimer) { clearTimeout(el._pbMotTimer); el._pbMotTimer = null; }
   const kill = [];
   el.classList.forEach(c => { if (c.indexOf("pb-") === 0) kill.push(c); });
   kill.forEach(c => el.classList.remove(c));
   el.style.animationDuration = "";
   el.style.animationDelay = "";
   el.style.animationTimingFunction = "";
-  el.style.opacity = "";
+  el.style.animationName = "";
+  if (el._pbMotScrubbing) {
+    if (el._pbMotBaseFilter != null) el.style.filter = el._pbMotBaseFilter;
+    if (el._pbMotBaseTransform != null) el.style.transform = el._pbMotBaseTransform;
+    if (el._pbMotBaseOpacity != null) el.style.opacity = el._pbMotBaseOpacity;
+    else el.style.opacity = "";
+  } else {
+    el.style.opacity = "";
+  }
+  el._pbMotBaseFilter = null;
+  el._pbMotBaseTransform = null;
+  el._pbMotBaseOpacity = null;
+  el._pbMotScrubbing = false;
+}
+
+/** Frames-per-second used for the scrubber frame readout. */
+export const MOTION_FPS = 30;
+
+/** Attention loop length (seconds) — matches CSS preset durations × iterations. */
+const ATTN_CYCLE = {
+  pulse: 0.7,
+  shake: 0.35,
+  wiggle: 0.4,
+  glow: 0.7,
+  heartbeat: 0.8
+};
+const ATTN_ITERS = {
+  pulse: 3,
+  shake: 4,
+  wiggle: 4,
+  glow: 3,
+  heartbeat: 3
+};
+
+export function formatMotionTime(sec) {
+  const t = Math.max(0, Number(sec) || 0);
+  const whole = Math.floor(t);
+  const tenths = Math.round((t - whole) * 10) % 10;
+  return whole + "." + tenths + "s";
+}
+
+export function formatMotionFrame(sec, fps) {
+  const f = Math.max(1, fps || MOTION_FPS);
+  return Math.round(Math.max(0, Number(sec) || 0) * f) + "f";
+}
+
+function easeProgress(p, easing) {
+  p = clamp(p, 0, 1);
+  switch (easing) {
+    case "linear": return p;
+    case "ease-in": return p * p;
+    case "ease-out": return 1 - (1 - p) * (1 - p);
+    case "ease-in-out": return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    case "ease":
+    default: {
+      // Approximate CSS `ease` (cubic-bezier .25,.1,.25,1)
+      const t = p;
+      return t * t * (3 - 2 * t);
+    }
+  }
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+/** Sample a multi-stop keyframe list at local progress 0–1 (pre-eased). */
+function sampleStops(stops, p) {
+  if (!stops.length) return {};
+  if (p <= stops[0].t) return Object.assign({}, stops[0]);
+  if (p >= stops[stops.length - 1].t) return Object.assign({}, stops[stops.length - 1]);
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i], b = stops[i + 1];
+    if (p >= a.t && p <= b.t) {
+      const u = (p - a.t) / (b.t - a.t || 1);
+      const out = { t: p };
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      keys.forEach(k => {
+        if (k === "t") return;
+        if (typeof a[k] === "number" && typeof b[k] === "number") out[k] = lerp(a[k], b[k], u);
+        else out[k] = u < 1 ? (a[k] != null ? a[k] : b[k]) : b[k];
+      });
+      return out;
+    }
+  }
+  return Object.assign({}, stops[stops.length - 1]);
+}
+
+function appearStops(id) {
+  switch (id) {
+    case "fade":
+      return [{ t: 0, opacity: 0, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "fly-up":
+      return [{ t: 0, opacity: 0, tx: 0, ty: 28, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "fly-down":
+      return [{ t: 0, opacity: 0, tx: 0, ty: -28, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "fly-left":
+      return [{ t: 0, opacity: 0, tx: -36, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "fly-right":
+      return [{ t: 0, opacity: 0, tx: 36, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "zoom":
+      return [{ t: 0, opacity: 0, tx: 0, ty: 0, scale: 0.72, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "bounce":
+      return [
+        { t: 0, opacity: 0, tx: 0, ty: 0, scale: 0.5, rot: 0 },
+        { t: 0.6, opacity: 1, tx: 0, ty: 0, scale: 1.08, rot: 0 },
+        { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }
+      ];
+    case "pop":
+      return [
+        { t: 0, opacity: 0, tx: 0, ty: 0, scale: 0.4, rot: 0 },
+        { t: 0.8, opacity: 1, tx: 0, ty: 0, scale: 1.06, rot: 0 },
+        { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }
+      ];
+    default:
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+  }
+}
+
+function disappearStops(id) {
+  switch (id) {
+    case "fade":
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 0, tx: 0, ty: 0, scale: 1, rot: 0 }];
+    case "fly-up":
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 0, tx: 0, ty: -28, scale: 1, rot: 0 }];
+    case "fly-down":
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 0, tx: 0, ty: 28, scale: 1, rot: 0 }];
+    case "zoom":
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 0, tx: 0, ty: 0, scale: 0.72, rot: 0 }];
+    default:
+      return [{ t: 0, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }, { t: 1, opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0 }];
+  }
+}
+
+function attentionSample(id, localT) {
+  // localT in [0,1] within one cycle
+  const p = clamp(localT, 0, 1);
+  switch (id) {
+    case "pulse": {
+      const s = p < 0.5 ? lerp(1, 1.06, p * 2) : lerp(1.06, 1, (p - 0.5) * 2);
+      return { opacity: 1, tx: 0, ty: 0, scale: s, rot: 0, glow: 0 };
+    }
+    case "shake": {
+      let x = 0;
+      if (p < 0.25) x = lerp(0, -5, p / 0.25);
+      else if (p < 0.75) x = lerp(-5, 5, (p - 0.25) / 0.5);
+      else x = lerp(5, 0, (p - 0.75) / 0.25);
+      return { opacity: 1, tx: x, ty: 0, scale: 1, rot: 0, glow: 0 };
+    }
+    case "wiggle": {
+      let r = 0;
+      if (p < 0.25) r = lerp(0, -3, p / 0.25);
+      else if (p < 0.75) r = lerp(-3, 3, (p - 0.25) / 0.5);
+      else r = lerp(3, 0, (p - 0.75) / 0.25);
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: r, glow: 0 };
+    }
+    case "glow": {
+      const g = p < 0.5 ? lerp(0, 1, p * 2) : lerp(1, 0, (p - 0.5) * 2);
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: g };
+    }
+    case "heartbeat": {
+      let s = 1;
+      if (p < 0.15) s = lerp(1, 1.12, p / 0.15);
+      else if (p < 0.3) s = lerp(1.12, 1, (p - 0.15) / 0.15);
+      else if (p < 0.45) s = lerp(1, 1.1, (p - 0.3) / 0.15);
+      else if (p < 0.6) s = lerp(1.1, 1, (p - 0.45) / 0.15);
+      return { opacity: 1, tx: 0, ty: 0, scale: s, rot: 0, glow: 0 };
+    }
+    default:
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0 };
+  }
+}
+
+function poseToCss(pose, baseTransform) {
+  const parts = [];
+  if (pose.tx) parts.push("translateX(" + pose.tx + "px)");
+  if (pose.ty) parts.push("translateY(" + pose.ty + "px)");
+  if (pose.scale != null && Math.abs(pose.scale - 1) > 0.001) parts.push("scale(" + pose.scale + ")");
+  if (pose.rot) parts.push("rotate(" + pose.rot + "deg)");
+  const motionTx = parts.length ? parts.join(" ") : "";
+  const base = baseTransform || "";
+  let transform = "";
+  if (motionTx && base) transform = motionTx + " " + base;
+  else transform = motionTx || base || "";
+  const filter = pose.glow
+    ? "drop-shadow(0 0 " + (pose.glow * 10).toFixed(1) + "px rgba(255,220,80," + (0.85 * pose.glow).toFixed(2) + "))"
+    : "";
+  return {
+    opacity: pose.opacity == null ? "" : String(pose.opacity),
+    transform,
+    filter
+  };
+}
+
+/**
+ * Compute visual pose for one object's motion at absolute timeline time `timeSec`.
+ * Uses the same delay/duration fields as the timeline bars.
+ */
+export function sampleMotionAtTime(motion, timeSec) {
+  const m = sanitizeMotion(motion);
+  const t = Math.max(0, Number(timeSec) || 0);
+  let pose = { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0 };
+
+  if (m.appear !== "none") {
+    const a0 = m.appearDelay;
+    const a1 = m.appearDelay + m.appearDuration;
+    if (t < a0) {
+      pose = sampleStops(appearStops(m.appear), 0);
+    } else if (t < a1) {
+      const raw = (t - a0) / (m.appearDuration || 0.001);
+      // Multi-stop bounce/pop already encode easing; apply CSS easing for simple 2-stop presets
+      const stops = appearStops(m.appear);
+      const p = stops.length > 2 ? clamp(raw, 0, 1) : easeProgress(raw, m.easing);
+      pose = sampleStops(stops, p);
+    } else {
+      pose = sampleStops(appearStops(m.appear), 1);
+    }
+  }
+
+  if (m.attention !== "none") {
+    const cycle = ATTN_CYCLE[m.attention] || 0.7;
+    const iters = ATTN_ITERS[m.attention] || 3;
+    const attnStart = m.attentionDelay;
+    const attnEnd = attnStart + cycle * iters;
+    if (t >= attnStart && t < attnEnd) {
+      const local = ((t - attnStart) % cycle) / cycle;
+      const attn = attentionSample(m.attention, local);
+      // Attention overlays transform; keep appear opacity
+      pose = {
+        opacity: pose.opacity,
+        tx: (pose.tx || 0) + (attn.tx || 0),
+        ty: (pose.ty || 0) + (attn.ty || 0),
+        scale: (pose.scale == null ? 1 : pose.scale) * (attn.scale == null ? 1 : attn.scale),
+        rot: (pose.rot || 0) + (attn.rot || 0),
+        glow: attn.glow || 0
+      };
+    }
+  }
+
+  if (m.disappear !== "none") {
+    const d0 = m.disappearDelay;
+    const d1 = m.disappearDelay + m.disappearDuration;
+    if (t >= d0) {
+      const raw = t >= d1 ? 1 : (t - d0) / (m.disappearDuration || 0.001);
+      const p = easeProgress(raw, m.easing);
+      pose = sampleStops(disappearStops(m.disappear), p);
+    }
+  }
+
+  return pose;
+}
+
+function rememberBaseStyles(el) {
+  if (!el || el._pbMotScrubbing) return;
+  el._pbMotBaseTransform = el.style.transform || "";
+  el._pbMotBaseOpacity = el.style.opacity || "";
+  el._pbMotBaseFilter = el.style.filter || "";
+  el._pbMotScrubbing = true;
+}
+
+function stripMotionAnimation(el) {
+  if (!el) return;
+  if (el._pbMotTimer) { clearTimeout(el._pbMotTimer); el._pbMotTimer = null; }
+  const kill = [];
+  el.classList.forEach(c => { if (c.indexOf("pb-") === 0) kill.push(c); });
+  kill.forEach(c => el.classList.remove(c));
+  el.style.animationDuration = "";
+  el.style.animationDelay = "";
+  el.style.animationTimingFunction = "";
+  el.style.animationName = "";
+}
+
+/**
+ * Freeze an element at motion time `timeSec` (seconds) for realtime scrubbing.
+ * Clears any running CSS playback first.
+ */
+export function scrubMotionOnElement(el, motion, timeSec) {
+  if (!el) return;
+  stripMotionAnimation(el);
+  rememberBaseStyles(el);
+  const pose = sampleMotionAtTime(motion, timeSec);
+  const css = poseToCss(pose, el._pbMotBaseTransform || "");
+  el.style.opacity = css.opacity;
+  el.style.transform = css.transform;
+  if (css.filter) el.style.filter = css.filter;
+  else el.style.filter = el._pbMotBaseFilter || "";
+}
+
+/**
+ * Scrub every motion item on a stage to the same absolute time.
+ * @param {Element} stage
+ * @param {{ id:string, obj:object }[]} items from buildMotionItems
+ * @param {number} timeSec
+ */
+export function scrubSlideAtTime(stage, items, timeSec) {
+  if (!stage) return;
+  (items || []).forEach(it => {
+    const m = readMotion(it.obj);
+    if (m.appear === "none" && m.attention === "none" && m.disappear === "none") return;
+    const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
+    if (!el) return;
+    scrubMotionOnElement(el, m, timeSec);
+  });
+}
+
+/** Restore edit pose for all motion nodes on a stage. */
+export function clearSlideMotion(stage, items) {
+  if (!stage) return;
+  (items || []).forEach(it => {
+    const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
+    if (el) clearMotionPlayback(el);
+  });
 }
 
 /**

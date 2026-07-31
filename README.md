@@ -32,6 +32,9 @@ No accounts. No backend. No data ever leaves the browser.
   spacing on one message box without breaking the rest.
 - **Saved pieces** — save a shape or Frame to reuse on other slides. Tweak text or
   colours on one copy, or unlink it to edit freely.
+- **Board size** — in the top bar next to Brand kit, pick Landscape (16:9, 16:10, 4:3, 21:9), Portrait (phone 9:16 and
+  others), Square, or a custom width × height. When you change the board, type and
+  shapes reflow to fit. Exports use the same board size. You can also use **Board** next to Grid/Rulers/Safe, or ⌘K → “Board size…”.
 - **Smart guides** — while dragging, red lines help you line things up (hold **Alt**
   to move freely). Toggle **Grid**, **Rulers**, and **Safe** area from the toolbar.
 - **Frames** — draw a Frame, add a photo, and optionally stack children inside it.
@@ -45,8 +48,8 @@ No accounts. No backend. No data ever leaves the browser.
   In a normal export, press **N** to peek at notes.
 - **Export menu** — download the offline `.html`, speaker notes as `.txt`, or **Print / PDF…**
   (use your browser’s Save as PDF).
-- **Command menu** — press **Ctrl/⌘ K** (or the ⌘K button) to search actions: new slides, export,
-  tools, brand kit, shape layering, and more.
+- **Command menu** — press **Ctrl/⌘ K** (or the ⌘K button) to search actions: new slides, board
+  size, export, tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
 - **Templates** — start from **Try Atlas (desktop)** / **Try Atlas (phone)** sample decks

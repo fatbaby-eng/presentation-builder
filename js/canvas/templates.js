@@ -307,32 +307,33 @@ function atlasDesktopSteps() {
   ];
 }
 
-/** Phone-friendly sample — narrow content column, larger cards, one idea per slide. */
-function atlasMobileSteps() {
-  const bezelL = box({
-    x: 0, y: 0, w: 16, h: 100, fill: "#0f141c", strokeWidth: 0, radius: 0, opacity: 1, shadowOn: false
-  });
-  const bezelR = box({
-    x: 84, y: 0, w: 16, h: 100, fill: "#0f141c", strokeWidth: 0, radius: 0, opacity: 1, shadowOn: false
-  });
-  const frame = [bezelL, bezelR];
+/**
+ * True 9:16 phone sample — full-bleed portrait board, stacked cards, no fake
+ * landscape side-bezels. Circle %-sizes use w/h ≈ 16/9 so they read round on portrait.
+ */
+function phoneDot(opts) {
+  const h = opts.h == null ? 3.2 : opts.h;
+  const w = opts.w == null ? Math.round(h * (16 / 9) * 10) / 10 : opts.w;
+  return ellipse(Object.assign({}, opts, { w, h }));
+}
 
+function atlasMobileSteps() {
   return [
     {
       type: "content", layout: "title", name: "Cover",
       heading: "Atlas",
       subhead: "Project map for a curious person.",
       bullets: [],
-      notes: "Phone sample: taller framing, fewer items, bigger tap targets.",
+      notes: "Phone sample on a 9:16 board — stacked layout, larger tap targets.",
       transition: tx("fade", 0.5),
       shapes: [
-        ...frame,
-        ellipse({ x: 22, y: 22, w: 3.5, h: 6.5, fill: "#c9783f", motion: mot("pop", 0.25, 0.45) }),
+        phoneDot({ x: 10, y: 18, h: 3.6, fill: "#c9783f", motion: mot("pop", 0.25, 0.45) }),
+        phoneDot({ x: 18, y: 24, h: 2.4, fill: "#e0a84a", opacity: 0.9, motion: mot("pop", 0.4, 0.4) }),
         msg({
-          x: 20, y: 72, w: 60, h: 16,
+          x: 8, y: 72, w: 84, h: 14,
           text: "Tap through — sample data only",
           textStyle: "caption", fill: "#243044", stroke: "#3d4f66", textColor: "#f4efe6",
-          shadowOn: false, radius: 12, motion: mot("fly-up", 0.4, 0.45)
+          shadowOn: false, radius: 14, motion: mot("fly-up", 0.4, 0.45)
         })
       ]
     },
@@ -346,7 +347,9 @@ function atlasMobileSteps() {
         "Forecasting on the dashboard"
       ],
       transition: tx("push-up", 0.45),
-      shapes: [...frame]
+      shapes: [
+        phoneDot({ x: 82, y: 12, h: 2.8, fill: "#4a7c6f", motion: mot("pop", 0.2, 0.4) })
+      ]
     },
     {
       type: "content", layout: "section", name: "Lanes",
@@ -355,24 +358,23 @@ function atlasMobileSteps() {
       bullets: [],
       transition: tx("push-up", 0.4),
       shapes: [
-        ...frame,
         msg({
-          x: 20, y: 36, w: 60, h: 16,
+          x: 8, y: 32, w: 84, h: 14,
           text: "WORK — 3 projects",
           textStyle: "h2", fill: "#c9783f", stroke: "#c9783f", textColor: "#1a2332",
-          radius: 14, motion: mot("fly-up", 0.08, 0.4)
+          radius: 16, motion: mot("fly-up", 0.08, 0.4)
         }),
         msg({
-          x: 20, y: 55, w: 60, h: 16,
+          x: 8, y: 50, w: 84, h: 14,
           text: "FREELANCE — 2 projects",
           textStyle: "h2", fill: "#4a7c6f", stroke: "#4a7c6f", textColor: "#f4efe6",
-          radius: 14, motion: mot("fly-up", 0.2, 0.4)
+          radius: 16, motion: mot("fly-up", 0.2, 0.4)
         }),
         msg({
-          x: 20, y: 74, w: 60, h: 16,
+          x: 8, y: 68, w: 84, h: 14,
           text: "PERSONAL — 3 projects",
           textStyle: "h2", fill: "#e0a84a", stroke: "#e0a84a", textColor: "#1a2332",
-          radius: 14, motion: mot("fly-up", 0.32, 0.4)
+          radius: 16, motion: mot("fly-up", 0.32, 0.4)
         })
       ]
     },
@@ -383,21 +385,20 @@ function atlasMobileSteps() {
       bullets: [],
       transition: tx("push-up", 0.4),
       shapes: [
-        ...frame,
         msg({
-          x: 19, y: 34, w: 62, h: 18,
+          x: 7, y: 30, w: 86, h: 16,
           text: "📌 Brand Strategist · active\nQ3 Campaign — Summer Push · 2400 XP",
-          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.08, 0.4)
+          textStyle: "caption", radius: 14, motion: mot("fly-up", 0.08, 0.4)
         }),
         msg({
-          x: 19, y: 54, w: 62, h: 18,
+          x: 7, y: 49, w: 86, h: 16,
           text: "Training Architect · shipped\nOnboarding Emulator — Mobile · 3100 XP",
-          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.2, 0.4)
+          textStyle: "caption", radius: 14, motion: mot("fly-up", 0.2, 0.4)
         }),
         msg({
-          x: 19, y: 74, w: 62, h: 18,
+          x: 7, y: 68, w: 86, h: 16,
           text: "Compliance Ranger · planning\nAccessibility Audit · 1800 XP",
-          textStyle: "caption", radius: 12, motion: mot("fly-up", 0.32, 0.4)
+          textStyle: "caption", radius: 14, motion: mot("fly-up", 0.32, 0.4)
         })
       ]
     },
@@ -408,11 +409,10 @@ function atlasMobileSteps() {
       bullets: [],
       transition: tx("zoom", 0.4),
       shapes: [
-        ...frame,
         msg({
-          x: 19, y: 36, w: 62, h: 50,
+          x: 7, y: 28, w: 86, h: 52,
           text: "PINNED · active · 2400 XP\n\nSummer Push\nNext: Finalize hero photography direction\n\nTags: brand · campaign · q3",
-          textStyle: "body", radius: 14, motion: mot("zoom", 0.12, 0.5)
+          textStyle: "body", radius: 16, motion: mot("zoom", 0.12, 0.5)
         })
       ]
     },
@@ -426,7 +426,9 @@ function atlasMobileSteps() {
         "Let go: unused mood boards"
       ],
       transition: tx("fade", 0.4),
-      shapes: [...frame]
+      shapes: [
+        phoneDot({ x: 78, y: 14, h: 3.4, fill: "#c9783f", motion: mot("bounce", 0.15, 0.5) })
+      ]
     },
     {
       type: "content", layout: "section", name: "Personal",
@@ -435,11 +437,10 @@ function atlasMobileSteps() {
       bullets: [],
       transition: tx("push-up", 0.4),
       shapes: [
-        ...frame,
         msg({
-          x: 19, y: 38, w: 62, h: 44,
+          x: 7, y: 30, w: 86, h: 48,
           text: "📌 Firebrick Wrangler\nactive · 1600 XP\n\nBackyard Pizza Oven — Phase 2\nNext: Source firebrick, 46 count\n#build #pizza #outdoor",
-          textStyle: "body", radius: 14, motion: mot("fly-up", 0.15, 0.45)
+          textStyle: "body", radius: 16, motion: mot("fly-up", 0.15, 0.45)
         })
       ]
     },
@@ -450,8 +451,10 @@ function atlasMobileSteps() {
       bullets: [],
       transition: tx("fade", 0.5),
       shapes: [
-        ...frame,
-        ellipse({ x: 48, y: 72, w: 4, h: 7.5, fill: "#c9783f", motion: mot("pop", 0.2, 0.45) })
+        phoneDot({
+          x: 44, y: 72, h: 3.8, fill: "#c9783f",
+          motion: Object.assign(mot("pop", 0.2, 0.45), { attention: "pulse", attentionDelay: 0.7 })
+        })
       ]
     }
   ];
@@ -465,6 +468,7 @@ export const BUILTIN_TEMPLATES = [
     title: "Atlas — Desktop",
     blurb: "Widescreen product demo with sample Work, Freelance & Personal projects",
     brand: Object.assign({}, ATLAS_BRAND),
+    artboard: { id: "16:9", w: 1920, h: 1080 },
     steps: atlasDesktopSteps(),
     cta: Object.assign({}, ATLAS_CTA)
   },
@@ -473,8 +477,9 @@ export const BUILTIN_TEMPLATES = [
     group: "sample",
     name: "Try Atlas (phone)",
     title: "Atlas — Mobile",
-    blurb: "Narrow framing, larger cards, one idea per slide — same sample data",
+    blurb: "Portrait 9:16 board, stacked cards, one idea per slide — same sample data",
     brand: Object.assign({}, ATLAS_BRAND),
+    artboard: { id: "9:16", w: 1080, h: 1920 },
     steps: atlasMobileSteps(),
     cta: Object.assign({}, ATLAS_CTA)
   },
@@ -576,6 +581,7 @@ export function templateToProjectPayload(tpl) {
   return {
     title: tpl.title || tpl.name || "Untitled",
     brand: Object.assign({}, tpl.brand || {}),
+    artboard: tpl.artboard ? Object.assign({}, tpl.artboard) : { id: "16:9", w: 1920, h: 1080 },
     steps: (tpl.steps || []).map(s => Object.assign({}, s, {
       shapes: (s.shapes || []).map(sh => Object.assign({}, sh)),
       bullets: Array.isArray(s.bullets) ? s.bullets.slice() : [],
@@ -598,6 +604,7 @@ export function projectToTemplatePayload(project, name) {
     payload: {
       title: project.title,
       brand: project.brand,
+      artboard: project.artboard,
       logo: project.logo,
       steps: project.steps,
       cta: project.cta,

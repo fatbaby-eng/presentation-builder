@@ -1,6 +1,6 @@
 /**
- * Frame tool helpers — artboard-like shapes that mask images.
- * Nested children (parentId) and auto-layout are schema-ready.
+ * Image holder helpers (internal type id: "frame").
+ * Masks images; nested children (parentId) and auto-layout are schema-ready.
  */
 
 export const FRAME_LAYOUTS = ["none", "vstack", "hstack", "grid"];
@@ -27,9 +27,11 @@ export function applyFrameVisual(el, sh) {
   el.style.border = (sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + (sh.stroke || "#94a3b8") : "1px dashed #94a3b8");
   el.style.borderRadius = (sh.radius || 0) + "px";
   el.style.opacity = sh.opacity == null ? 1 : sh.opacity;
-  // Clear prior img
-  const prev = el.querySelector(":scope > .frame-img");
-  if (prev) prev.remove();
+  // Clear prior media / placeholder
+  const prevImg = el.querySelector(":scope > .frame-img");
+  if (prevImg) prevImg.remove();
+  const prevPh = el.querySelector(":scope > .frame-ph");
+  if (prevPh) prevPh.remove();
   if (sh.image) {
     const img = document.createElement("img");
     img.className = "frame-img";
@@ -39,13 +41,10 @@ export function applyFrameVisual(el, sh) {
     img.style.objectFit = sh.imageFit === "contain" ? "contain" : sh.imageFit === "fill" ? "fill" : "cover";
     el.appendChild(img);
   } else {
-    // Placeholder label for empty frames
-    if (!el.querySelector(":scope > .frame-ph")) {
-      const ph = document.createElement("div");
-      ph.className = "frame-ph";
-      ph.textContent = "Frame — drop image";
-      el.appendChild(ph);
-    }
+    const ph = document.createElement("div");
+    ph.className = "frame-ph";
+    ph.textContent = "Image holder";
+    el.appendChild(ph);
   }
 }
 

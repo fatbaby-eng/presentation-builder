@@ -82,8 +82,8 @@ export function deriveProps(shapes) {
       props.push({ id: sh.id, kind: "text", label: "Text: " + str(sh.text || "Message", 24), field: "text" });
       props.push({ id: sh.id + ":fill", kind: "color", label: "Text box fill", field: "fill", shapeId: sh.id });
     } else if (sh.type === "frame") {
-      props.push({ id: sh.id + ":image", kind: "image", label: "Frame image", field: "image", shapeId: sh.id });
-      props.push({ id: sh.id + ":fill", kind: "color", label: "Frame fill", field: "fill", shapeId: sh.id });
+      props.push({ id: sh.id + ":image", kind: "image", label: "Image holder photo", field: "image", shapeId: sh.id });
+      props.push({ id: sh.id + ":fill", kind: "color", label: "Image holder fill", field: "fill", shapeId: sh.id });
     } else if (sh.type === "box" || sh.type === "ellipse" || sh.type === "highlight") {
       props.push({ id: sh.id + ":fill", kind: "color", label: (sh.type === "highlight" ? "Highlight" : "Fill"), field: "fill", shapeId: sh.id });
     } else if (sh.type === "arrow") {

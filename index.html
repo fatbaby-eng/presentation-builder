@@ -532,7 +532,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <button type="button" class="empty-card" id="emptyTplBtn">
               <span class="ec-icon">▦</span>
               <strong>Start from a template</strong>
-              <span class="ec-desc">Pitch, product tour, training, status</span>
+              <span class="ec-desc">Try Atlas samples, pitch, tour, training…</span>
             </button>
             <button type="button" class="empty-card" id="emptyAddBtn">
               <span class="ec-icon">🖼</span>
@@ -1071,7 +1071,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <div class="modal">
     <div class="modal-head"><strong>▦ Start from a template</strong><button class="btn sm" id="tplClose">✕ Close</button></div>
     <div class="modal-body">
-      <p class="hint">Pick a starter deck. Your brand kit can still be applied after. Nothing leaves your browser.</p>
+      <p class="hint">Pick a starter deck — including <strong>Try Atlas</strong> samples built from fake project cards. Your brand kit can still be applied after. Nothing leaves your browser.</p>
       <h3>Built-in</h3>
       <div class="tpl-grid" id="tplBuiltin"></div>
       <h3>Saved by you</h3>
@@ -4895,7 +4895,7 @@ function editorCommands() {
     { id: "new-statement", label: "New statement slide", keywords: "add slide quote", run: () => addContentSlide("statement") },
     { id: "new-text", label: "New plain text slide", keywords: "add slide", run: () => addTextSlide() },
     { id: "import", label: "Import content…", keywords: "outline pdf docx markdown", shortcut: "", run: () => openOutline() },
-    { id: "template", label: "Start from a template…", keywords: "pitch tour training", run: () => openTemplates() },
+    { id: "template", label: "Start from a template…", keywords: "pitch tour training atlas sample", run: () => openTemplates() },
     { id: "save-tpl", label: "Save current deck as template", keywords: "reuse template", run: () => { openTemplates(); saveCurrentAsTemplate(); } },
     { id: "screenshots", label: "Add screenshots…", keywords: "image upload", run: () => $("imgInput").click() },
     { id: "dup-slide", label: "Duplicate this slide", keywords: "copy slide", run: () => { if (project.steps[selected]) dupStep(selected); } },

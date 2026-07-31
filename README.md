@@ -49,8 +49,9 @@ No accounts. No backend. No data ever leaves the browser.
   tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
-- **Templates** — start from Pitch, Product tour, Training, or Status. Save your own templates
-  in the browser and export a `.template.json`.
+- **Templates** — start from **Try Atlas (desktop / phone)** sample decks (fake project cards),
+  or Pitch, Product tour, Training, or Status. Save your own templates in the browser and export
+  a `.template.json`.
 - **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
   build Heading/Body sizes from one body size and a ratio.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**

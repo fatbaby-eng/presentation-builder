@@ -1,6 +1,6 @@
 /**
- * Slide motion — appear / attention / disappear presets.
- * Plain-language names; CSS animations for editor preview + offline export.
+ * Slide motion — appear / attention / disappear / point-to-point move.
+ * Plain-language names; scrub sampler drives editor preview; CSS for export.
  */
 
 export const APPEAR_PRESETS = [
@@ -32,6 +32,11 @@ export const DISAPPEAR_PRESETS = [
   { id: "zoom", label: "Zoom out" }
 ];
 
+export const MOVE_PRESETS = [
+  { id: "none", label: "Stay put" },
+  { id: "from-to", label: "Move from → to" }
+];
+
 export const EASINGS = [
   { id: "ease", label: "Smooth" },
   { id: "ease-in", label: "Slow start" },
@@ -39,6 +44,20 @@ export const EASINGS = [
   { id: "ease-in-out", label: "Slow both ends" },
   { id: "linear", label: "Steady" }
 ];
+
+/** Friendly labels for shape types in the motion list (incl. image holders). */
+export const MOTION_SHAPE_LABEL = {
+  box: "Box",
+  ellipse: "Ellipse",
+  frame: "Image holder",
+  arrow: "Arrow",
+  highlight: "Highlight",
+  message: "Message box",
+  text: "Text",
+  symbol: "Saved piece"
+};
+
+export const MIN_CLIP_DURATION = 0.1;
 
 function clamp(n, lo, hi) {
   n = Number(n);
@@ -48,6 +67,12 @@ function clamp(n, lo, hi) {
 
 function hasId(list, id) {
   return list.some(p => p.id === id);
+}
+
+function clampPct(n, fallback) {
+  const v = Number(n);
+  if (!isFinite(v)) return fallback;
+  return clamp(v, -50, 150);
 }
 
 export function defaultMotion() {
@@ -60,7 +85,15 @@ export function defaultMotion() {
     disappear: "none",
     disappearDelay: 2.5,
     disappearDuration: 0.45,
-    easing: "ease-out"
+    easing: "ease-out",
+    // Point-to-point path (board % coordinates)
+    move: "none",
+    moveDelay: 0,
+    moveDuration: 0.8,
+    moveFromX: 10,
+    moveFromY: 40,
+    moveToX: 40,
+    moveToY: 40
   };
 }
 
@@ -69,14 +102,21 @@ export function sanitizeMotion(raw) {
   raw = raw || {};
   return {
     appear: hasId(APPEAR_PRESETS, raw.appear) ? raw.appear : "none",
-    appearDelay: clamp(raw.appearDelay == null ? d.appearDelay : raw.appearDelay, 0, 12),
-    appearDuration: clamp(raw.appearDuration == null ? d.appearDuration : raw.appearDuration, 0.1, 5),
+    appearDelay: clamp(raw.appearDelay == null ? d.appearDelay : raw.appearDelay, 0, 30),
+    appearDuration: clamp(raw.appearDuration == null ? d.appearDuration : raw.appearDuration, MIN_CLIP_DURATION, 8),
     attention: hasId(ATTENTION_PRESETS, raw.attention) ? raw.attention : "none",
-    attentionDelay: clamp(raw.attentionDelay == null ? d.attentionDelay : raw.attentionDelay, 0, 12),
+    attentionDelay: clamp(raw.attentionDelay == null ? d.attentionDelay : raw.attentionDelay, 0, 30),
     disappear: hasId(DISAPPEAR_PRESETS, raw.disappear) ? raw.disappear : "none",
-    disappearDelay: clamp(raw.disappearDelay == null ? d.disappearDelay : raw.disappearDelay, 0, 20),
-    disappearDuration: clamp(raw.disappearDuration == null ? d.disappearDuration : raw.disappearDuration, 0.1, 5),
-    easing: hasId(EASINGS, raw.easing) ? raw.easing : "ease-out"
+    disappearDelay: clamp(raw.disappearDelay == null ? d.disappearDelay : raw.disappearDelay, 0, 40),
+    disappearDuration: clamp(raw.disappearDuration == null ? d.disappearDuration : raw.disappearDuration, MIN_CLIP_DURATION, 8),
+    easing: hasId(EASINGS, raw.easing) ? raw.easing : "ease-out",
+    move: hasId(MOVE_PRESETS, raw.move) ? raw.move : "none",
+    moveDelay: clamp(raw.moveDelay == null ? d.moveDelay : raw.moveDelay, 0, 30),
+    moveDuration: clamp(raw.moveDuration == null ? d.moveDuration : raw.moveDuration, MIN_CLIP_DURATION, 8),
+    moveFromX: clampPct(raw.moveFromX, d.moveFromX),
+    moveFromY: clampPct(raw.moveFromY, d.moveFromY),
+    moveToX: clampPct(raw.moveToX, d.moveToX),
+    moveToY: clampPct(raw.moveToY, d.moveToY)
   };
 }
 
@@ -88,8 +128,29 @@ export function mergeMotionFields(target, src) {
 export function readMotion(obj) {
   if (!obj) return defaultMotion();
   if (obj.motion) return sanitizeMotion(obj.motion);
-  // Flat fields (after sanitize merge)
   return sanitizeMotion(obj);
+}
+
+export function hasActiveMotion(motion) {
+  const m = sanitizeMotion(motion);
+  return m.appear !== "none" || m.attention !== "none" || m.disappear !== "none" || m.move !== "none";
+}
+
+/** Seed a from→to path using the shape's current board position as the end. */
+export function seedMoveFromShape(motion, shape) {
+  const m = sanitizeMotion(motion);
+  const x = Number(shape && shape.x);
+  const y = Number(shape && shape.y);
+  const toX = isFinite(x) ? x : m.moveToX;
+  const toY = isFinite(y) ? y : m.moveToY;
+  m.move = "from-to";
+  m.moveToX = toX;
+  m.moveToY = toY;
+  m.moveFromX = clampPct(toX - 18, toX - 18);
+  m.moveFromY = toY;
+  if (m.moveDelay == null) m.moveDelay = 0;
+  if (!m.moveDuration) m.moveDuration = 0.8;
+  return sanitizeMotion(m);
 }
 
 /** Total time (s) needed to finish all motion on a list of objects. */
@@ -100,12 +161,27 @@ export function timelineDuration(items) {
     if (m.appear !== "none") max = Math.max(max, m.appearDelay + m.appearDuration + 0.05);
     if (m.attention !== "none") max = Math.max(max, m.attentionDelay + 2.5);
     if (m.disappear !== "none") max = Math.max(max, m.disappearDelay + m.disappearDuration + 0.05);
+    if (m.move !== "none") max = Math.max(max, m.moveDelay + m.moveDuration + 0.05);
   });
   return max;
 }
 
 /**
+ * Clamp a timing clip so start >= 0, duration >= min, and optionally extend timelineMax.
+ * @returns {{ delay:number, duration:number, timelineMax:number }}
+ */
+export function clampTimingClip(delay, duration, timelineMax, opts) {
+  const minDur = (opts && opts.minDuration) || MIN_CLIP_DURATION;
+  let dly = clamp(delay, 0, 60);
+  let dur = clamp(duration, minDur, 8);
+  let maxT = Math.max(timelineMax || 2, dly + dur + 0.05, 2);
+  if (dly + dur > maxT) maxT = dly + dur + 0.05;
+  return { delay: dly, duration: dur, timelineMax: maxT };
+}
+
+/**
  * Build timeline rows for the current slide.
+ * Includes image holders (type "frame") the same as other top-level shapes.
  * @returns {{ kind:string, index:number, id:string, label:string, obj:object }[]}
  */
 export function buildMotionItems(step) {
@@ -113,10 +189,18 @@ export function buildMotionItems(step) {
   if (!step) return rows;
   (step.shapes || []).forEach((sh, i) => {
     if (sh.parentId) return; // children follow parent visually; animate the parent / top-level only
-    const label = sh.type === "message" ? (sh.text || "Message").slice(0, 28)
-      : sh.type === "symbol" ? "Saved piece"
-      : (sh.type || "Shape");
-    rows.push({ kind: "shape", index: i, id: sh.id, label: label.charAt(0).toUpperCase() + label.slice(1), obj: sh });
+    let label;
+    if (sh.type === "message") label = (sh.text || "Message").slice(0, 28);
+    else if (sh.type === "text") label = (sh.text || "Text").slice(0, 28);
+    else if (MOTION_SHAPE_LABEL[sh.type]) label = MOTION_SHAPE_LABEL[sh.type];
+    else label = sh.type || "Shape";
+    rows.push({
+      kind: "shape",
+      index: i,
+      id: sh.id,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      obj: sh
+    });
   });
   (step.overlays || []).forEach((o, i) => {
     rows.push({ kind: "overlay", index: i, id: o.id, label: "Image", obj: o });
@@ -167,7 +251,7 @@ export function motionStylesheet() {
 
 /**
  * Apply appear/attention/disappear as sequenced CSS animations on an element.
- * Uses Web Animations when available for cleaner sequencing; falls back to classes.
+ * Move (point-to-point) is applied via left/top keyframes when present.
  */
 export function playMotionOnElement(el, motion, opts) {
   const m = sanitizeMotion(motion);
@@ -182,6 +266,13 @@ export function playMotionOnElement(el, motion, opts) {
   const run = () => {
     const easing = m.easing || "ease-out";
     let chain = Promise.resolve();
+
+    if (m.move !== "none") {
+      // Start at from-position immediately so the path is visible
+      el.style.left = m.moveFromX + "%";
+      el.style.top = m.moveFromY + "%";
+      chain = chain.then(() => animateMove(el, m, easing, preview));
+    }
 
     if (m.appear !== "none") {
       chain = chain.then(() => animateCss(el, "pb-appear-" + m.appear, m.appearDuration, m.appearDelay, easing, preview));
@@ -206,13 +297,44 @@ export function playMotionOnElement(el, motion, opts) {
     return chain;
   };
 
-  // Start after a frame so opacity:0 is painted
   requestAnimationFrame(() => { run(); });
   return timelineDuration([{ obj: { motion: m } }]);
 }
 
 function delay(sec) {
   return new Promise(r => setTimeout(r, Math.max(0, sec) * 1000));
+}
+
+function animateMove(el, m, easing, preview) {
+  return new Promise(resolve => {
+    const dur = m.moveDuration;
+    const dly = m.moveDelay;
+    if (el.animate) {
+      const anim = el.animate(
+        [
+          { left: m.moveFromX + "%", top: m.moveFromY + "%" },
+          { left: m.moveToX + "%", top: m.moveToY + "%" }
+        ],
+        { duration: dur * 1000, delay: dly * 1000, easing: easing || "ease-out", fill: "forwards" }
+      );
+      el._pbMotAnim = anim;
+      anim.onfinish = () => {
+        el.style.left = m.moveToX + "%";
+        el.style.top = m.moveToY + "%";
+        if (!preview) try { anim.cancel(); } catch (e) {}
+        resolve();
+      };
+      anim.oncancel = () => resolve();
+    } else {
+      // Fallback: jump after delay+duration
+      const t = setTimeout(() => {
+        el.style.left = m.moveToX + "%";
+        el.style.top = m.moveToY + "%";
+        resolve();
+      }, (dly + dur) * 1000);
+      el._pbMotTimer = t;
+    }
+  });
 }
 
 function animateCss(el, className, duration, delaySec, easing, preview) {
@@ -239,6 +361,10 @@ function animateCss(el, className, duration, delaySec, easing, preview) {
 export function clearMotionPlayback(el) {
   if (!el) return;
   if (el._pbMotTimer) { clearTimeout(el._pbMotTimer); el._pbMotTimer = null; }
+  if (el._pbMotAnim) {
+    try { el._pbMotAnim.cancel(); } catch (e) {}
+    el._pbMotAnim = null;
+  }
   const kill = [];
   el.classList.forEach(c => { if (c.indexOf("pb-") === 0) kill.push(c); });
   kill.forEach(c => el.classList.remove(c));
@@ -251,12 +377,16 @@ export function clearMotionPlayback(el) {
     if (el._pbMotBaseTransform != null) el.style.transform = el._pbMotBaseTransform;
     if (el._pbMotBaseOpacity != null) el.style.opacity = el._pbMotBaseOpacity;
     else el.style.opacity = "";
+    if (el._pbMotBaseLeft != null) el.style.left = el._pbMotBaseLeft;
+    if (el._pbMotBaseTop != null) el.style.top = el._pbMotBaseTop;
   } else {
     el.style.opacity = "";
   }
   el._pbMotBaseFilter = null;
   el._pbMotBaseTransform = null;
   el._pbMotBaseOpacity = null;
+  el._pbMotBaseLeft = null;
+  el._pbMotBaseTop = null;
   el._pbMotScrubbing = false;
 }
 
@@ -300,7 +430,6 @@ function easeProgress(p, easing) {
     case "ease-in-out": return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
     case "ease":
     default: {
-      // Approximate CSS `ease` (cubic-bezier .25,.1,.25,1)
       const t = p;
       return t * t * (3 - 2 * t);
     }
@@ -378,7 +507,6 @@ function disappearStops(id) {
 }
 
 function attentionSample(id, localT) {
-  // localT in [0,1] within one cycle
   const p = clamp(localT, 0, 1);
   switch (id) {
     case "pulse": {
@@ -433,32 +561,48 @@ function poseToCss(pose, baseTransform) {
   return {
     opacity: pose.opacity == null ? "" : String(pose.opacity),
     transform,
-    filter
+    filter,
+    left: pose.leftPct != null ? pose.leftPct + "%" : null,
+    top: pose.topPct != null ? pose.topPct + "%" : null
   };
 }
 
 /**
  * Compute visual pose for one object's motion at absolute timeline time `timeSec`.
  * Uses the same delay/duration fields as the timeline bars.
+ * Point-to-point move sets leftPct/topPct in board %.
  */
 export function sampleMotionAtTime(motion, timeSec) {
   const m = sanitizeMotion(motion);
   const t = Math.max(0, Number(timeSec) || 0);
-  let pose = { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0 };
+  let pose = { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0, leftPct: null, topPct: null };
+
+  if (m.move !== "none") {
+    const m0 = m.moveDelay;
+    const m1 = m.moveDelay + m.moveDuration;
+    let u;
+    if (t < m0) u = 0;
+    else if (t >= m1) u = 1;
+    else u = easeProgress((t - m0) / (m.moveDuration || 0.001), m.easing);
+    pose.leftPct = lerp(m.moveFromX, m.moveToX, u);
+    pose.topPct = lerp(m.moveFromY, m.moveToY, u);
+  }
 
   if (m.appear !== "none") {
     const a0 = m.appearDelay;
     const a1 = m.appearDelay + m.appearDuration;
     if (t < a0) {
-      pose = sampleStops(appearStops(m.appear), 0);
+      const a = sampleStops(appearStops(m.appear), 0);
+      pose = Object.assign(pose, a, { leftPct: pose.leftPct, topPct: pose.topPct });
     } else if (t < a1) {
       const raw = (t - a0) / (m.appearDuration || 0.001);
-      // Multi-stop bounce/pop already encode easing; apply CSS easing for simple 2-stop presets
       const stops = appearStops(m.appear);
       const p = stops.length > 2 ? clamp(raw, 0, 1) : easeProgress(raw, m.easing);
-      pose = sampleStops(stops, p);
+      const a = sampleStops(stops, p);
+      pose = Object.assign(pose, a, { leftPct: pose.leftPct, topPct: pose.topPct });
     } else {
-      pose = sampleStops(appearStops(m.appear), 1);
+      const a = sampleStops(appearStops(m.appear), 1);
+      pose = Object.assign(pose, a, { leftPct: pose.leftPct, topPct: pose.topPct });
     }
   }
 
@@ -470,14 +614,15 @@ export function sampleMotionAtTime(motion, timeSec) {
     if (t >= attnStart && t < attnEnd) {
       const local = ((t - attnStart) % cycle) / cycle;
       const attn = attentionSample(m.attention, local);
-      // Attention overlays transform; keep appear opacity
       pose = {
         opacity: pose.opacity,
         tx: (pose.tx || 0) + (attn.tx || 0),
         ty: (pose.ty || 0) + (attn.ty || 0),
         scale: (pose.scale == null ? 1 : pose.scale) * (attn.scale == null ? 1 : attn.scale),
         rot: (pose.rot || 0) + (attn.rot || 0),
-        glow: attn.glow || 0
+        glow: attn.glow || 0,
+        leftPct: pose.leftPct,
+        topPct: pose.topPct
       };
     }
   }
@@ -488,7 +633,8 @@ export function sampleMotionAtTime(motion, timeSec) {
     if (t >= d0) {
       const raw = t >= d1 ? 1 : (t - d0) / (m.disappearDuration || 0.001);
       const p = easeProgress(raw, m.easing);
-      pose = sampleStops(disappearStops(m.disappear), p);
+      const d = sampleStops(disappearStops(m.disappear), p);
+      pose = Object.assign(pose, d, { leftPct: pose.leftPct, topPct: pose.topPct });
     }
   }
 
@@ -500,12 +646,18 @@ function rememberBaseStyles(el) {
   el._pbMotBaseTransform = el.style.transform || "";
   el._pbMotBaseOpacity = el.style.opacity || "";
   el._pbMotBaseFilter = el.style.filter || "";
+  el._pbMotBaseLeft = el.style.left || "";
+  el._pbMotBaseTop = el.style.top || "";
   el._pbMotScrubbing = true;
 }
 
 function stripMotionAnimation(el) {
   if (!el) return;
   if (el._pbMotTimer) { clearTimeout(el._pbMotTimer); el._pbMotTimer = null; }
+  if (el._pbMotAnim) {
+    try { el._pbMotAnim.cancel(); } catch (e) {}
+    el._pbMotAnim = null;
+  }
   const kill = [];
   el.classList.forEach(c => { if (c.indexOf("pb-") === 0) kill.push(c); });
   kill.forEach(c => el.classList.remove(c));
@@ -529,6 +681,10 @@ export function scrubMotionOnElement(el, motion, timeSec) {
   el.style.transform = css.transform;
   if (css.filter) el.style.filter = css.filter;
   else el.style.filter = el._pbMotBaseFilter || "";
+  if (css.left != null) el.style.left = css.left;
+  else if (el._pbMotBaseLeft != null) el.style.left = el._pbMotBaseLeft;
+  if (css.top != null) el.style.top = css.top;
+  else if (el._pbMotBaseTop != null) el.style.top = el._pbMotBaseTop;
 }
 
 /**
@@ -541,7 +697,7 @@ export function scrubSlideAtTime(stage, items, timeSec) {
   if (!stage) return;
   (items || []).forEach(it => {
     const m = readMotion(it.obj);
-    if (m.appear === "none" && m.attention === "none" && m.disappear === "none") return;
+    if (!hasActiveMotion(m)) return;
     const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
     if (!el) return;
     scrubMotionOnElement(el, m, timeSec);
@@ -559,20 +715,31 @@ export function clearSlideMotion(stage, items) {
 
 /**
  * For export: set inline animation styles so objects play when the slide is shown.
- * Appear only (attention optional as infinite/3x); disappear skipped in auto-play export
- * unless delay is set — we still encode appear for demos.
+ * Appear + optional move (left/top WAAPI-like CSS via custom properties / dual animation).
  */
 export function applyExportMotion(el, motion) {
   const m = sanitizeMotion(motion);
-  if (m.appear === "none" && m.attention === "none") return;
+  if (!hasActiveMotion(m)) return;
   el.classList.add("pb-mot");
+  if (m.move !== "none") {
+    el.style.left = m.moveFromX + "%";
+    el.style.top = m.moveFromY + "%";
+    // Use WAAPI when available in the viewer; also set CSS transition fallback via data attrs
+    el.dataset.pbMove = "1";
+    el.dataset.pbMoveFromX = String(m.moveFromX);
+    el.dataset.pbMoveFromY = String(m.moveFromY);
+    el.dataset.pbMoveToX = String(m.moveToX);
+    el.dataset.pbMoveToY = String(m.moveToY);
+    el.dataset.pbMoveDelay = String(m.moveDelay);
+    el.dataset.pbMoveDur = String(m.moveDuration);
+    el.dataset.pbMoveEase = m.easing || "ease-out";
+  }
   if (m.appear !== "none") {
     el.classList.add("pb-appear-" + m.appear);
     el.style.animationDuration = m.appearDuration + "s";
     el.style.animationDelay = m.appearDelay + "s";
     el.style.animationTimingFunction = m.easing || "ease-out";
-    el.style.opacity = "0"; // filled by animation
-    // After appear, optionally chain attention via animationend — keep export simple:
+    el.style.opacity = "0";
     if (m.attention !== "none") {
       el.dataset.pbAttn = m.attention;
       el.dataset.pbAttnDelay = String(m.attentionDelay);

@@ -66,8 +66,24 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fafbfc; }
 .motion-row.on { border-color: var(--accent); background: #f2f0ff; }
 .motion-row .lab { font-size: .72rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.motion-bar-track { position: relative; height: 10px; background: #eef0f4; border-radius: 5px; overflow: hidden; }
-.motion-bar-fill { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, #a78bfa, #6c5ce7); border-radius: 5px; opacity: .85; }
+.motion-bar-track { position: relative; height: 16px; background: #eef0f4; border-radius: 5px; overflow: visible;
+  touch-action: none; user-select: none; }
+.motion-bar-stack { position: absolute; inset: 0; }
+.motion-bar-fill { position: absolute; top: 1px; height: 6px; background: linear-gradient(90deg, #a78bfa, #6c5ce7);
+  border-radius: 5px; opacity: .9; cursor: grab; min-width: 10px; box-sizing: border-box; }
+.motion-bar-fill:active { cursor: grabbing; }
+.motion-bar-fill.move { background: linear-gradient(90deg, #38bdf8, #0284c7); top: 9px; height: 6px; z-index: 1; }
+.motion-bar-fill.ghost { background: repeating-linear-gradient(90deg, #d8dce6 0 4px, #e8ebf1 4px 8px);
+  opacity: .7; cursor: pointer; top: 5px; }
+.motion-bar-h { position: absolute; top: -2px; bottom: -2px; width: 9px; border-radius: 3px;
+  background: #fff; border: 1.5px solid #5b4cdb; box-shadow: 0 1px 2px rgba(40,30,90,.2);
+  cursor: ew-resize; z-index: 3; touch-action: none; }
+.motion-bar-fill.move .motion-bar-h { border-color: #0369a1; }
+.motion-bar-h.left { left: -4px; }
+.motion-bar-h.right { right: -4px; }
+.motion-bar-tip { position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  font-size: .62rem; font-weight: 700; white-space: nowrap; background: #1b1f2a; color: #fff;
+  padding: .12rem .35rem; border-radius: 4px; pointer-events: none; z-index: 5; font-variant-numeric: tabular-nums; }
 .motion-row .meta { font-size: .65rem; color: var(--muted); text-align: right; }
 .motion-scrub { display: grid; grid-template-columns: 110px 1fr auto; gap: .4rem; align-items: center;
   margin-bottom: .55rem; padding: .4rem .45rem; border: 1px solid var(--line); border-radius: 8px; background: #f7f8fa; }
@@ -671,11 +687,11 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       <div class="motion-panel collapsed" id="motionPanel" style="display:none">
         <div class="motion-head">
           <button type="button" class="btn ghost sm" id="motionToggle" title="Show or hide motion">Motion ▸</button>
-          <span class="hint">Make things appear, pulse, or leave</span>
+          <span class="hint">Appear, move, pulse, or leave — drag timeline bars to time it</span>
           <button type="button" class="btn sm primary" id="motionPlay">Play this slide</button>
         </div>
         <div class="motion-body" id="motionBody">
-          <div class="hint" style="margin-bottom:.45rem">Select a shape or image, then choose how it moves. Keep it simple — one nice entrance is enough.</div>
+          <div class="hint" style="margin-bottom:.45rem">Select a shape or image holder, then choose how it appears or moves. Drag the purple (appear) or blue (move) bars — left edge = when it starts, right edge = how long.</div>
           <div class="motion-scrub" id="motionScrub" style="display:none">
             <div class="lab">Timeline</div>
             <div class="motion-scrub-track" id="motionScrubTrack" title="Drag to scrub animation">
@@ -709,11 +725,47 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             </div>
             <div class="field" style="margin:.5rem 0 0">
               <label for="motAppearDelay">Starts after <span id="motAppearDelayVal" class="hint" style="font-weight:400"></span></label>
-              <input type="range" id="motAppearDelay" min="0" max="50" step="1" style="width:100%">
+              <input type="range" id="motAppearDelay" min="0" max="80" step="1" style="width:100%">
             </div>
             <div class="field" style="margin:.4rem 0 0">
               <label for="motAppearDur">Appears over <span id="motAppearDurVal" class="hint" style="font-weight:400"></span></label>
-              <input type="range" id="motAppearDur" min="1" max="30" step="1" style="width:100%">
+              <input type="range" id="motAppearDur" min="1" max="40" step="1" style="width:100%">
+            </div>
+            <div class="field" style="margin:.55rem 0 0; padding-top:.45rem; border-top:1px dashed var(--line)">
+              <label for="motMove">Move from → to</label>
+              <select id="motMove"></select>
+            </div>
+            <div id="motMoveFields" style="display:none">
+              <div class="grid2" style="margin-top:.4rem">
+                <div class="field" style="margin:0">
+                  <label for="motMoveDelay">Start time <span id="motMoveDelayVal" class="hint" style="font-weight:400"></span></label>
+                  <input type="range" id="motMoveDelay" min="0" max="80" step="1" style="width:100%">
+                </div>
+                <div class="field" style="margin:0">
+                  <label for="motMoveDur">Duration <span id="motMoveDurVal" class="hint" style="font-weight:400"></span></label>
+                  <input type="range" id="motMoveDur" min="1" max="40" step="1" style="width:100%">
+                </div>
+              </div>
+              <div class="grid2" style="margin-top:.35rem">
+                <div class="field" style="margin:0">
+                  <label>Start point (X%, Y%)</label>
+                  <div style="display:flex;gap:.3rem">
+                    <input type="number" id="motMoveFromX" step="0.5" style="width:100%">
+                    <input type="number" id="motMoveFromY" step="0.5" style="width:100%">
+                  </div>
+                </div>
+                <div class="field" style="margin:0">
+                  <label>End point (X%, Y%)</label>
+                  <div style="display:flex;gap:.3rem">
+                    <input type="number" id="motMoveToX" step="0.5" style="width:100%">
+                    <input type="number" id="motMoveToY" step="0.5" style="width:100%">
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem">
+                <button type="button" class="btn ghost sm" id="motMoveUseCurrentStart" title="Use the shape’s current position as the start">Use current as start</button>
+                <button type="button" class="btn ghost sm" id="motMoveUseCurrentEnd" title="Use the shape’s current position as the end">Use current as end</button>
+              </div>
             </div>
             <button type="button" class="btn ghost sm" id="motClear" style="margin-top:.45rem">Clear motion</button>
           </div>
@@ -1425,11 +1477,12 @@ import {
   dataUrlSizeLabel, defaultImageLook
 } from "./js/canvas/images.js";
 import {
-  APPEAR_PRESETS, ATTENTION_PRESETS, DISAPPEAR_PRESETS, EASINGS,
+  APPEAR_PRESETS, ATTENTION_PRESETS, DISAPPEAR_PRESETS, MOVE_PRESETS, EASINGS,
   sanitizeMotion, readMotion, buildMotionItems, timelineDuration,
   motionStylesheet, playMotionOnElement, clearMotionPlayback,
   defaultMotion, MOTION_FPS, formatMotionTime, formatMotionFrame,
-  scrubSlideAtTime, clearSlideMotion
+  scrubSlideAtTime, clearSlideMotion, hasActiveMotion, seedMoveFromShape,
+  clampTimingClip, MIN_CLIP_DURATION
 } from "./js/canvas/motion.js";
 import {
   TRANSITION_PRESETS, sanitizeTransition, defaultTransition, transitionStylesheet,
@@ -3291,15 +3344,17 @@ function renderSymbolLibrary() {
   });
 }
 
-/* ───────────────────────── Motion (appear / attention / leave) ───────────────────────── */
+/* ───────────────────────── Motion (appear / attention / leave / move) ───────────────────────── */
 let motionPanelOpen = false;
 let motionPlaying = false;
 let motionPlayTimer = null;
+let motionPlayRaf = null;
 let motionScrubTime = 0;       // seconds; preview pose while scrubbing / after scrub
 let motionScrubActive = false; // true after user seeks until Reset / Play / slide change
 let motionScrubMax = 2;
 let motionScrubDragging = false;
 let motionScrubSlideId = null;
+let motionBarDragging = false;
 
 function motionStage() {
   return canvasWrap.querySelector(".slide-canvas") || canvasWrap.querySelector(".frame") || canvasWrap.querySelector(".text-preview");
@@ -3307,6 +3362,7 @@ function motionStage() {
 
 function stopSlideMotionPlayback() {
   if (motionPlayTimer) { clearTimeout(motionPlayTimer); motionPlayTimer = null; }
+  if (motionPlayRaf) { cancelAnimationFrame(motionPlayRaf); motionPlayRaf = null; }
   const stage = motionStage();
   const step = curSlide();
   if (stage && step) clearSlideMotion(stage, buildMotionItems(step));
@@ -3350,7 +3406,7 @@ function resetMotionScrubPose() {
 
 function seekMotionScrubFromEvent(e, track) {
   const r = track.getBoundingClientRect();
-  const pad = 6; // match playhead half-width feel
+  const pad = 6;
   const x = clamp(e.clientX - r.left, pad, r.width - pad);
   const pct = (x - pad) / Math.max(1, r.width - pad * 2);
   applyMotionScrub(pct * motionScrubMax);
@@ -3369,6 +3425,7 @@ function fillMotionSelects() {
   fill("motAttention", ATTENTION_PRESETS);
   fill("motDisappear", DISAPPEAR_PRESETS);
   fill("motEasing", EASINGS);
+  fill("motMove", MOVE_PRESETS);
 }
 
 function curMotionTarget() {
@@ -3388,9 +3445,129 @@ function ensureMotion(obj) {
   return obj.motion;
 }
 
+function motionMetaLabel(m) {
+  const bits = [];
+  if (m.move !== "none") bits.push("Move");
+  if (m.appear !== "none") bits.push((APPEAR_PRESETS.find(p => p.id === m.appear) || {}).label || m.appear);
+  else if (m.attention !== "none") bits.push((ATTENTION_PRESETS.find(p => p.id === m.attention) || {}).label || m.attention);
+  return bits.length ? bits.join(" · ") : "—";
+}
+
+/**
+ * After Effects–style timing bar: left handle = start/delay, right = end/duration, body = shift.
+ * channel: "appear" | "move"
+ */
+function attachMotionTimingBar(track, it, channel, delay, duration, maxT, opts) {
+  opts = opts || {};
+  const fill = document.createElement("div");
+  fill.className = "motion-bar-fill" + (channel === "move" ? " move" : "") + (opts.ghost ? " ghost" : "");
+  fill.style.left = (delay / maxT) * 100 + "%";
+  fill.style.width = Math.max(2.5, (duration / maxT) * 100) + "%";
+  fill.title = opts.title || (channel === "move" ? "Move" : "Appears");
+  fill.dataset.channel = channel;
+
+  const tip = document.createElement("div");
+  tip.className = "motion-bar-tip";
+  tip.style.display = "none";
+  tip.textContent = formatMotionTime(delay) + " · " + formatMotionTime(duration);
+  fill.appendChild(tip);
+
+  const hL = document.createElement("div");
+  hL.className = "motion-bar-h left";
+  hL.title = "Drag: when it starts";
+  const hR = document.createElement("div");
+  hR.className = "motion-bar-h right";
+  hR.title = "Drag: how long";
+  fill.appendChild(hL);
+  fill.appendChild(hR);
+
+  const applyClip = (newDelay, newDur) => {
+    const clipped = clampTimingClip(newDelay, newDur, motionScrubMax);
+    motionScrubMax = Math.max(motionScrubMax, clipped.timelineMax);
+    const m = ensureMotion(it.obj);
+    if (channel === "appear") {
+      if (m.appear === "none") m.appear = "fade";
+      m.appearDelay = clipped.delay;
+      m.appearDuration = clipped.duration;
+    } else {
+      if (m.move === "none") {
+        const seeded = seedMoveFromShape(m, it.obj);
+        Object.assign(m, seeded);
+      }
+      m.moveDelay = clipped.delay;
+      m.moveDuration = clipped.duration;
+    }
+    it.obj.motion = sanitizeMotion(m);
+    tip.style.display = "";
+    tip.textContent = "Start " + formatMotionTime(clipped.delay) + " · " + formatMotionTime(clipped.duration);
+    fill.style.left = (clipped.delay / motionScrubMax * 100) + "%";
+    fill.style.width = Math.max(2.5, clipped.duration / motionScrubMax * 100) + "%";
+    applyMotionScrub(motionScrubActive ? motionScrubTime : clipped.delay);
+    return clipped;
+  };
+
+  const beginDrag = (mode, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    motionBarDragging = true;
+    if (it.kind === "shape") { selShape = it.index; selAsset = -1; selHotspot = -1; }
+    else { selAsset = it.index; selShape = -1; selHotspot = -1; }
+    motionPanelOpen = true;
+    const trackRect = track.getBoundingClientRect();
+    const startX = e.clientX;
+    const originDelay = delay;
+    const originDur = duration;
+    try { fill.setPointerCapture(e.pointerId); } catch (err) {}
+
+    const onMove = ev => {
+      const dx = ev.clientX - startX;
+      const dt = (dx / Math.max(1, trackRect.width)) * motionScrubMax;
+      let curDelay = originDelay;
+      let curDur = originDur;
+      if (mode === "left") {
+        const end = originDelay + originDur;
+        curDelay = clamp(originDelay + dt, 0, end - MIN_CLIP_DURATION);
+        curDur = end - curDelay;
+      } else if (mode === "right") {
+        curDur = Math.max(MIN_CLIP_DURATION, originDur + dt);
+        curDelay = originDelay;
+      } else {
+        curDelay = Math.max(0, originDelay + dt);
+        curDur = originDur;
+      }
+      applyClip(curDelay, curDur);
+    };
+    const onUp = () => {
+      fill.removeEventListener("pointermove", onMove);
+      fill.removeEventListener("pointerup", onUp);
+      fill.removeEventListener("pointercancel", onUp);
+      motionBarDragging = false;
+      tip.style.display = "none";
+      scheduleSave();
+      renderMotionPanel();
+      if (motionScrubActive) applyMotionScrub(motionScrubTime);
+    };
+    fill.addEventListener("pointermove", onMove);
+    fill.addEventListener("pointerup", onUp);
+    fill.addEventListener("pointercancel", onUp);
+    applyClip(originDelay, originDur);
+  };
+
+  hL.addEventListener("pointerdown", e => beginDrag("left", e));
+  hR.addEventListener("pointerdown", e => beginDrag("right", e));
+  fill.addEventListener("pointerdown", e => {
+    if (e.target === hL || e.target === hR) return;
+    beginDrag("body", e);
+  });
+
+  track.appendChild(fill);
+  return fill;
+}
+
 function renderMotionPanel() {
   const panel = $("motionPanel");
   if (!panel || panel.style.display === "none") return;
+  if (motionBarDragging) return;
   fillMotionSelects();
   panel.classList.toggle("collapsed", !motionPanelOpen);
   $("motionToggle").textContent = motionPanelOpen ? "Motion ▾" : "Motion ▸";
@@ -3406,7 +3583,7 @@ function renderMotionPanel() {
   const items = buildMotionItems(step);
   if (!items.length) {
     const e = document.createElement("div"); e.className = "hint";
-    e.textContent = "Add a shape or image on this slide to animate it.";
+    e.textContent = "Add a shape or image holder on this slide to animate it.";
     tracks.appendChild(e);
   }
   const maxT = Math.max(2, timelineDuration(items));
@@ -3420,31 +3597,31 @@ function renderMotionPanel() {
     const row = document.createElement("div");
     const selected = (it.kind === "shape" && it.index === selShape) || (it.kind === "overlay" && it.index === selAsset);
     row.className = "motion-row" + (selected ? " on" : "");
-    const lab = document.createElement("div"); lab.className = "lab"; lab.textContent = it.label; row.appendChild(lab);
+    const lab = document.createElement("div"); lab.className = "lab"; lab.textContent = it.label; lab.title = it.label; row.appendChild(lab);
     const track = document.createElement("div"); track.className = "motion-bar-track";
+
     if (m.appear !== "none") {
-      const fill = document.createElement("div"); fill.className = "motion-bar-fill";
-      fill.style.left = (m.appearDelay / maxT * 100) + "%";
-      fill.style.width = Math.max(3, m.appearDuration / maxT * 100) + "%";
-      fill.title = "Appears";
-      track.appendChild(fill);
+      attachMotionTimingBar(track, it, "appear", m.appearDelay, m.appearDuration, maxT, { title: "Appears — drag edges to trim" });
+    } else if (m.move === "none") {
+      attachMotionTimingBar(track, it, "appear", 0, 0.55, maxT, { ghost: true, title: "Drag to set when it appears" });
     }
+    if (m.move !== "none") {
+      attachMotionTimingBar(track, it, "move", m.moveDelay, m.moveDuration, maxT, { title: "Move — drag edges to trim" });
+    }
+
     row.appendChild(track);
     const meta = document.createElement("div"); meta.className = "meta";
-    meta.textContent = m.appear === "none" && m.attention === "none" ? "—" :
-      (m.appear !== "none"
-        ? ((APPEAR_PRESETS.find(p => p.id === m.appear) || {}).label || m.appear)
-        : ((ATTENTION_PRESETS.find(p => p.id === m.attention) || {}).label || m.attention));
+    meta.textContent = motionMetaLabel(m);
     row.appendChild(meta);
-    row.onclick = () => {
+    row.addEventListener("click", e => {
+      if (motionBarDragging || e.target.closest(".motion-bar-fill")) return;
       if (it.kind === "shape") { selShape = it.index; selAsset = -1; selHotspot = -1; }
       else { selAsset = it.index; selShape = -1; selHotspot = -1; }
       tool = "select"; motionPanelOpen = true; render();
-    };
+    });
     tracks.appendChild(row);
   });
 
-  // Re-apply scrub pose after canvas rebuilds (selection / edits)
   if (motionScrubActive && !motionPlaying && items.length) {
     const stage = motionStage();
     if (stage) scrubSlideAtTime(stage, items, motionScrubTime);
@@ -3463,6 +3640,23 @@ function renderMotionPanel() {
   $("motAppearDelayVal").textContent = m.appearDelay.toFixed(1) + "s";
   $("motAppearDur").value = Math.round(m.appearDuration * 10);
   $("motAppearDurVal").textContent = m.appearDuration.toFixed(1) + "s";
+  if ($("motMove")) $("motMove").value = m.move;
+  const moveFields = $("motMoveFields");
+  if (moveFields) moveFields.style.display = m.move !== "none" ? "" : "none";
+  if (m.move !== "none") {
+    if ($("motMoveDelay")) {
+      $("motMoveDelay").value = Math.round(m.moveDelay * 10);
+      $("motMoveDelayVal").textContent = m.moveDelay.toFixed(1) + "s";
+    }
+    if ($("motMoveDur")) {
+      $("motMoveDur").value = Math.round(m.moveDuration * 10);
+      $("motMoveDurVal").textContent = m.moveDuration.toFixed(1) + "s";
+    }
+    if ($("motMoveFromX")) $("motMoveFromX").value = Number(m.moveFromX.toFixed(1));
+    if ($("motMoveFromY")) $("motMoveFromY").value = Number(m.moveFromY.toFixed(1));
+    if ($("motMoveToX")) $("motMoveToX").value = Number(m.moveToX.toFixed(1));
+    if ($("motMoveToY")) $("motMoveToY").value = Number(m.moveToY.toFixed(1));
+  }
 }
 
 function playSlideMotion() {
@@ -3471,9 +3665,12 @@ function playSlideMotion() {
   if (!stage) { toast("Nothing to play on this slide", true); return; }
   if (motionPlaying) return;
 
-  // Leave scrub pose behind; play from the start
   stopSlideMotionPlayback();
-  motionScrubActive = false;
+  const items = buildMotionItems(step);
+  const longest = Math.max(1.2, timelineDuration(items));
+  motionScrubMax = longest;
+  motionScrubActive = true;
+  motionScrubSlideId = step.id;
   motionScrubTime = 0;
   updateMotionScrubUI();
 
@@ -3481,24 +3678,33 @@ function playSlideMotion() {
   $("motionPlay").disabled = true;
   $("motionPlay").textContent = "Playing…";
 
-  const items = buildMotionItems(step);
-  let longest = 1.2;
-  items.forEach(it => {
-    const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
-    if (!el) return;
-    const t = playMotionOnElement(el, readMotion(it.obj), { preview: true });
-    longest = Math.max(longest, t);
-  });
-  motionPlayTimer = setTimeout(() => {
-    motionPlayTimer = null;
-    items.forEach(it => {
-      const el = stage.querySelector('[data-pb-mot="' + it.id + '"]');
-      if (el) clearMotionPlayback(el);
-    });
-    motionPlaying = false;
-    $("motionPlay").disabled = false;
-    $("motionPlay").textContent = "Play this slide";
-  }, longest * 1000 + 200);
+  const t0 = performance.now();
+  const tick = now => {
+    if (!motionPlaying) return;
+    const t = (now - t0) / 1000;
+    if (t >= longest) {
+      scrubSlideAtTime(stage, items, longest);
+      motionScrubTime = longest;
+      updateMotionScrubUI();
+      motionPlayRaf = null;
+      motionPlayTimer = setTimeout(() => {
+        motionPlayTimer = null;
+        clearSlideMotion(stage, items);
+        motionPlaying = false;
+        motionScrubActive = false;
+        motionScrubTime = 0;
+        updateMotionScrubUI();
+        $("motionPlay").disabled = false;
+        $("motionPlay").textContent = "Play this slide";
+      }, 180);
+      return;
+    }
+    motionScrubTime = t;
+    scrubSlideAtTime(stage, items, t);
+    updateMotionScrubUI();
+    motionPlayRaf = requestAnimationFrame(tick);
+  };
+  motionPlayRaf = requestAnimationFrame(tick);
 }
 
 function touchMotion(mutator) {
@@ -4667,8 +4873,27 @@ ${presenterStylesheet()}
         (function applyMot(node, mot) {
           mot = mot || {};
           var appear = mot.appear || "none", attn = mot.attention || "none";
-          if (appear === "none" && attn === "none") return;
+          var move = mot.move || "none";
+          if (appear === "none" && attn === "none" && move === "none") return;
           node.classList.add("pb-mot");
+          if (move === "from-to" && node.animate) {
+            node.style.left = (mot.moveFromX != null ? mot.moveFromX : 0) + "%";
+            node.style.top = (mot.moveFromY != null ? mot.moveFromY : 0) + "%";
+            try {
+              node.animate(
+                [
+                  { left: (mot.moveFromX != null ? mot.moveFromX : 0) + "%", top: (mot.moveFromY != null ? mot.moveFromY : 0) + "%" },
+                  { left: (mot.moveToX != null ? mot.moveToX : 0) + "%", top: (mot.moveToY != null ? mot.moveToY : 0) + "%" }
+                ],
+                {
+                  duration: (mot.moveDuration == null ? 0.8 : mot.moveDuration) * 1000,
+                  delay: (mot.moveDelay || 0) * 1000,
+                  easing: mot.easing || "ease-out",
+                  fill: "forwards"
+                }
+              );
+            } catch (err) {}
+          }
           if (appear !== "none") {
             node.classList.add("pb-appear-" + appear);
             node.style.animationDuration = (mot.appearDuration == null ? 0.55 : mot.appearDuration) + "s";
@@ -4711,12 +4936,39 @@ ${presenterStylesheet()}
       var im = document.createElement("img"); im.src = a.image; im.alt = a.name || "";
       im.style.filter = vLookFilter(o);
       d.appendChild(im);
-      if (o.motion && o.motion.appear && o.motion.appear !== "none") {
-        d.classList.add("pb-mot", "pb-appear-" + o.motion.appear);
-        d.style.animationDuration = (o.motion.appearDuration == null ? 0.55 : o.motion.appearDuration) + "s";
-        d.style.animationDelay = (o.motion.appearDelay || 0) + "s";
-        d.style.animationTimingFunction = o.motion.easing || "ease-out";
-        d.style.opacity = "0";
+      if (o.motion) {
+        (function applyOvMot(node, mot) {
+          mot = mot || {};
+          var appear = mot.appear || "none";
+          var move = mot.move || "none";
+          if (appear === "none" && move === "none") return;
+          node.classList.add("pb-mot");
+          if (move === "from-to" && node.animate) {
+            node.style.left = (mot.moveFromX != null ? mot.moveFromX : o.x) + "%";
+            node.style.top = (mot.moveFromY != null ? mot.moveFromY : o.y) + "%";
+            try {
+              node.animate(
+                [
+                  { left: (mot.moveFromX != null ? mot.moveFromX : o.x) + "%", top: (mot.moveFromY != null ? mot.moveFromY : o.y) + "%" },
+                  { left: (mot.moveToX != null ? mot.moveToX : o.x) + "%", top: (mot.moveToY != null ? mot.moveToY : o.y) + "%" }
+                ],
+                {
+                  duration: (mot.moveDuration == null ? 0.8 : mot.moveDuration) * 1000,
+                  delay: (mot.moveDelay || 0) * 1000,
+                  easing: mot.easing || "ease-out",
+                  fill: "forwards"
+                }
+              );
+            } catch (err) {}
+          }
+          if (appear !== "none") {
+            node.classList.add("pb-appear-" + appear);
+            node.style.animationDuration = (mot.appearDuration == null ? 0.55 : mot.appearDuration) + "s";
+            node.style.animationDelay = (mot.appearDelay || 0) + "s";
+            node.style.animationTimingFunction = mot.easing || "ease-out";
+            node.style.opacity = "0";
+          }
+        })(d, o.motion);
       }
       box.appendChild(d);
     });
@@ -5373,11 +5625,65 @@ $("motAttention").addEventListener("change", e => touchMotion(m => { m.attention
 $("motDisappear").addEventListener("change", e => touchMotion(m => { m.disappear = e.target.value; }));
 $("motEasing").addEventListener("change", e => touchMotion(m => { m.easing = e.target.value; }));
 $("motAppearDelay").addEventListener("input", e => {
-  touchMotion(m => { m.appearDelay = clamp(e.target.value / 10, 0, 12); $("motAppearDelayVal").textContent = m.appearDelay.toFixed(1) + "s"; });
+  touchMotion(m => { m.appearDelay = clamp(e.target.value / 10, 0, 30); $("motAppearDelayVal").textContent = m.appearDelay.toFixed(1) + "s"; });
 });
 $("motAppearDur").addEventListener("input", e => {
-  touchMotion(m => { m.appearDuration = clamp(e.target.value / 10, 0.1, 5); $("motAppearDurVal").textContent = m.appearDuration.toFixed(1) + "s"; });
+  touchMotion(m => { m.appearDuration = clamp(e.target.value / 10, MIN_CLIP_DURATION, 8); $("motAppearDurVal").textContent = m.appearDuration.toFixed(1) + "s"; });
 });
+if ($("motMove")) {
+  $("motMove").addEventListener("change", e => {
+    touchMotion(m => {
+      if (e.target.value === "from-to") {
+        const t = curMotionTarget();
+        Object.assign(m, seedMoveFromShape(m, t && t.obj));
+      } else {
+        m.move = "none";
+      }
+    });
+  });
+}
+if ($("motMoveDelay")) {
+  $("motMoveDelay").addEventListener("input", e => {
+    touchMotion(m => { m.moveDelay = clamp(e.target.value / 10, 0, 30); $("motMoveDelayVal").textContent = m.moveDelay.toFixed(1) + "s"; });
+  });
+}
+if ($("motMoveDur")) {
+  $("motMoveDur").addEventListener("input", e => {
+    touchMotion(m => { m.moveDuration = clamp(e.target.value / 10, MIN_CLIP_DURATION, 8); $("motMoveDurVal").textContent = m.moveDuration.toFixed(1) + "s"; });
+  });
+}
+function bindMoveCoord(id, key) {
+  const el = $(id); if (!el) return;
+  el.addEventListener("change", e => {
+    touchMotion(m => { m[key] = clamp(parseFloat(e.target.value), -50, 150); });
+  });
+}
+bindMoveCoord("motMoveFromX", "moveFromX");
+bindMoveCoord("motMoveFromY", "moveFromY");
+bindMoveCoord("motMoveToX", "moveToX");
+bindMoveCoord("motMoveToY", "moveToY");
+if ($("motMoveUseCurrentStart")) {
+  $("motMoveUseCurrentStart").onclick = () => {
+    const t = curMotionTarget(); if (!t || !t.obj) return;
+    touchMotion(m => {
+      m.move = "from-to";
+      m.moveFromX = Number(t.obj.x) || 0;
+      m.moveFromY = Number(t.obj.y) || 0;
+    });
+    toast("Start point set to current position");
+  };
+}
+if ($("motMoveUseCurrentEnd")) {
+  $("motMoveUseCurrentEnd").onclick = () => {
+    const t = curMotionTarget(); if (!t || !t.obj) return;
+    touchMotion(m => {
+      m.move = "from-to";
+      m.moveToX = Number(t.obj.x) || 0;
+      m.moveToY = Number(t.obj.y) || 0;
+    });
+    toast("End point set to current position");
+  };
+}
 $("motClear").onclick = () => {
   const t = curMotionTarget(); if (!t) return;
   t.obj.motion = defaultMotion();

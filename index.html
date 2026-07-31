@@ -245,16 +245,17 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .frame.artboard-frame > img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
 .text-preview.artboard-text { width: var(--board-w, 760px); max-width: 100%; aspect-ratio: var(--board-ar, 16 / 9);
   display: flex; flex-direction: column; justify-content: center; padding: var(--board-pad, 2rem); box-sizing: border-box; }
-/* Board size — lives in the top bar so it stays visible while editing */
-.artboard-bar { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap;
-  padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 8px; background: #f8f9fc; }
-.artboard-bar .tlabel { font-size: .78rem; color: var(--ink); font-weight: 700; margin: 0; }
-.artboard-bar select { font-size: .78rem; font-weight: 600; padding: .3rem .45rem; border-radius: 7px;
-  border: 1px solid var(--line); background: #fff; max-width: 170px; min-width: 9.5rem; }
-.artboard-bar input[type=number] { width: 64px; font-size: .72rem; padding: .3rem .35rem; border-radius: 7px;
+/* Page size — sits in the canvas toolbar next to Grid/Rulers so it stays findable while editing */
+.artboard-bar { display: inline-flex; align-items: center; gap: .35rem; flex-wrap: wrap;
+  padding: .2rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: #f8f9fc;
+  margin-left: .25rem; flex: none; }
+.artboard-bar .tlabel { font-size: .72rem; color: var(--ink); font-weight: 700; margin: 0; white-space: nowrap; }
+.artboard-bar select { font-size: .72rem; font-weight: 600; padding: .28rem .4rem; border-radius: 7px;
+  border: 1px solid var(--line); background: #fff; max-width: 150px; min-width: 8.5rem; }
+.artboard-bar input[type=number] { width: 58px; font-size: .7rem; padding: .28rem .3rem; border-radius: 7px;
   border: 1px solid var(--line); background: #fff; }
-.artboard-bar .ab-x { font-size: .7rem; color: var(--muted); font-weight: 700; }
-.artboard-bar .btn.sm { padding: .3rem .5rem; }
+.artboard-bar .ab-x { font-size: .68rem; color: var(--muted); font-weight: 700; }
+.artboard-bar .btn.sm { padding: .28rem .45rem; }
 .artboard-bar.flash { outline: 2px solid var(--accent); outline-offset: 2px; background: #f2f0ff; }
 .slide-canvas .accent-bar { width: 56px; height: 6px; border-radius: 3px; background: var(--brand-primary, var(--accent)); margin-bottom: 1.3rem; flex: none; }
 .slide-canvas h1 { font-family: var(--brand-font-h, var(--font)); margin: 0; font-size: 2.1rem; line-height: 1.15; letter-spacing: -.01em; }
@@ -554,18 +555,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <div class="topbar">
     <div class="brand"><span class="dot"></span> Presentation Builder <small>free &middot; by <a class="credit-link" href="https://toddboswell.com" target="_blank" rel="noopener noreferrer">toddboswell.com</a></small></div>
     <input class="title-input" id="projTitle" value="Untitled Presentation" maxlength="120" aria-label="Presentation title">
-    <label class="accent-pick">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
+    <label class="accent-pick" title="Accent / brand colour used for hotspots and accents">Brand color <input type="color" id="accent" value="#6c5ce7"></label>
+    <label class="accent-pick" title="Slide background colour (same as Brand kit)">Background <input type="color" id="bgQuick" value="#0c0e14"></label>
     <button class="btn ghost" id="brandBtn">🎨 Brand kit</button>
-    <div class="artboard-bar" id="artboardBar" title="Slide board size — content reflows when you change it">
-      <span class="tlabel">Board</span>
-      <select id="artboardSelect" aria-label="Board size"></select>
-      <span id="artboardCustom" style="display:none;align-items:center;gap:.3rem">
-        <input type="number" id="abW" min="320" max="7680" step="1" title="Width (px)" aria-label="Board width">
-        <span class="ab-x">×</span>
-        <input type="number" id="abH" min="320" max="7680" step="1" title="Height (px)" aria-label="Board height">
-        <button type="button" class="btn sm" id="abApplyCustom">Apply</button>
-      </span>
-    </div>
     <div class="spacer"></div>
     <span id="saveState" class="save-state" title="Your work is auto-saved in this browser"></span>
     <div class="export-menu-wrap">
@@ -619,21 +611,30 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="canvas-col">
       <div class="canvas-tools" id="canvasTools" style="display:none">
         <span class="tlabel">Tools</span>
-        <button class="tool" data-tool="select" id="toolSelect">↖ Select</button>
-        <button class="tool img-tool" data-tool="hotspot" id="toolHotspot">＋ Hotspot</button>
-        <button class="tool img-tool" data-tool="redact" id="toolRedact">▦ Redact</button>
-        <button class="tool" data-tool="box">▭ Box</button>
-        <button class="tool" data-tool="ellipse">◯ Ellipse</button>
-        <button class="tool" data-tool="frame" title="Image holder — place a photo &amp; optional auto-layout">▢ Image holder</button>
-        <button class="tool" data-tool="arrow">➶ Arrow</button>
-        <button class="tool" data-tool="highlight">▨ Highlight</button>
-        <button class="tool" data-tool="message">💬 Message</button>
-        <button class="tool" data-tool="text" title="Click or drag to add text — bend, colour, size…">T Type</button>
+        <button class="tool" data-tool="select" id="toolSelect" title="Select and move">↖ Select</button>
+        <button class="tool img-tool" data-tool="hotspot" id="toolHotspot" title="Add a click hotspot">＋ Hotspot</button>
+        <button class="tool img-tool" data-tool="redact" id="toolRedact" title="Cover private areas">▦ Redact</button>
+        <button class="tool" data-tool="box" title="Draw a box">▢ Box</button>
+        <button class="tool" data-tool="ellipse" title="Draw an ellipse">⭕ Ellipse</button>
+        <button class="tool" data-tool="frame" title="Image holder — place a photo &amp; optional auto-layout">🖼️ Image holder</button>
+        <button class="tool" data-tool="arrow" title="Draw an arrow">➤ Arrow</button>
+        <button class="tool" data-tool="highlight" title="Draw a highlight">✨ Highlight</button>
+        <button class="tool" data-tool="message" title="Draw a message callout">💬 Message</button>
+        <button class="tool" data-tool="text" title="Click or drag to add text — bend, colour, size…">🔤 Type</button>
         <div class="view-tools" title="Hold Alt while dragging to disable snap">
-          <button type="button" class="tool" id="toggleGrid" title="Column grid">Grid</button>
-          <button type="button" class="tool" id="toggleRulers" title="Rulers &amp; guides — drag from ruler to add a guide">Rulers</button>
-          <button type="button" class="tool" id="toggleSafe" title="Safe / margin area">Safe</button>
-          <button type="button" class="tool" id="focusBoardBtn" title="Change slide board size (also in the top bar)">Board</button>
+          <button type="button" class="tool" id="toggleGrid" title="Column grid">▦ Grid</button>
+          <button type="button" class="tool" id="toggleRulers" title="Rulers &amp; guides — drag from ruler to add a guide">📏 Rulers</button>
+          <button type="button" class="tool" id="toggleSafe" title="Safe / margin area">⬚ Safe</button>
+        </div>
+        <div class="artboard-bar" id="artboardBar" title="Page size — content reflows when you change it">
+          <span class="tlabel">📐 Page size</span>
+          <select id="artboardSelect" aria-label="Page size"></select>
+          <span id="artboardCustom" style="display:none;align-items:center;gap:.3rem">
+            <input type="number" id="abW" min="320" max="7680" step="1" title="Width (px)" aria-label="Page width">
+            <span class="ab-x">×</span>
+            <input type="number" id="abH" min="320" max="7680" step="1" title="Height (px)" aria-label="Page height">
+            <button type="button" class="btn sm" id="abApplyCustom">Apply</button>
+          </span>
         </div>
         <span class="tlabel" id="toolHint" style="margin-left:auto"></span>
       </div>
@@ -723,6 +724,13 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <!-- Inspector -->
     <div class="col inspector" id="inspector" style="display:none">
       <h2>Slide settings</h2>
+      <div class="field">
+        <label for="slideBgQuick">Background color</label>
+        <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">
+          <input type="color" id="slideBgQuick" value="#0c0e14" title="Slide background" style="width:34px;height:34px;border:1px solid var(--line);border-radius:7px;padding:0;background:none;cursor:pointer">
+          <span class="hint" style="margin:0">Same as brand background — edits every slide</span>
+        </div>
+      </div>
       <div class="field">
         <label for="stepName">Slide name</label>
         <input type="text" id="stepName" maxlength="80" placeholder="e.g. Open the dashboard">
@@ -1793,7 +1801,7 @@ function applyBrand() {
   r.setProperty("--brand-font-b", FONTS[b.fontBody]);
 }
 
-/* Board size (artboard) — CSS vars + toolbar sync */
+/* Page size (artboard) — CSS vars + toolbar sync */
 function applyArtboardCss(root) {
   const ab = sanitizeArtboard(project.artboard);
   const style = (root && root.style) ? root.style : document.documentElement.style;
@@ -1843,6 +1851,7 @@ function focusBoardControl() {
   const bar = $("artboardBar");
   const sel = $("artboardSelect");
   if (bar) {
+    bar.scrollIntoView({ block: "nearest", inline: "nearest" });
     bar.classList.add("flash");
     setTimeout(() => bar.classList.remove("flash"), 900);
   }
@@ -1850,7 +1859,7 @@ function focusBoardControl() {
     sel.focus();
     try { sel.showPicker && sel.showPicker(); } catch (_) {}
   }
-  toast("Pick a board size in the top bar");
+  toast("Pick a page size in the toolbar");
 }
 function setProjectArtboard(nextRaw, opts) {
   opts = opts || {};
@@ -1862,7 +1871,7 @@ function setProjectArtboard(nextRaw, opts) {
   }
   reflowProjectForArtboard(project, oldAb, newAb);
   project.artboard = newAb;
-  if (!opts.silent) toast("Board: " + artboardLabel(newAb));
+  if (!opts.silent) toast("Page size: " + artboardLabel(newAb));
   render();
 }
 
@@ -2045,7 +2054,11 @@ function renderCanvas() {
     : tool === "frame"    ? "Drag to draw an image holder — then upload or drop a photo"
     : tool === "message"  ? "Drag to draw a message box"
     : tool === "text"     ? "Drag to place text — then set size, colour, bend…"
-    : SHAPE_TOOLS.includes(tool) ? "Drag to draw a " + tool
+    : tool === "box"      ? "Drag to draw a box"
+    : tool === "ellipse"  ? "Drag to draw an ellipse"
+    : tool === "arrow"    ? "Drag to draw an arrow"
+    : tool === "highlight"? "Drag to draw a highlight"
+    : SHAPE_TOOLS.includes(tool) ? "Drag to draw"
     : "Select tool — drag snaps to guides (hold Alt to free-move)";
 
   applyArtboardCss();
@@ -3510,6 +3523,8 @@ function populateFontSelects() {
 function syncBrandInputs() {
   const b = project.brand;
   $("accent").value = b.primary;
+  if ($("bgQuick")) $("bgQuick").value = b.bg;
+  if ($("slideBgQuick")) $("slideBgQuick").value = b.bg;
   $("bPrimary").value = b.primary; $("cvPrimary").textContent = b.primary;
   $("bSecondary").value = b.secondary; $("cvSecondary").textContent = b.secondary;
   $("bAccent").value = b.accent || b.primary; $("cvAccent").textContent = b.accent || b.primary;
@@ -5031,6 +5046,8 @@ $("bgMode").addEventListener("click", e => {
   applyBrand(); syncBrandInputs(); render();
 });
 function setBgColor(hex) { project.brand.bg = safeColor(hex, project.brand.bg); applyBrand(); syncBrandInputs(); render(); }
+if ($("bgQuick")) $("bgQuick").addEventListener("input", e => setBgColor(e.target.value));
+if ($("slideBgQuick")) $("slideBgQuick").addEventListener("input", e => setBgColor(e.target.value));
 $("bBg").addEventListener("input", e => setBgColor(e.target.value));
 $("bBgBase").addEventListener("input", e => setBgColor(e.target.value));
 $("bBgGrad1").addEventListener("input", e => setBgColor(e.target.value));
@@ -5425,7 +5442,7 @@ $("toggleRulers").onclick = () => toggleSlideFlag("showRulers");
 $("toggleSafe").onclick = () => toggleSlideFlag("showSafe");
 if ($("focusBoardBtn")) $("focusBoardBtn").onclick = () => focusBoardControl();
 
-// Board size
+// Page size (artboard presets + custom)
 populateArtboardSelect();
 syncArtboardUI();
 $("artboardSelect").addEventListener("change", e => {
@@ -5509,25 +5526,30 @@ function editorCommands() {
     { id: "grid", label: "Toggle grid", keywords: "guides columns", run: () => toggleSlideFlag("showGrid") },
     { id: "rulers", label: "Toggle rulers", keywords: "guides", run: () => toggleSlideFlag("showRulers") },
     { id: "safe", label: "Toggle safe area", keywords: "margin", run: () => toggleSlideFlag("showSafe") },
-    { id: "board", label: "Board size…", keywords: "artboard landscape portrait square custom", run: () => { focusBoardControl(); } },
-    { id: "board-169", label: "Board: Widescreen 16:9", keywords: "landscape artboard", run: () => setProjectArtboard({ id: "16:9" }) },
-    { id: "board-916", label: "Board: Phone 9:16", keywords: "portrait phone artboard", run: () => setProjectArtboard({ id: "9:16" }) },
-    { id: "board-11", label: "Board: Square 1:1", keywords: "square artboard", run: () => setProjectArtboard({ id: "1:1" }) },
-    { id: "board-custom", label: "Board: Custom size…", keywords: "artboard width height dimensions", run: () => {
+    { id: "board", label: "📐 Page size…", keywords: "board artboard landscape portrait square custom resize", run: () => { focusBoardControl(); } },
+    { id: "board-169", label: "Page size: Widescreen 16:9", keywords: "landscape artboard board", run: () => setProjectArtboard({ id: "16:9" }) },
+    { id: "board-916", label: "Page size: Phone 9:16", keywords: "portrait phone artboard board", run: () => setProjectArtboard({ id: "9:16" }) },
+    { id: "board-11", label: "Page size: Square 1:1", keywords: "square artboard board", run: () => setProjectArtboard({ id: "1:1" }) },
+    { id: "board-custom", label: "Page size: Custom…", keywords: "artboard width height dimensions board", run: () => {
       const ab = sanitizeArtboard(project.artboard);
       setProjectArtboard({ id: "custom", w: ab.w, h: ab.h });
       setTimeout(() => $("abW") && $("abW").focus(), 0);
     } },
-    { id: "tool-select", label: "Select tool", keywords: "cursor", run: () => { tool = "select"; render(); } },
-    { id: "tool-box", label: "Draw a box", keywords: "shape rectangle", run: () => { tool = "box"; render(); } },
-    { id: "tool-ellipse", label: "Draw a circle", keywords: "shape ellipse", run: () => { tool = "ellipse"; render(); } },
-    { id: "tool-arrow", label: "Draw an arrow", keywords: "shape", run: () => { tool = "arrow"; render(); } },
-    { id: "tool-type", label: "Type tool", keywords: "text font arc bend", run: () => { tool = "text"; render(); } },
-    { id: "tool-message", label: "Draw a message box", keywords: "text shape callout", run: () => { tool = "message"; render(); } },
-    { id: "tool-frame", label: "Draw an image holder", keywords: "frame image container photo", run: () => { tool = "frame"; render(); } },
-    { id: "tool-highlight", label: "Draw a highlight", keywords: "shape", run: () => { tool = "highlight"; render(); } },
-    { id: "tool-hotspot", label: "Hotspot tool", keywords: "click tip", run: () => { tool = "hotspot"; render(); } },
-    { id: "tool-redact", label: "Redact tool", keywords: "blur blackout", run: () => { tool = "redact"; render(); } },
+    { id: "tool-select", label: "↖ Select tool", keywords: "cursor", run: () => { tool = "select"; render(); } },
+    { id: "tool-box", label: "▢ Draw a box", keywords: "shape rectangle", run: () => { tool = "box"; render(); } },
+    { id: "tool-ellipse", label: "⭕ Draw an ellipse", keywords: "shape circle oval", run: () => { tool = "ellipse"; render(); } },
+    { id: "tool-arrow", label: "➤ Draw an arrow", keywords: "shape", run: () => { tool = "arrow"; render(); } },
+    { id: "tool-type", label: "🔤 Type tool", keywords: "text font arc bend", run: () => { tool = "text"; render(); } },
+    { id: "tool-message", label: "💬 Draw a message", keywords: "text shape callout", run: () => { tool = "message"; render(); } },
+    { id: "tool-frame", label: "🖼️ Image holder", keywords: "frame image container photo holder", run: () => { tool = "frame"; render(); } },
+    { id: "tool-highlight", label: "✨ Draw a highlight", keywords: "shape", run: () => { tool = "highlight"; render(); } },
+    { id: "tool-hotspot", label: "＋ Hotspot tool", keywords: "click tip", run: () => { tool = "hotspot"; render(); } },
+    { id: "tool-redact", label: "▦ Redact tool", keywords: "blur blackout", run: () => { tool = "redact"; render(); } },
+    { id: "bg-color", label: "Background color…", keywords: "brand slide fill", run: () => {
+      const el = $("bgQuick") || $("slideBgQuick");
+      if (el) { el.focus(); try { el.click(); } catch (_) {} }
+      else openBrand();
+    } },
     { id: "motion", label: "Open Motion panel", keywords: "animate appear", run: () => { motionPanelOpen = true; renderMotionPanel(); } },
     { id: "dup-shape", label: "Duplicate selected shape", keywords: "copy object", run: () => dupSelectedShape() },
     { id: "front", label: "Bring shape to front", keywords: "layer order", run: () => bringShapeFront() },

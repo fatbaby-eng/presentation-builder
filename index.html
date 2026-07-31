@@ -420,8 +420,6 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .ov { position: absolute; z-index: 5; cursor: move; touch-action: none; }
 .ov img { display: block; width: 100%; height: auto; pointer-events: none; -webkit-user-drag: none; user-select: none; }
 .ov.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
-.ov .oh { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: #fff; border: 2px solid var(--accent);
-  border-radius: 3px; cursor: nwse-resize; z-index: 2; }
 .ov .ox { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
   border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .shape { position: absolute; z-index: 4; box-sizing: border-box; }
@@ -430,10 +428,17 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .shape.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
 .shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .shape .msg-text { width: 100%; height: 100%; overflow: hidden; }
-.sh { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: #fff; border: 2px solid var(--accent);
-  border-radius: 3px; cursor: nwse-resize; z-index: 3; }
+/* Selection resize handles (corners + edges) */
+.rh { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: #fff; border: 2px solid var(--accent);
+  border-radius: 2px; z-index: 6; box-sizing: border-box; touch-action: none; }
+.ov .rh { z-index: 3; }
 .shx { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: var(--danger); color: #fff;
   border: 2px solid #fff; cursor: pointer; font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 3; }
+.size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .45rem; }
+.size-grid label { display: flex; flex-direction: column; gap: .15rem; font-size: .68rem; font-weight: 600; color: var(--muted); }
+.size-grid input[type=number] { width: 100%; padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 7px;
+  font-size: .82rem; font-weight: 600; color: var(--ink); font-family: inherit; }
+.size-grid input[type=number]:focus { outline: none; border-color: var(--accent); }
 .rot { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%;
   background: #fff; border: 2px solid var(--accent); cursor: grab; z-index: 3; }
 .rot::before { content: ""; position: absolute; left: 50%; top: 12px; width: 2px; height: 14px; background: var(--accent); transform: translateX(-50%); }
@@ -1087,6 +1092,15 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <div><label class="hint">BR</label><input type="range" id="sfRBR" min="0" max="80" step="1"></div>
           </div>
         </div>
+        <div class="field" id="sfSizeWrap">
+          <label>Position &amp; size <span class="hint" style="font-weight:400">% of slide · Shift+drag locks proportions</span></label>
+          <div class="size-grid">
+            <label>X <input type="number" id="sfX" step="0.5"></label>
+            <label>Y <input type="number" id="sfY" step="0.5"></label>
+            <label>W <input type="number" id="sfW" step="0.5" min="0.5"></label>
+            <label>H <input type="number" id="sfH" step="0.5" min="0.5"></label>
+          </div>
+        </div>
         <div class="field">
           <label for="sfRotate">Rotation <span id="sfRotateVal" class="hint" style="font-weight:400"></span></label>
           <input type="range" id="sfRotate" min="-180" max="180" step="1" style="width:100%">
@@ -1452,6 +1466,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 
 <script type="module">
 import { beginPercentDrag } from "./js/canvas/dragTransform.js";
+import { attachResizeHandles, isResizeHandleTarget } from "./js/canvas/resizeHandles.js";
 import { renderChromeOverlays, sanitizeSlideChrome, mountRulers } from "./js/canvas/slideChrome.js";
 import { newFrameShape, applyFrameVisual, reflowFrameChildren, FRAME_LAYOUTS } from "./js/canvas/frame.js";
 import {
@@ -1995,7 +2010,7 @@ function attachOverlays(stageEl, step, sel) {
 
     // drag to move (smart guides + Alt to disable snap)
     ov.addEventListener("pointerdown", e => {
-      if (e.target.classList.contains("oh") || e.target.classList.contains("ox")) return;
+      if (e.target.classList.contains("ox") || isResizeHandleTarget(e.target) || e.target.classList.contains("rot")) return;
       e.stopPropagation(); e.preventDefault();
       if (selAsset !== oi) { selAsset = oi; selHotspot = -1; selShape = -1; render(); return; }
       beginPercentDrag(e, {
@@ -2006,21 +2021,11 @@ function attachOverlays(stageEl, step, sel) {
     });
 
     if (oi === selAsset) {
-      const h = document.createElement("div"); h.className = "oh"; h.title = "Drag to resize";
-      h.addEventListener("pointerdown", e => {
-        e.stopPropagation(); e.preventDefault();
-        const rect = stageEl.getBoundingClientRect();
-        const sx = e.clientX, sy = e.clientY, sw = o.w, rad = (o.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
-        try { h.setPointerCapture(e.pointerId); } catch (err) {}
-        const move = ev => {
-          const dx = ev.clientX - sx, dy = ev.clientY - sy;            // project onto the asset's own x-axis
-          o.w = clamp(sw + (dx * cos + dy * sin) / rect.width * 100, 1, 200);
-          ov.style.width = o.w + "%";
-        };
-        const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); };
-        h.addEventListener("pointermove", move); h.addEventListener("pointerup", up);
+      attachResizeHandles(ov, {
+        stage: stageEl, obj: o, widthOnly: true,
+        handles: ["nw", "ne", "se", "sw", "e", "w"],
+        onEnd: () => { scheduleSave(); renderInspector(); }
       });
-      ov.appendChild(h);
       addRotateHandle(ov, o);
 
       const x = document.createElement("div"); x.className = "ox"; x.textContent = "×"; x.title = "Remove from this slide";
@@ -2112,7 +2117,7 @@ function renderCanvas() {
     : tool === "arrow"    ? "Drag to draw an arrow"
     : tool === "highlight"? "Drag to draw a highlight"
     : SHAPE_TOOLS.includes(tool) ? "Drag to draw"
-    : "Select tool — drag snaps to guides (hold Alt to free-move)";
+    : "Select tool — drag to move, handles to resize (Shift locks proportions, Alt free-moves)";
 
   applyArtboardCss();
 
@@ -2407,7 +2412,7 @@ function attachShapes(stage, step, sel) {
         });
       }
       el.addEventListener("pointerdown", e => {
-        if (editing || e.target.classList.contains("sh") || e.target.classList.contains("shx") || e.target.classList.contains("rot") || e.target.closest(".frame-upload-btn")) return;
+        if (editing || isResizeHandleTarget(e.target) || e.target.classList.contains("shx") || e.target.classList.contains("rot") || e.target.closest(".frame-upload-btn")) return;
         e.stopPropagation(); e.preventDefault();
         if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; render(); return; }
         beginPercentDrag(e, {
@@ -2451,28 +2456,17 @@ function attachShapes(stage, step, sel) {
         }
       }
       if (si === selShape) {
-        const hnd = document.createElement("div"); hnd.className = "sh"; hnd.title = "Drag to resize";
-        hnd.addEventListener("pointerdown", e => {
-          e.stopPropagation(); e.preventDefault();
-          const r = stage.getBoundingClientRect();
-          const sx = e.clientX, sy = e.clientY, sw = sh.w, sH = sh.h, rad = (sh.rot || 0) * Math.PI / 180, cos = Math.cos(rad), sin = Math.sin(rad);
-          try { hnd.setPointerCapture(e.pointerId); } catch (err) {}
-          const mv = ev => {
-            const dx = ev.clientX - sx, dy = ev.clientY - sy;           // project screen delta onto the shape's own axes
-            sh.w = clamp(sw + (dx * cos + dy * sin) / r.width * 100, 0.5, 200);
-            sh.h = clamp(sH + (-dx * sin + dy * cos) / r.height * 100, 0.5, 200);
-            el.style.width = sh.w + "%"; el.style.height = sh.h + "%";
-          };
-          const up = () => {
-            hnd.removeEventListener("pointermove", mv); hnd.removeEventListener("pointerup", up);
+        attachResizeHandles(el, {
+          stage, obj: sh,
+          onEnd: () => {
             if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
               reflowFrameChildren(sh, (step.shapes || []).filter(c => c.parentId === sh.id));
+              renderCanvas();
             }
-            render();
-          };
-          hnd.addEventListener("pointermove", mv); hnd.addEventListener("pointerup", up);
+            scheduleSave();
+            renderInspector();
+          }
         });
-        el.appendChild(hnd);
         addRotateHandle(el, sh);
         const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
         x.addEventListener("pointerdown", e => e.stopPropagation());
@@ -2761,6 +2755,11 @@ function renderShapeFields(sh) {
   if ($("sfArcWrap")) $("sfArcWrap").style.display = isMsg ? "" : "none";
   if ($("sfTextOpacityWrap")) $("sfTextOpacityWrap").style.display = isMsg ? "" : "none";
   if ($("sfArcFields")) $("sfArcFields").style.display = (isMsg && sh.textArcOn) ? "" : "none";
+  $("sfSizeWrap").style.display = "";
+  $("sfX").value = roundSize(sh.x);
+  $("sfY").value = roundSize(sh.y);
+  $("sfW").value = roundSize(sh.w);
+  $("sfH").value = roundSize(sh.h);
   $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
   if (isSym) { renderSymbolProps(sh); return; }
   $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
@@ -5463,6 +5462,31 @@ function touchShape(fn) {
   const sh = curShape(); if (!sh) return;
   fn(sh); renderCanvas(); scheduleSave();
 }
+function roundSize(n) {
+  n = Number(n); if (!isFinite(n)) return 0;
+  return Math.round(n * 10) / 10;
+}
+function applyShapeSizeField(key, raw) {
+  touchShape(sh => {
+    const v = clamp(raw, key === "w" || key === "h" ? 0.5 : -50, key === "w" || key === "h" ? 200 : 150);
+    sh[key] = v;
+    if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
+      const step = curSlide();
+      if (step) reflowFrameChildren(sh, (step.shapes || []).filter(c => c.parentId === sh.id));
+    }
+  });
+  const sh = curShape();
+  if (sh) {
+    $("sfX").value = roundSize(sh.x);
+    $("sfY").value = roundSize(sh.y);
+    $("sfW").value = roundSize(sh.w);
+    $("sfH").value = roundSize(sh.h);
+  }
+}
+$("sfX").addEventListener("change", e => applyShapeSizeField("x", e.target.value));
+$("sfY").addEventListener("change", e => applyShapeSizeField("y", e.target.value));
+$("sfW").addEventListener("change", e => applyShapeSizeField("w", e.target.value));
+$("sfH").addEventListener("change", e => applyShapeSizeField("h", e.target.value));
 $("sfText").addEventListener("input", e => { const sh = curShape(); if (sh) { sh.text = e.target.value; renderCanvas(); } });
 $("sfFill").addEventListener("input", e => {
   touchShape(sh => { sh.fill = safeColor(e.target.value, sh.fill); sh.fillVar = null; pushRecentColor(sh.fill); $("sfFillText").value = formatFillText(sh.fill); });

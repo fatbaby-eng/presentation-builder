@@ -490,11 +490,65 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { background: var(--danger); }
 
+/* Shown when index.html is opened via file:// (ES modules won't load) */
+.file-proto-banner {
+  display: none; position: fixed; inset: 0; z-index: 10000;
+  background: rgba(27, 31, 42, .92); color: #fff;
+  align-items: center; justify-content: center; padding: 1.5rem;
+  font-family: var(--font);
+}
+.file-proto-banner.show { display: flex; }
+.file-proto-banner .card {
+  max-width: 34rem; background: #fff; color: var(--ink);
+  border-radius: 14px; padding: 1.4rem 1.5rem; box-shadow: var(--shadow);
+}
+.file-proto-banner h1 { font-size: 1.15rem; margin: 0 0 .55rem; }
+.file-proto-banner p { margin: 0 0 .7rem; line-height: 1.45; color: var(--muted); }
+.file-proto-banner code {
+  display: block; background: #f3f4f8; border: 1px solid var(--line);
+  border-radius: 8px; padding: .65rem .8rem; font-size: .85rem; color: var(--ink);
+  margin: .5rem 0 .85rem; word-break: break-all;
+}
+.file-proto-banner .hint { font-size: .78rem; margin: 0; }
+
 .hidden-file { display: none; }
 @media (max-width: 980px) { .main { grid-template-columns: 1fr; } .steps, .inspector { display: none; } }
 </style>
 </head>
 <body>
+<div id="fileProtoBanner" class="file-proto-banner" role="alertdialog" aria-labelledby="fileProtoTitle" aria-modal="true">
+  <div class="card">
+    <h1 id="fileProtoTitle">This editor needs a local server</h1>
+    <p>Opening <code style="display:inline;padding:.1rem .35rem;margin:0">index.html</code> by double-click
+      (<code style="display:inline;padding:.1rem .35rem;margin:0">file://</code>) blocks the JavaScript modules,
+      so the app looks blank or broken.</p>
+    <p>From this folder, run:</p>
+    <code>npm start</code>
+    <p class="hint">Or: <code style="display:inline;padding:.1rem .35rem;margin:0">npx --yes serve .</code>
+      — then open the URL it prints (usually <code style="display:inline;padding:.1rem .35rem;margin:0">http://localhost:3000</code>).
+      Exported presentations are still a single offline HTML file and do not need a server.</p>
+  </div>
+</div>
+<script>
+(function () {
+  function showFileBanner() {
+    var el = document.getElementById("fileProtoBanner");
+    if (el) el.classList.add("show");
+  }
+  if (location.protocol === "file:") {
+    showFileBanner();
+    return;
+  }
+  // Surface silent module load failures (wrong path, missing file, etc.)
+  window.addEventListener("error", function (e) {
+    var msg = (e && (e.message || (e.error && e.error.message))) || "";
+    if (/Failed to fetch dynamically imported module|error loading dynamically imported module|CORS|Access to script/i.test(msg) ||
+        (e && e.filename && /\.js$/i.test(e.filename) && /module/i.test(msg))) {
+      showFileBanner();
+    }
+  }, true);
+})();
+</script>
 <div class="app">
   <!-- ── Top bar ── -->
   <div class="topbar">

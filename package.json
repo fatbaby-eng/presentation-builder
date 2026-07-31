@@ -1,0 +1,10 @@
+{
+  "name": "presentation-builder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Free, self-hostable interactive presentation builder (static files only).",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "serve": "npx --yes serve ."
+  }
+}

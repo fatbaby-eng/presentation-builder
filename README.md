@@ -71,13 +71,16 @@ No accounts. No backend. No data ever leaves the browser.
 
 ## Use it
 
-Open the editor with a local static server (ES modules require it):
+**Do not double-click `index.html`.** The editor uses ES modules, so opening it as
+`file://` fails in the browser (blank/broken UI). Use a local static server:
 
 ```bash
-npx --yes serve .
+npm start
 ```
 
-Then visit the URL it prints (usually `http://localhost:3000`).
+(Same thing: `npx --yes serve .`.) Then visit the URL it prints (usually
+`http://localhost:3000`). If you opened the file directly, you’ll get an on-page
+message with these steps.
 
 Exported presentations remain a **single offline `.html` file** — no server needed to view or share them.
 

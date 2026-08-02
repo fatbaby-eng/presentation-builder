@@ -183,6 +183,10 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .empty-card .ec-icon { font-size: 1.25rem; line-height: 1; }
 .empty-card strong { color: var(--ink); font-size: .88rem; }
 .empty-card span.ec-desc { color: var(--muted); font-size: .74rem; line-height: 1.35; }
+.welcome-lead { line-height: 1.55; margin: 0 0 1rem; color: var(--muted); font-size: .92rem; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1rem 0 .75rem; }
+.welcome-dismiss { display: flex; align-items: center; gap: .45rem; margin-top: .85rem; font-size: .78rem; color: var(--muted); cursor: pointer; user-select: none; }
+.welcome-dismiss input { accent-color: var(--accent); }
 .anim-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .3rem; }
 .anim-grid button { padding: .4rem .2rem; border: 1px solid var(--line); border-radius: 7px; background: #fff; cursor: pointer;
   font-size: .68rem; font-weight: 600; color: var(--muted); line-height: 1.2; }
@@ -689,7 +693,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <button type="button" class="empty-card" id="emptyTplBtn">
               <span class="ec-icon">▦</span>
               <strong>Start from a template</strong>
-              <span class="ec-desc">Atlas samples with project cards, or blank starters</span>
+              <span class="ec-desc">Try a satire sample deck, or a blank starter outline</span>
             </button>
             <button type="button" class="empty-card" id="emptyAddBtn">
               <span class="ec-icon">🖼</span>
@@ -1317,6 +1321,22 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
   <iframe id="previewFrame" title="Presentation preview" sandbox="allow-scripts"></iframe>
 </div>
 
+<!-- Welcome (first visit) -->
+<div class="overlay modal-overlay" id="welcomeModal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><strong id="welcomeTitle">Welcome to Presentation Builder</strong><button type="button" class="btn sm" id="welcomeClose" aria-label="Close">✕ Close</button></div>
+    <div class="modal-body">
+      <p class="welcome-lead">Build click-through decks in your browser — screenshots, hotspots, motion, and an offline HTML export. Nothing is uploaded.</p>
+      <p class="hint" style="margin:0">New here? Try a sample to see what the tools can do, or start blank and build your own.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn primary" id="welcomeTrySample">Try a sample</button>
+        <button type="button" class="btn" id="welcomeBlank">Start blank</button>
+      </div>
+      <label class="welcome-dismiss"><input type="checkbox" id="welcomeDontShow"> Don’t show this again</label>
+    </div>
+  </div>
+</div>
+
 <!-- Template gallery -->
 <div class="overlay modal-overlay" id="tplModal">
   <div class="modal">
@@ -1324,7 +1344,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="modal-body">
       <p class="hint">Pick a sample to explore features, or a blank starter to fill in. Your brand kit can still be applied after. Nothing leaves your browser.</p>
       <div class="tpl-section-label">Try a sample</div>
-      <p class="tpl-section-hint">Real demo decks with sample data — shapes, motion, and transitions included.</p>
+      <p class="tpl-section-hint">Dry satire demos with real motion, focus rings, arrows, and transitions — desktop and phone boards.</p>
       <div class="tpl-grid" id="tplSamples"></div>
       <div class="tpl-section-label">Starters</div>
       <p class="tpl-section-hint">Empty outlines: pitch, product tour, training, status.</p>
@@ -6047,7 +6067,7 @@ function editorCommands() {
     { id: "new-statement", label: "New statement slide", keywords: "add slide quote", run: () => addContentSlide("statement") },
     { id: "new-text", label: "New plain text slide", keywords: "add slide", run: () => addTextSlide() },
     { id: "import", label: "Import content…", keywords: "outline pdf docx markdown", shortcut: "", run: () => openOutline() },
-    { id: "template", label: "Start from a template…", keywords: "pitch tour training atlas sample", run: () => openTemplates() },
+    { id: "template", label: "Start from a template…", keywords: "pitch tour training sample dog slack phish builder onboarding", run: () => openTemplates() },
     { id: "save-tpl", label: "Save current deck as template", keywords: "reuse template", run: () => { openTemplates(); saveCurrentAsTemplate(); } },
     { id: "screenshots", label: "Add screenshots…", keywords: "image upload", run: () => $("imgInput").click() },
     { id: "dup-slide", label: "Duplicate this slide", keywords: "copy slide", run: () => { if (project.steps[selected]) dupStep(selected); } },
@@ -6172,6 +6192,42 @@ populateFontSelects();
 const restored = restoreAutosave();
 render();
 if (restored) toast("Restored your last session");
+
+/* ── Welcome / first-run ───────────────────────────────────────
+   Show once for empty local state unless the user opted out. */
+const WELCOME_HIDE_KEY = "presentationBuilder.welcome.hide.v1";
+function shouldShowWelcome() {
+  try {
+    if (localStorage.getItem(WELCOME_HIDE_KEY) === "1") return false;
+  } catch (e) { /* private mode */ }
+  if (restored) return false;
+  if (listRecents().length) return false;
+  if (project.steps.length || (project.assets && project.assets.length)) return false;
+  return true;
+}
+function closeWelcome(opts) {
+  opts = opts || {};
+  const box = $("welcomeDontShow");
+  if (opts.persist || (box && box.checked)) {
+    try { localStorage.setItem(WELCOME_HIDE_KEY, "1"); } catch (e) {}
+  }
+  $("welcomeModal").classList.remove("open");
+}
+function openWelcome() { $("welcomeModal").classList.add("open"); }
+$("welcomeClose").onclick = () => closeWelcome({ persist: false });
+$("welcomeBlank").onclick = () => {
+  closeWelcome({ persist: true });
+  addContentSlide("title");
+  toast("Blank title slide — build from here");
+};
+$("welcomeTrySample").onclick = () => {
+  closeWelcome({ persist: true });
+  openTemplates();
+};
+$("welcomeModal").addEventListener("click", e => {
+  if (e.target === $("welcomeModal")) closeWelcome({ persist: false });
+});
+if (shouldShowWelcome()) openWelcome();
 </script>
 </body>
 </html>

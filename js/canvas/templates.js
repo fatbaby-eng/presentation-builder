@@ -166,123 +166,125 @@ function dogSlackSteps() {
     {
       type: "content", layout: "title", name: "Cover",
       heading: "Teach the Dog to Use Slack",
-      subhead: "A mandatory walkthrough nobody asked for · Canine UX Lead · 750 XP",
+      subhead: "Required training for a problem a raised eyebrow could’ve solved · 750 XP",
       bullets: [],
       notes: "Showcase sample — poke fun at corporate training theater while flexing builder features.",
-      transition: tx("fade", 0.5),
+      transition: tx("fade", 0.4),
       shapes: [
+        // Beat: dots → avatar → punchline → caption → arrow → pulse
+        ellipse({ x: 8, y: 20, w: 2, h: 3.6, fill: "#a06b3c", motion: mot("pop", 0.05, 0.35) }),
+        ellipse({ x: 12, y: 28, w: 1.4, h: 2.5, fill: "#5aa8a0", opacity: 0.9, motion: mot("pop", 0.18, 0.35) }),
         frame({
           x: 74, y: 16, w: 16, h: 28.5, image: CANINE_UX_LEAD, imageFit: "cover",
           stroke: "#5aa8a0", strokeWidth: 2, radius: 999,
           glowOn: true, glowColor: "#5aa8a0", glowBlur: 18, glowOpacity: 0.45,
-          motion: mot("pop", 0.15, 0.45, { attention: "heartbeat", attentionDelay: 0.75 })
+          motion: mot("pop", 0.12, 0.45, { attention: "heartbeat", attentionDelay: 0.75 })
         }),
         typeText({
-          x: 6, y: 58, w: 48, h: 8, text: "Yes, this deck exists.",
+          x: 6, y: 58, w: 52, h: 8, text: "Yes, we built a deck for this.",
           textColor: "#c9a66b", textStyle: "h2",
-          motion: mot("fly-up", 0.35, 0.45)
+          motion: mot("fly-up", 0.4, 0.45)
         }),
         msg({
           x: 6, y: 70, w: 52, h: 16,
-          text: "Personal lane · sample quest\nBecause “sit” wasn’t enterprise enough.",
+          text: "Personal lane · sample quest\n“Sit” lacked stakeholder alignment.",
           textStyle: "caption", fill: "#2a3828", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 12, motion: mot("fade", 0.5, 0.5)
+          shadowOn: false, radius: 12, motion: mot("fade", 0.55, 0.45)
         }),
-        ellipse({ x: 8, y: 20, w: 2, h: 3.6, fill: "#a06b3c", motion: mot("pop", 0.3, 0.4) }),
-        ellipse({ x: 12, y: 28, w: 1.4, h: 2.5, fill: "#5aa8a0", opacity: 0.9, motion: mot("pop", 0.45, 0.4) }),
         arrow({
           x: 58, y: 28, w: 14, h: 10, stroke: "#c9a66b", fill: "#c9a66b", arrowStyle: "curved",
           strokeWidth: 3, flipY: true,
-          motion: mot("fade", 0.55, 0.4, { attention: "pulse", attentionDelay: 0.9 })
+          motion: mot("fade", 0.7, 0.4, { attention: "pulse", attentionDelay: 1.25 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "The quest",
-      heading: "Active Quest (gamified, naturally)",
-      subhead: "He keeps reacting with the wrong emoji. We made it a KPI.",
+      heading: "Active Quest (XP makes it official)",
+      subhead: "Wrong emoji reactions. We turned it into a roadmap item.",
       bullets: [],
-      transition: tx("push-left", 0.45),
+      transition: tx("push-left", 0.35),
       shapes: [
         frame({
           x: 80, y: 12, w: 12, h: 21.5, image: CANINE_UX_LEAD, imageFit: "cover",
           stroke: "#a06b3c", strokeWidth: 2, radius: 999,
-          motion: mot("fly-right", 0.1, 0.45)
+          motion: mot("fly-right", 0.05, 0.4)
         }),
         box({
           x: 6, y: 42, w: 88, h: 46, fill: "#243028", stroke: "#3d4f3a", strokeWidth: 1, radius: 14,
           shadowOn: true, shadowY: 8, shadowBlur: 18, shadowOpacity: 0.28,
-          motion: mot("fly-up", 0.15, 0.5)
+          motion: mot("fly-up", 0.15, 0.45)
         }),
         msg({
           x: 10, y: 46, w: 58, h: 36, fill: "#243028", stroke: "#243028", strokeWidth: 0, shadowOn: false,
-          text: "STATUS · active · 750 XP\n\nQuest: Teach Slack to a dog\nLane: Personal (where shame lives)\nNext: Negotiate a ceasefire with 🔥\n#dog #slack #emoji #hr #why",
-          textColor: "#f0ebe3", textStyle: "body", motion: mot("fade", 0.3, 0.4)
-        }),
-        msg({
-          x: 70, y: 48, w: 20, h: 14, fill: "#2a3828", stroke: "#c45c4a", strokeWidth: 1, shadowOn: false,
-          text: "HR severity\n“elevated”",
-          textColor: "#f0ebe3", textStyle: "caption", radius: 10,
-          motion: mot("pop", 0.4, 0.4, { attention: "glow", attentionDelay: 0.7 })
+          text: "STATUS · active · 750 XP\n\nQuest: Teach Slack to a dog\nLane: Personal (where shame lives)\nNext: Negotiate a 🔥 ceasefire\n#dog #slack #emoji #hr #why",
+          textColor: "#f0ebe3", textStyle: "body", motion: mot("fade", 0.35, 0.4)
         }),
         arrow({
           x: 62, y: 64, w: 12, h: 14, stroke: "#5aa8a0", fill: "#5aa8a0", arrowStyle: "dashed",
           strokeWidth: 2, flipX: true,
-          motion: mot("fade", 0.45, 0.35)
+          motion: mot("fade", 0.55, 0.35)
+        }),
+        msg({
+          x: 70, y: 48, w: 20, h: 14, fill: "#2a3828", stroke: "#c45c4a", strokeWidth: 1, shadowOn: false,
+          text: "HR severity\n“deck-worthy”",
+          textColor: "#f0ebe3", textStyle: "caption", radius: 10,
+          motion: mot("pop", 0.7, 0.4, { attention: "glow", attentionDelay: 1.25 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "The incident",
-      heading: "Incident report: emoji crisis",
-      subhead: "He can open Slack. Responsibility remains… aspirational.",
+      heading: "Incident: the 🔥 HR crisis",
+      subhead: "He can open Slack. Impulse control filed a PTO request.",
       bullets: [],
       notes: "Dry joke: fire-emoji spam as a workplace incident.",
-      transition: tx("zoom", 0.45),
+      transition: tx("zoom", 0.35),
       shapes: [
         box({
           x: 6, y: 32, w: 52, h: 56, fill: "#f4efe6", stroke: "#d6c7b5", strokeWidth: 1, radius: 14,
           shadowOn: true, shadowY: 8, shadowBlur: 18, shadowOpacity: 0.25,
-          motion: mot("zoom", 0.08, 0.5)
+          motion: mot("zoom", 0.05, 0.45)
         }),
         msg({
           x: 9, y: 36, w: 46, h: 46, fill: "#f4efe6", stroke: "#f4efe6", strokeWidth: 0, shadowOn: false,
-          text: "Summary\n\nOpens app: yes.\nReads thread: unclear.\nReacts 🔥 to everything: pathological.\n\nHR would like a word.\nAlso a spreadsheet.",
-          textColor: "#1a2418", textStyle: "body", motion: mot("fade", 0.25, 0.45)
+          text: "Summary\n\nOpens app: yes.\nReads thread: speculative.\nReacts 🔥 to everything: policy violation.\n\nHR wants a meeting.\nAlso a spreadsheet.\nPossibly a waiver.",
+          textColor: "#1a2418", textStyle: "body", motion: mot("fade", 0.25, 0.4)
         }),
         frame({
           x: 66, y: 34, w: 18, h: 32, image: CANINE_UX_LEAD, imageFit: "cover",
           stroke: "#5aa8a0", strokeWidth: 2, radius: 999,
-          motion: mot("fly-right", 0.2, 0.5)
+          motion: mot("fly-right", 0.2, 0.45)
+        }),
+        highlight({
+          x: 10, y: 58, w: 40, h: 8, fill: "#c45c4a", opacity: 0.28,
+          motion: mot("fade", 0.45, 0.35)
+        }),
+        arrow({
+          x: 50, y: 48, w: 14, h: 12, stroke: "#a06b3c", fill: "#a06b3c", arrowStyle: "thick",
+          strokeWidth: 4,
+          motion: mot("fly-left", 0.55, 0.4, { attention: "pulse", attentionDelay: 1.1 })
         }),
         msg({
           x: 64, y: 70, w: 24, h: 14, fill: "#2a3828", stroke: "#c9a66b", strokeWidth: 1, shadowOn: false,
           text: "🔥 × ∞\n“engagement”",
           textColor: "#f0ebe3", textStyle: "caption", radius: 10,
-          motion: mot("pop", 0.4, 0.4, { attention: "pulse", attentionDelay: 0.65 })
-        }),
-        highlight({
-          x: 10, y: 58, w: 40, h: 8, fill: "#c45c4a", opacity: 0.28,
-          motion: mot("fade", 0.5, 0.4)
-        }),
-        arrow({
-          x: 50, y: 48, w: 14, h: 12, stroke: "#a06b3c", fill: "#a06b3c", arrowStyle: "thick",
-          strokeWidth: 4,
-          motion: mot("fly-left", 0.35, 0.4)
+          motion: mot("pop", 0.7, 0.4, { attention: "pulse", attentionDelay: 1.25 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "Tap here",
-      heading: "Module 1: Do not tap fire",
-      subhead: "A guided tour for a problem that needed a stern look, not a deck.",
+      heading: "Module 1: Do not tap 🔥",
+      subhead: "A guided tour for a lesson that needed a look, not a LMS.",
       bullets: [],
-      transition: tx("wipe-left", 0.4),
+      transition: tx("wipe-left", 0.35),
       shapes: [
+        // Beat: panel → thread → emojis → callout → arrow → rings → settle
         box({
           x: 8, y: 34, w: 54, h: 52, fill: "#243028", stroke: "#3d4f3a", strokeWidth: 1, radius: 14,
           shadowOn: true, shadowY: 6, shadowBlur: 14, shadowOpacity: 0.3,
-          motion: mot("fly-up", 0.1, 0.45)
+          motion: mot("fly-up", 0.05, 0.4)
         }),
         msg({
           x: 11, y: 38, w: 48, h: 12, fill: "#2a3828", stroke: "#2a3828", strokeWidth: 0, shadowOn: false,
@@ -292,32 +294,32 @@ function dogSlackSteps() {
         msg({
           x: 11, y: 52, w: 30, h: 10, fill: "#1a2418", stroke: "#3d4f3a", strokeWidth: 1, shadowOn: false,
           text: "👍  🎉  🔥  👀",
-          textColor: "#f0ebe3", textStyle: "h2", radius: 8, motion: mot("fade", 0.3, 0.4)
-        }),
-        focus({
-          x: 28, y: 50, w: 10, h: 16,
-          motion: mot("fade", 0.45, 0.3, { attention: "focus-rings", attentionDelay: 0.35 })
+          textColor: "#f0ebe3", textStyle: "h2", radius: 8, motion: mot("fade", 0.35, 0.4)
         }),
         msg({
           x: 66, y: 36, w: 26, h: 22,
-          text: "Tap the wrong one\nand you’ve earned\nanother training module.",
+          text: "Wrong tap =\nanother module.\nCongrats, I guess.",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 12, motion: mot("fly-right", 0.35, 0.45)
+          radius: 12, motion: mot("fly-right", 0.5, 0.4)
         }),
         arrow({
           x: 48, y: 54, w: 16, h: 10, stroke: "#e23d4b", fill: "#e23d4b", arrowStyle: "solid",
           strokeWidth: 3,
-          motion: mot("fade", 0.4, 0.35, { attention: "pulse", attentionDelay: 0.8 })
+          motion: mot("fade", 0.7, 0.35, { attention: "pulse", attentionDelay: 1.2 })
+        }),
+        focus({
+          x: 28, y: 50, w: 10, h: 16,
+          motion: mot("fade", 0.85, 0.35, { attention: "focus-rings", attentionDelay: 1.35 })
         }),
         typeText({
-          x: 66, y: 64, w: 26, h: 10, text: "Not this one.",
+          x: 66, y: 64, w: 26, h: 10, text: "Especially not this.",
           textColor: "#c45c4a", textStyle: "body",
-          motion: mot("pop", 0.55, 0.4)
+          motion: mot("pop", 1.0, 0.35)
         }),
         ellipse({
           x: 18, y: 68, w: 3, h: 5.4, fill: "#5aa8a0",
-          motion: mot("bounce", 0.25, 0.5, {
-            move: "from-to", moveDelay: 0.4, moveDuration: 1.1,
+          motion: mot("bounce", 0.3, 0.4, {
+            move: "from-to", moveDelay: 0.55, moveDuration: 0.9,
             moveFromX: 72, moveFromY: 72, moveToX: 18, moveToY: 68
           })
         })
@@ -325,124 +327,124 @@ function dogSlackSteps() {
     },
     {
       type: "content", layout: "section", name: "Channel",
-      heading: "Module 2: Pick a channel first",
-      subhead: "Revolutionary advice. Someone will still DM the CEO a bone emoji.",
+      heading: "Module 2: Channel before chaos",
+      subhead: "Radical idea: pick a room. Someone will still DM the CEO a bone.",
       bullets: [],
-      transition: tx("push-left", 0.4),
+      transition: tx("push-left", 0.35),
       shapes: [
         msg({
           x: 6, y: 36, w: 28, h: 48,
-          text: "#general\nWhere good judgment goes to die\n\n→ stay quiet",
+          text: "#general\nWhere judgment\ngoes to die\n\n→ lurk quietly",
           textStyle: "caption", fill: "#243028", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 12, motion: mot("fly-up", 0.08, 0.4)
+          shadowOn: false, radius: 12, motion: mot("fly-up", 0.05, 0.4)
         }),
         msg({
           x: 36, y: 36, w: 28, h: 48,
-          text: "#random\nTechnically allowed\n\n→ still not 🔥",
+          text: "#random\nTechnically\nallowed\n\n→ still not 🔥",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
           radius: 12, motion: mot("fly-up", 0.2, 0.4)
         }),
         msg({
           x: 66, y: 36, w: 28, h: 48,
-          text: "#hr-concerns\nThey already know\n\n→ do not enter",
+          text: "#hr-concerns\nThey already\nknow\n\n→ do not enter",
           textStyle: "caption", fill: "#2a3828", stroke: "#c45c4a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 12, motion: mot("fly-up", 0.32, 0.4)
+          shadowOn: false, radius: 12, motion: mot("fly-up", 0.35, 0.4)
         }),
         arrow({
           x: 28, y: 28, w: 14, h: 10, stroke: "#c9a66b", fill: "#c9a66b", arrowStyle: "block",
           strokeWidth: 2, flipY: true,
-          motion: mot("fade", 0.4, 0.35)
+          motion: mot("fade", 0.55, 0.35, { attention: "pulse", attentionDelay: 1.0 })
         }),
         arrow({
           x: 58, y: 78, w: 16, h: 8, stroke: "#5aa8a0", fill: "#5aa8a0", arrowStyle: "double",
           strokeWidth: 2,
-          motion: mot("fade", 0.5, 0.35)
+          motion: mot("fade", 0.7, 0.35)
         }),
         focus({
           x: 44, y: 42, w: 12, h: 18,
-          motion: mot("none", 0, 0.3, { attention: "focus-rings", attentionDelay: 0.5 })
+          motion: mot("fade", 0.8, 0.35, { attention: "focus-rings", attentionDelay: 1.3 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "Ask Claude",
-      heading: "Ask Claude (because why not)",
-      subhead: "AI reflection for an emoji problem. Peak 2020s.",
+      heading: "Ask Claude (peak overkill)",
+      subhead: "AI reflection for an emoji habit. Because 2020s.",
       bullets: [],
-      transition: tx("fade", 0.4),
+      transition: tx("fade", 0.35),
       shapes: [
         msg({
           x: 5, y: 36, w: 29, h: 50,
-          text: "Revive or archive?\n\nIs this quest still worth a walkthrough — or has Slack already won by existing?",
+          text: "Revive or archive?\n\nIs this still a quest — or did Slack win just by existing?",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 12, motion: mot("fly-up", 0.08, 0.45)
+          radius: 12, motion: mot("fly-up", 0.05, 0.4)
         }),
         msg({
           x: 35.5, y: 36, w: 29, h: 50,
-          text: "What’s unfinished?\n\nEmoji etiquette. Channel manners. Not licking the trackpad during all-hands.",
+          text: "What’s unfinished?\n\nEmoji manners. Channel sense. Not licking the trackpad in all-hands.",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 12, motion: mot("fly-up", 0.2, 0.45)
+          radius: 12, motion: mot("fly-up", 0.22, 0.4)
         }),
         msg({
           x: 66, y: 36, w: 29, h: 50,
-          text: "Audit for gaps\n\nWhere does “good boy” end and “please file an incident” begin?",
+          text: "Audit the gap\n\nWhere “good boy” ends and “please open an incident” begins.",
           textStyle: "caption", fill: "#243028", stroke: "#5aa8a0", textColor: "#f0ebe3",
-          shadowOn: false, radius: 12, motion: mot("fly-up", 0.32, 0.45)
+          shadowOn: false, radius: 12, motion: mot("fly-up", 0.4, 0.4)
         }),
         typeText({
-          x: 5, y: 88, w: 60, h: 8, text: "Overkill is a feature.",
+          x: 5, y: 88, w: 70, h: 8, text: "We asked a language model about dog emojis. Naturally.",
           textColor: "#c9a66b", textStyle: "caption",
-          motion: mot("fade", 0.5, 0.4)
+          motion: mot("fade", 0.7, 0.4)
         })
       ]
     },
     {
       type: "content", layout: "bullets", name: "Checklist",
-      heading: "Training checklist (theater edition)",
-      subhead: "Sample progress — not live data, not a real certification",
+      heading: "Training checklist (theater)",
+      subhead: "Sample progress — not live data, not a real badge",
       bullets: [
         "Opens Slack without chewing the laptop — shipped (barely)",
-        "Chooses a channel before reacting — “in progress” forever",
+        "Picks a channel before reacting — forever “in progress”",
         "Stops 🔥 on every message — blocked by HR, personality, physics",
-        "Earns Canine UX Lead · 1000 XP — the only metric that mattered"
+        "Earns Canine UX Lead · 1000 XP — the only KPI leadership cared about"
       ],
-      transition: tx("push-left", 0.4),
+      transition: tx("push-left", 0.35),
       shapes: [
-        highlight({
-          x: 6, y: 76, w: 42, h: 8, fill: "#5aa8a0", opacity: 0.35,
-          motion: mot("fade", 0.3, 0.4, { attention: "glow", attentionDelay: 0.6 })
-        }),
         frame({
           x: 82, y: 14, w: 10, h: 18, image: CANINE_UX_LEAD, imageFit: "cover",
           stroke: "#a06b3c", strokeWidth: 2, radius: 999,
-          motion: mot("bounce", 0.15, 0.5)
+          motion: mot("bounce", 0.1, 0.45)
         }),
         arrow({
           x: 68, y: 22, w: 12, h: 10, stroke: "#c9a66b", fill: "#c9a66b", arrowStyle: "curved",
           strokeWidth: 3,
-          motion: mot("fade", 0.35, 0.4)
+          motion: mot("fade", 0.35, 0.35, { attention: "pulse", attentionDelay: 0.85 })
         }),
-        ellipse({ x: 58, y: 80, w: 2.2, h: 4, fill: "#a06b3c", motion: mot("pop", 0.45, 0.4) })
+        highlight({
+          x: 6, y: 76, w: 42, h: 8, fill: "#5aa8a0", opacity: 0.35,
+          motion: mot("fade", 0.45, 0.4, { attention: "glow", attentionDelay: 1.0 })
+        }),
+        ellipse({ x: 58, y: 80, w: 2.2, h: 4, fill: "#a06b3c", motion: mot("pop", 0.65, 0.35) })
       ]
     },
     {
       type: "content", layout: "statement", name: "Close",
-      heading: "You didn’t need this walkthrough. The dog didn’t either.",
+      heading: "Nobody needed this walkthrough. Especially not the dog.",
       subhead: "— Canine UX Lead · still wrong · still on the map · sample",
       bullets: [],
-      transition: tx("fade", 0.55),
+      transition: tx("fade", 0.45),
       shapes: [
-        frame({
-          x: 42, y: 60, w: 14, h: 25, image: CANINE_UX_LEAD, imageFit: "cover",
-          stroke: "#c9a66b", strokeWidth: 2, radius: 999,
-          glowOn: true, glowColor: "#c9a66b", glowBlur: 16, glowOpacity: 0.4,
-          motion: mot("pop", 0.15, 0.45, { attention: "pulse", attentionDelay: 0.7 })
-        }),
         msg({
           x: 28, y: 48, w: 44, h: 10,
           text: "Certificate of completion: vibes only.",
           textStyle: "caption", fill: "#2a3828", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 10, motion: mot("fly-up", 0.35, 0.4)
+          shadowOn: false, radius: 10, motion: mot("fly-up", 0.2, 0.4)
+        }),
+        frame({
+          x: 42, y: 60, w: 14, h: 25, image: CANINE_UX_LEAD, imageFit: "cover",
+          stroke: "#c9a66b", strokeWidth: 2, radius: 999,
+          glowOn: true, glowColor: "#c9a66b", glowBlur: 16, glowOpacity: 0.4,
+          motion: mot("pop", 0.4, 0.45, { attention: "pulse", attentionDelay: 1.0 })
         })
       ]
     }
@@ -474,114 +476,115 @@ function dogSlackPhoneSteps() {
     {
       type: "content", layout: "title", name: "Cover",
       heading: "Teach the Dog to Use Slack",
-      subhead: "Phone edition of a walkthrough that shouldn’t exist.",
+      subhead: "Phone edition of training nobody requested.",
       bullets: [],
       notes: "Portrait 9:16 sample — dry humor, stacked cards, motion showcase.",
-      transition: tx("fade", 0.5),
+      transition: tx("fade", 0.4),
       shapes: [
+        dogPhoneDot({ x: 10, y: 18, h: 3.2, fill: "#a06b3c", motion: mot("pop", 0.05, 0.35) }),
+        dogPhoneDot({ x: 20, y: 22, h: 2.2, fill: "#5aa8a0", opacity: 0.9, motion: mot("pop", 0.15, 0.35) }),
         dogAvatarPhone({
           x: 32, y: 28, h: 16, stroke: "#5aa8a0",
           glowOn: true, glowColor: "#5aa8a0", glowBlur: 14, glowOpacity: 0.4,
-          motion: mot("pop", 0.2, 0.45, { attention: "heartbeat", attentionDelay: 0.7 })
+          motion: mot("pop", 0.15, 0.45, { attention: "heartbeat", attentionDelay: 0.75 })
         }),
         msg({
           x: 8, y: 68, w: 84, h: 18,
           text: "750 XP · Canine UX Lead\nYes, we verticalized the absurdity.",
           textStyle: "caption", fill: "#2a3828", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 14, motion: mot("fly-up", 0.4, 0.45)
-        }),
-        dogPhoneDot({ x: 10, y: 18, h: 3.2, fill: "#a06b3c", motion: mot("pop", 0.25, 0.4) }),
-        dogPhoneDot({ x: 20, y: 22, h: 2.2, fill: "#5aa8a0", opacity: 0.9, motion: mot("pop", 0.4, 0.4) })
+          shadowOn: false, radius: 14, motion: mot("fly-up", 0.45, 0.4)
+        })
       ]
     },
     {
       type: "content", layout: "section", name: "Quest",
       heading: "Active Quest",
-      subhead: "Gamified because a stern “no” felt insufficient.",
+      subhead: "Gamified because “no” felt under-documented.",
       bullets: [],
-      transition: tx("push-up", 0.45),
+      transition: tx("push-up", 0.35),
       shapes: [
         msg({
           x: 7, y: 30, w: 86, h: 28,
-          text: "STATUS · active · 750 XP\n\nTeach Slack to a dog\nNext: 🔥 ceasefire negotiations",
+          text: "STATUS · active · 750 XP\n\nTeach Slack to a dog\nNext: 🔥 ceasefire talks",
           textStyle: "body", fill: "#243028", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 16, motion: mot("fly-up", 0.1, 0.45)
-        }),
-        msg({
-          x: 7, y: 62, w: 86, h: 20,
-          text: "HR severity: “elevated”\nTranslation: someone made a deck.",
-          textStyle: "caption", fill: "#2a3828", stroke: "#c45c4a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 14,
-          motion: mot("fly-up", 0.25, 0.4, { attention: "glow", attentionDelay: 0.7 })
+          shadowOn: false, radius: 16, motion: mot("fly-up", 0.08, 0.4)
         }),
         arrow({
           x: 70, y: 52, w: 18, h: 10, stroke: "#c9a66b", fill: "#c9a66b", arrowStyle: "dashed",
           strokeWidth: 2, flipY: true,
-          motion: mot("fade", 0.35, 0.35)
+          motion: mot("fade", 0.4, 0.35)
+        }),
+        msg({
+          x: 7, y: 62, w: 86, h: 20,
+          text: "HR severity: “deck-worthy”\nTranslation: someone opened Keynote.",
+          textStyle: "caption", fill: "#2a3828", stroke: "#c45c4a", textColor: "#f0ebe3",
+          shadowOn: false, radius: 14,
+          motion: mot("fly-up", 0.55, 0.4, { attention: "glow", attentionDelay: 1.1 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "Incident",
       heading: "Emoji crisis",
-      subhead: "Opens app: yes. Judgment: pending review.",
+      subhead: "Opens app: yes. Judgment: out of office.",
       bullets: [],
-      transition: tx("zoom", 0.4),
+      transition: tx("zoom", 0.35),
       shapes: [
         msg({
           x: 7, y: 28, w: 86, h: 36,
-          text: "Reacts 🔥 to everything.\nHR would like a word.\nAlso a spreadsheet.\nPossibly a support animal waiver.",
+          text: "Reacts 🔥 to everything.\nHR wants a word.\nAlso a spreadsheet.\nPossibly a support-animal waiver.",
           textStyle: "body", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 16, motion: mot("zoom", 0.12, 0.5)
-        }),
-        dogAvatarPhone({
-          x: 36, y: 68, h: 14, stroke: "#a06b3c",
-          motion: mot("fly-up", 0.3, 0.45)
+          radius: 16, motion: mot("zoom", 0.08, 0.45)
         }),
         highlight({
           x: 12, y: 48, w: 76, h: 8, fill: "#c45c4a", opacity: 0.25,
-          motion: mot("fade", 0.35, 0.4)
+          motion: mot("fade", 0.4, 0.35)
+        }),
+        dogAvatarPhone({
+          x: 36, y: 68, h: 14, stroke: "#a06b3c",
+          motion: mot("fly-up", 0.5, 0.4, { attention: "pulse", attentionDelay: 1.05 })
         })
       ]
     },
     {
       type: "content", layout: "section", name: "Tap here",
-      heading: "Do not tap fire",
+      heading: "Do not tap 🔥",
       subhead: "Focus rings for a lesson a look could’ve taught.",
       bullets: [],
-      transition: tx("push-up", 0.4),
+      transition: tx("push-up", 0.35),
       shapes: [
+        // Beat: thread → emojis → warning → arrow → rings → move settle
         msg({
           x: 7, y: 28, w: 86, h: 12,
           text: "#general · “shipped the thing”",
           textStyle: "caption", fill: "#243028", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 12, motion: mot("fade", 0.1, 0.35)
+          shadowOn: false, radius: 12, motion: mot("fade", 0.05, 0.35)
         }),
         msg({
           x: 18, y: 44, w: 64, h: 12,
           text: "👍   🎉   🔥   👀",
           textStyle: "h2", fill: "#1a2418", stroke: "#3d4f3a", textColor: "#f0ebe3",
-          shadowOn: false, radius: 10, motion: mot("fade", 0.2, 0.4)
-        }),
-        focus({
-          x: 48, y: 42, w: 18, h: 14,
-          motion: mot("fade", 0.35, 0.3, { attention: "focus-rings", attentionDelay: 0.3 })
+          shadowOn: false, radius: 10, motion: mot("fade", 0.25, 0.4)
         }),
         msg({
           x: 7, y: 62, w: 86, h: 16,
           text: "Wrong tap → another module.\nYou’ve been warned. Softly.",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 14, motion: mot("fly-up", 0.4, 0.4)
+          radius: 14, motion: mot("fly-up", 0.45, 0.4)
         }),
         arrow({
           x: 28, y: 54, w: 20, h: 10, stroke: "#e23d4b", fill: "#e23d4b", arrowStyle: "thick",
           strokeWidth: 3,
-          motion: mot("fade", 0.45, 0.35, { attention: "pulse", attentionDelay: 0.75 })
+          motion: mot("fade", 0.65, 0.35, { attention: "pulse", attentionDelay: 1.15 })
+        }),
+        focus({
+          x: 48, y: 42, w: 18, h: 14,
+          motion: mot("fade", 0.8, 0.35, { attention: "focus-rings", attentionDelay: 1.3 })
         }),
         dogPhoneDot({
           x: 12, y: 82, h: 3.4, fill: "#5aa8a0",
-          motion: mot("bounce", 0.2, 0.45, {
-            move: "from-to", moveDelay: 0.35, moveDuration: 1.0,
+          motion: mot("bounce", 0.2, 0.4, {
+            move: "from-to", moveDelay: 0.5, moveDuration: 0.85,
             moveFromX: 70, moveFromY: 82, moveToX: 12, moveToY: 82
           })
         })
@@ -592,25 +595,25 @@ function dogSlackPhoneSteps() {
       heading: "Ask Claude",
       subhead: "Silicon Valley for “maybe don’t.”",
       bullets: [],
-      transition: tx("fade", 0.4),
+      transition: tx("fade", 0.35),
       shapes: [
         msg({
           x: 7, y: 28, w: 86, h: 18,
           text: "Revive or archive?\nHas Slack already won by existing?",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 14, motion: mot("fly-up", 0.08, 0.4)
+          radius: 14, motion: mot("fly-up", 0.05, 0.4)
         }),
         msg({
           x: 7, y: 50, w: 86, h: 18,
           text: "What’s unfinished?\nTrackpad licking. Channel manners.",
           textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
-          radius: 14, motion: mot("fly-up", 0.2, 0.4)
+          radius: 14, motion: mot("fly-up", 0.25, 0.4)
         }),
         msg({
           x: 7, y: 72, w: 86, h: 16,
-          text: "Overkill is a feature.",
+          text: "We asked AI about dog emojis.",
           textStyle: "h2", fill: "#243028", stroke: "#5aa8a0", textColor: "#f0ebe3",
-          shadowOn: false, radius: 14, motion: mot("fly-up", 0.32, 0.4)
+          shadowOn: false, radius: 14, motion: mot("fly-up", 0.45, 0.4)
         })
       ]
     },
@@ -624,16 +627,16 @@ function dogSlackPhoneSteps() {
         "Stops 🔥 spam — blocked by HR & physics",
         "1000 XP Canine UX Lead — the real goal"
       ],
-      transition: tx("push-up", 0.4),
+      transition: tx("push-up", 0.35),
       shapes: [
-        highlight({
-          x: 8, y: 78, w: 70, h: 8, fill: "#5aa8a0", opacity: 0.35,
-          motion: mot("fade", 0.3, 0.4, { attention: "glow", attentionDelay: 0.55 })
-        }),
         arrow({
           x: 72, y: 18, w: 18, h: 10, stroke: "#c9a66b", fill: "#c9a66b", arrowStyle: "curved",
           strokeWidth: 2, flipY: true,
-          motion: mot("fade", 0.25, 0.35)
+          motion: mot("fade", 0.2, 0.35, { attention: "pulse", attentionDelay: 0.7 })
+        }),
+        highlight({
+          x: 8, y: 78, w: 70, h: 8, fill: "#5aa8a0", opacity: 0.35,
+          motion: mot("fade", 0.4, 0.4, { attention: "glow", attentionDelay: 0.95 })
         })
       ]
     },
@@ -642,17 +645,17 @@ function dogSlackPhoneSteps() {
       heading: "You didn’t need this. Neither did he.",
       subhead: "Canine UX Lead · phone sample · vibes certificate",
       bullets: [],
-      transition: tx("fade", 0.5),
+      transition: tx("fade", 0.4),
       shapes: [
-        dogAvatarPhone({
-          x: 34, y: 58, h: 16, stroke: "#c9a66b",
-          glowOn: true, glowColor: "#c9a66b", glowBlur: 14, glowOpacity: 0.4,
-          motion: mot("pop", 0.2, 0.45, { attention: "pulse", attentionDelay: 0.7 })
-        }),
         typeText({
           x: 10, y: 48, w: 80, h: 8, text: "Certificate: vibes only.",
           textColor: "#c9a66b", textStyle: "caption",
-          motion: mot("fade", 0.35, 0.4)
+          motion: mot("fade", 0.2, 0.4)
+        }),
+        dogAvatarPhone({
+          x: 34, y: 58, h: 16, stroke: "#c9a66b",
+          glowOn: true, glowColor: "#c9a66b", glowBlur: 14, glowOpacity: 0.4,
+          motion: mot("pop", 0.4, 0.45, { attention: "pulse", attentionDelay: 1.0 })
         })
       ]
     }

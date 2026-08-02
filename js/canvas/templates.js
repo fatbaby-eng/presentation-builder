@@ -11,6 +11,7 @@ import {
   mot, tx, box, msg, highlight, ellipse, frame, arrow, focus, typeText
 } from "./sampleHelpers.js";
 import { BUILDER_SAMPLES } from "./sampleBuilder.js";
+import { PIZZA_SAMPLES } from "./samplePizza.js";
 import { PHISH_SAMPLES } from "./samplePhish.js";
 
 /** Brand kit matched to the pixel-art dog icon (dark green, warm brown, teal). */
@@ -573,6 +574,7 @@ export const BUILTIN_TEMPLATES = [
       { id: "canine-ux-lead", name: "Canine UX Lead", image: CANINE_UX_LEAD }
     ]
   },
+  ...PIZZA_SAMPLES,
   ...BUILDER_SAMPLES,
   ...PHISH_SAMPLES,
   {

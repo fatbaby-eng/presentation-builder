@@ -1344,7 +1344,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="modal-body">
       <p class="hint">Pick a sample to explore features, or a blank starter to fill in. Your brand kit can still be applied after. Nothing leaves your browser.</p>
       <div class="tpl-section-label">Try a sample</div>
-      <p class="tpl-section-hint">Flagship: Teach the Dog to Use Slack (canine screenshot). Also Onboarding and Phish — desktop and phone boards.</p>
+      <p class="tpl-section-hint">Flagship: Teach the Dog to Use Slack. Also Backyard Pizza Oven, Onboarding, and Phish — desktop and phone boards.</p>
       <div class="tpl-grid" id="tplSamples"></div>
       <div class="tpl-section-label">Starters</div>
       <p class="tpl-section-hint">Empty outlines: pitch, product tour, training, status.</p>
@@ -6067,7 +6067,7 @@ function editorCommands() {
     { id: "new-statement", label: "New statement slide", keywords: "add slide quote", run: () => addContentSlide("statement") },
     { id: "new-text", label: "New plain text slide", keywords: "add slide", run: () => addTextSlide() },
     { id: "import", label: "Import content…", keywords: "outline pdf docx markdown", shortcut: "", run: () => openOutline() },
-    { id: "template", label: "Start from a template…", keywords: "pitch tour training sample dog slack phish builder onboarding", run: () => openTemplates() },
+    { id: "template", label: "Start from a template…", keywords: "pitch tour training sample dog slack pizza oven phish builder onboarding", run: () => openTemplates() },
     { id: "save-tpl", label: "Save current deck as template", keywords: "reuse template", run: () => { openTemplates(); saveCurrentAsTemplate(); } },
     { id: "screenshots", label: "Add screenshots…", keywords: "image upload", run: () => $("imgInput").click() },
     { id: "dup-slide", label: "Duplicate this slide", keywords: "copy slide", run: () => { if (project.steps[selected]) dupStep(selected); } },

@@ -6,6 +6,8 @@
  * Starters (group: "starter") are blank-ish outlines to fill in.
  */
 
+import { CANINE_UX_LEAD } from "./sampleDog.js";
+
 function mot(appear, delay, duration) {
   return {
     appear: appear || "none",
@@ -61,6 +63,17 @@ function ellipse(opts) {
   }, opts);
 }
 
+function frame(opts) {
+  return Object.assign({
+    type: "frame", x: 0, y: 0, w: 18, h: 32, rot: 0, flipX: false, flipY: false,
+    fill: "#1a2418", stroke: "#3d4f3a", strokeWidth: 0, opacity: 1, radius: 999,
+    text: "", textColor: "#1b1f2a", parentId: null,
+    image: null, imageFit: "cover", layout: "none", padding: 0,
+    fillMode: "solid", shadowOn: true, shadowY: 6, shadowBlur: 16, shadowOpacity: 0.35,
+    glowOn: false
+  }, opts);
+}
+
 /** Warm map / curious-builder palette — not purple-AI default. */
 const ATLAS_BRAND = {
   primary: "#c9783f",
@@ -83,6 +96,169 @@ const ATLAS_CTA = {
   text: "Visit toddboswell.com",
   url: "https://toddboswell.com"
 };
+
+/** Brand kit matched to the pixel-art dog icon (dark green, warm brown, teal). */
+const DOG_BRAND = {
+  primary: "#a06b3c",
+  secondary: "#5aa8a0",
+  accent: "#c9a66b",
+  bg: "#1a2418",
+  text: "#f0ebe3",
+  success: "#5b8f6b",
+  warning: "#d4a017",
+  danger: "#c45c4a",
+  bg2: "#2a3828",
+  bgMode: "gradient",
+  bgAngle: 148,
+  fontHeading: "georgia",
+  fontBody: "system"
+};
+
+const DOG_CTA = {
+  enabled: true,
+  text: "Visit toddboswell.com",
+  url: "https://toddboswell.com"
+};
+
+/** Short playful sample — Canine UX Lead quest for mockups / demos. */
+function dogSlackSteps() {
+  return [
+    {
+      type: "content", layout: "title", name: "Cover",
+      heading: "Teach the Dog to Use Slack",
+      subhead: "Canine UX Lead • 750 XP",
+      bullets: [],
+      notes: "Demo mockup sample — playful Personal-lane quest with the dog avatar.",
+      transition: tx("fade", 0.5),
+      shapes: [
+        frame({
+          x: 74, y: 18, w: 16, h: 28.5, image: CANINE_UX_LEAD, imageFit: "cover",
+          stroke: "#5aa8a0", strokeWidth: 2, radius: 999,
+          motion: mot("pop", 0.2, 0.45)
+        }),
+        msg({
+          x: 6, y: 68, w: 42, h: 16,
+          text: "Personal lane · sample quest\nWrong emoji reactions · HR watching",
+          textStyle: "caption", fill: "#2a3828", stroke: "#3d4f3a", textColor: "#f0ebe3",
+          shadowOn: false, radius: 12, motion: mot("fade", 0.45, 0.5)
+        }),
+        ellipse({ x: 8, y: 22, w: 2, h: 3.6, fill: "#a06b3c", motion: mot("pop", 0.35, 0.4) }),
+        ellipse({ x: 12, y: 30, w: 1.4, h: 2.5, fill: "#5aa8a0", opacity: 0.9, motion: mot("pop", 0.5, 0.4) })
+      ]
+    },
+    {
+      type: "content", layout: "section", name: "Quest",
+      heading: "Active Quest",
+      subhead: "He keeps reacting with the wrong emoji",
+      bullets: [],
+      transition: tx("push-left", 0.45),
+      shapes: [
+        frame({
+          x: 78, y: 14, w: 12, h: 21.5, image: CANINE_UX_LEAD, imageFit: "cover",
+          stroke: "#a06b3c", strokeWidth: 2, radius: 999,
+          motion: mot("fly-right", 0.15, 0.45)
+        }),
+        box({
+          x: 8, y: 48, w: 84, h: 36, fill: "#243028", stroke: "#3d4f3a", strokeWidth: 1, radius: 14,
+          shadowOn: true, shadowY: 8, shadowBlur: 18, shadowOpacity: 0.28,
+          motion: mot("fly-up", 0.2, 0.5)
+        }),
+        msg({
+          x: 12, y: 52, w: 76, h: 28, fill: "#243028", stroke: "#243028", strokeWidth: 0, shadowOn: false,
+          text: "STATUS · active · 750 XP\n\nQuest: Teach Slack · Lane: Personal\nNext: Stop the fire-emoji spam\n#dog #slack #emoji #hr",
+          textColor: "#f0ebe3", textStyle: "body", motion: mot("fade", 0.35, 0.4)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "section", name: "Overview",
+      heading: "Quest overview",
+      subhead: "Canine UX Lead · dossier",
+      bullets: [],
+      notes: "Overview copy is the joke — he can open Slack; he cannot react responsibly.",
+      transition: tx("zoom", 0.45),
+      shapes: [
+        box({
+          x: 8, y: 34, w: 56, h: 52, fill: "#f4efe6", stroke: "#d6c7b5", strokeWidth: 1, radius: 14,
+          shadowOn: true, shadowY: 8, shadowBlur: 18, shadowOpacity: 0.25,
+          motion: mot("zoom", 0.1, 0.5)
+        }),
+        msg({
+          x: 11, y: 38, w: 50, h: 44, fill: "#f4efe6", stroke: "#f4efe6", strokeWidth: 0, shadowOn: false,
+          text: "He can open the app.\nHe cannot stop reacting fire emoji to everything.\n\nHR is concerned.",
+          textColor: "#1a2418", textStyle: "body", motion: mot("fade", 0.28, 0.45)
+        }),
+        frame({
+          x: 70, y: 36, w: 18, h: 32, image: CANINE_UX_LEAD, imageFit: "cover",
+          stroke: "#5aa8a0", strokeWidth: 2, radius: 999,
+          motion: mot("fly-right", 0.25, 0.5)
+        }),
+        msg({
+          x: 68, y: 72, w: 22, h: 12, fill: "#2a3828", stroke: "#5aa8a0", strokeWidth: 1, shadowOn: false,
+          text: "🔥 × ∞\nreactions",
+          textColor: "#f0ebe3", textStyle: "caption", radius: 10, motion: mot("pop", 0.45, 0.4)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "section", name: "Reflect",
+      heading: "Ask Claude",
+      subhead: "Reflection prompts for this quest",
+      bullets: [],
+      transition: tx("fade", 0.4),
+      shapes: [
+        msg({
+          x: 6, y: 38, w: 28, h: 44,
+          text: "Revive or archive?\n\nIs this quest still worth training — or has Slack already won?",
+          textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
+          radius: 12, motion: mot("fly-up", 0.08, 0.45)
+        }),
+        msg({
+          x: 36, y: 38, w: 28, h: 44,
+          text: "What's unfinished?\n\nEmoji etiquette. Channel manners. Not licking the trackpad.",
+          textStyle: "caption", fill: "#f4efe6", stroke: "#d6c7b5", textColor: "#1a2418",
+          radius: 12, motion: mot("fly-up", 0.2, 0.45)
+        }),
+        msg({
+          x: 66, y: 38, w: 28, h: 44,
+          text: "Audit for gaps\n\nWhere does “good boy” end and “incident report” begin?",
+          textStyle: "caption", fill: "#243028", stroke: "#5aa8a0", textColor: "#f0ebe3",
+          radius: 12, motion: mot("fly-up", 0.32, 0.45)
+        })
+      ]
+    },
+    {
+      type: "content", layout: "bullets", name: "Progress",
+      heading: "Training checklist",
+      subhead: "Sample progress — not live product data",
+      bullets: [
+        "Opens Slack without chewing the laptop — shipped",
+        "Chooses a channel before reacting — in progress",
+        "Stops fire-emoji on every message — blocked (HR)",
+        "Earns Canine UX Lead · 1000 XP — next milestone"
+      ],
+      transition: tx("push-left", 0.4),
+      shapes: [
+        highlight({ x: 6, y: 78, w: 36, h: 6, fill: "#5aa8a0", opacity: 0.35, motion: mot("fade", 0.35, 0.4) }),
+        ellipse({ x: 88, y: 18, w: 2.4, h: 4.4, fill: "#a06b3c", motion: mot("bounce", 0.2, 0.5) })
+      ]
+    },
+    {
+      type: "content", layout: "statement", name: "Close",
+      heading: "Good dog. Wrong emoji. Still on the map.",
+      subhead: "— Canine UX Lead · Teach the Dog to Use Slack · sample",
+      bullets: [],
+      transition: tx("fade", 0.55),
+      shapes: [
+        frame({
+          x: 42, y: 62, w: 14, h: 25, image: CANINE_UX_LEAD, imageFit: "cover",
+          stroke: "#c9a66b", strokeWidth: 2, radius: 999,
+          motion: Object.assign(mot("pop", 0.15, 0.45), { attention: "pulse", attentionDelay: 0.7 })
+        })
+      ]
+    }
+  ];
+}
 
 /** Desktop widescreen sample — denser layout, side-by-side cards. */
 function atlasDesktopSteps() {
@@ -484,6 +660,21 @@ export const BUILTIN_TEMPLATES = [
     cta: Object.assign({}, ATLAS_CTA)
   },
   {
+    id: "dog-slack",
+    group: "sample",
+    name: "Teach the Dog to Use Slack",
+    title: "Teach the Dog to Use Slack",
+    blurb: "Playful Canine UX Lead quest — avatar, active quest, overview & Ask Claude prompts",
+    brand: Object.assign({}, DOG_BRAND),
+    artboard: { id: "16:9", w: 1920, h: 1080 },
+    steps: dogSlackSteps(),
+    cta: Object.assign({}, DOG_CTA),
+    logo: CANINE_UX_LEAD,
+    assets: [
+      { id: "canine-ux-lead", name: "Canine UX Lead", image: CANINE_UX_LEAD }
+    ]
+  },
+  {
     id: "pitch",
     group: "starter",
     name: "Pitch deck",
@@ -589,9 +780,11 @@ export function templateToProjectPayload(tpl) {
       notes: s.notes
     })),
     cta: Object.assign({ enabled: false, text: "Get started", url: "" }, tpl.cta || {}),
-    assets: [],
+    assets: Array.isArray(tpl.assets)
+      ? tpl.assets.map(a => Object.assign({}, a))
+      : [],
     symbols: [],
-    logo: null
+    logo: tpl.logo || null
   };
 }
 

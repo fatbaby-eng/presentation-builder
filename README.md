@@ -52,7 +52,8 @@ No accounts. No backend. No data ever leaves the browser.
   size, export, tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
-- **Templates** — start from **Try Atlas (desktop)** / **Try Atlas (phone)** / **Teach the Dog to Use Slack**
+- **Templates** — start from **Try Atlas (desktop)** / **Try Atlas (phone)** /
+  **Teach the Dog to Use Slack** / **Teach the Dog to Use Slack (phone)**
   sample decks (fake project cards so you can poke shapes, motion, and transitions), or blank starters:
   Pitch, Product tour, Training, Status. Save your own templates in the browser and export
   a `.template.json`.
@@ -62,11 +63,12 @@ No accounts. No backend. No data ever leaves the browser.
   for portable `.presentation.json` files. **Close** clears the canvas (keeps a copy under
   **Open → Recent**). **T Type** places free text with size, colour, transparency, and bend (arc).
 
-### Try the Atlas samples
+### Try the sample decks
 
 1. Open the editor (`npx --yes serve .`, then the local URL).
 2. Click **Start from a template…** (empty canvas card, **＋ New slide** menu, or **Ctrl/⌘ K → template**).
-3. Under **Try a sample**, pick **Try Atlas (desktop)**, **Try Atlas (phone)**, or **Teach the Dog to Use Slack**.
+3. Under **Try a sample**, pick **Try Atlas (desktop)**, **Try Atlas (phone)**,
+   **Teach the Dog to Use Slack** (16:9), or **Teach the Dog to Use Slack (phone)** (9:16).
 4. Preview or Present to walk the demo; tweak anything — it’s regular project JSON in your browser.
 
 ## Use it

@@ -693,7 +693,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <button type="button" class="empty-card" id="emptyTplBtn">
               <span class="ec-icon">▦</span>
               <strong>Start from a template</strong>
-              <span class="ec-desc">Try a satire sample deck, or a blank starter outline</span>
+              <span class="ec-desc">Try Teach the Dog to Use Slack, or a blank starter</span>
             </button>
             <button type="button" class="empty-card" id="emptyAddBtn">
               <span class="ec-icon">🖼</span>
@@ -1327,9 +1327,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="modal-head"><strong id="welcomeTitle">Welcome to Presentation Builder</strong><button type="button" class="btn sm" id="welcomeClose" aria-label="Close">✕ Close</button></div>
     <div class="modal-body">
       <p class="welcome-lead">Build click-through decks in your browser — screenshots, hotspots, motion, and an offline HTML export. Nothing is uploaded.</p>
-      <p class="hint" style="margin:0">New here? Try a sample to see what the tools can do, or start blank and build your own.</p>
+      <p class="hint" style="margin:0">New here? Load the Teach the Dog to Use Slack sample to see motion, focus rings, and arrows — or start blank.</p>
       <div class="welcome-actions">
-        <button type="button" class="btn primary" id="welcomeTrySample">Try a sample</button>
+        <button type="button" class="btn primary" id="welcomeTrySample">Try Teach the Dog sample</button>
         <button type="button" class="btn" id="welcomeBlank">Start blank</button>
       </div>
       <label class="welcome-dismiss"><input type="checkbox" id="welcomeDontShow"> Don’t show this again</label>
@@ -1344,7 +1344,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
     <div class="modal-body">
       <p class="hint">Pick a sample to explore features, or a blank starter to fill in. Your brand kit can still be applied after. Nothing leaves your browser.</p>
       <div class="tpl-section-label">Try a sample</div>
-      <p class="tpl-section-hint">Dry satire demos with real motion, focus rings, arrows, and transitions — desktop and phone boards.</p>
+      <p class="tpl-section-hint">Flagship: Teach the Dog to Use Slack (canine screenshot). Also Onboarding and Phish — desktop and phone boards.</p>
       <div class="tpl-grid" id="tplSamples"></div>
       <div class="tpl-section-label">Starters</div>
       <p class="tpl-section-hint">Empty outlines: pitch, product tour, training, status.</p>
@@ -6222,7 +6222,9 @@ $("welcomeBlank").onclick = () => {
 };
 $("welcomeTrySample").onclick = () => {
   closeWelcome({ persist: true });
-  openTemplates();
+  const tpl = BUILTIN_TEMPLATES.find(t => t.id === "dog-slack");
+  if (tpl) applyTemplatePayload(templateToProjectPayload(tpl), tpl.title || tpl.name);
+  else openTemplates();
 };
 $("welcomeModal").addEventListener("click", e => {
   if (e.target === $("welcomeModal")) closeWelcome({ persist: false });

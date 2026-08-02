@@ -1,5 +1,5 @@
 /**
- * Flagship satire sample: a deck about Presentation Builder itself.
+ * Satire sample: a deck about Presentation Builder itself.
  * Dry tongue-in-cheek — polish theater, page-size debates, export anxiety.
  */
 
@@ -56,7 +56,7 @@ export function builderDesktopSteps() {
       heading: "Onboarding: You Already Know How to Click",
       subhead: "A deck about decks · required viewing for people who open tools",
       bullets: [],
-      notes: "Flagship sample — satire of needing a demo for the demo tool.",
+      notes: "Satire sample — needing a demo for the demo tool.",
       transition: tx("fade", 0.4),
       shapes: [
         ellipse({ x: 8, y: 18, w: 2.2, h: 4, fill: "#c4a574", motion: mot("pop", 0.05, 0.35) }),

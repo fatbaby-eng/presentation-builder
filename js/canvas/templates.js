@@ -37,7 +37,7 @@ const DOG_CTA = {
 };
 
 /**
- * Widescreen showcase — dry humor, motion-forward onboarding mock.
+ * Flagship showcase — dry humor, motion-forward training mock with the canine screenshot.
  * Packs image holders, arrow styles, focus rings, attention, move, type, etc.
  */
 function dogSlackSteps() {
@@ -47,7 +47,7 @@ function dogSlackSteps() {
       heading: "Teach the Dog to Use Slack",
       subhead: "Required training for a problem a raised eyebrow could’ve solved · 750 XP",
       bullets: [],
-      notes: "Showcase sample — poke fun at corporate training theater while flexing builder features.",
+      notes: "Flagship sample — poke fun at corporate training theater while flexing builder features.",
       transition: tx("fade", 0.4),
       shapes: [
         // Beat: dots → avatar → punchline → caption → arrow → pulse
@@ -543,13 +543,12 @@ function dogSlackPhoneSteps() {
 
 
 export const BUILTIN_TEMPLATES = [
-  ...BUILDER_SAMPLES,
   {
     id: "dog-slack",
     group: "sample",
     name: "Teach the Dog to Use Slack",
     title: "Teach the Dog to Use Slack",
-    blurb: "Widescreen showcase — dry humor, motion, focus rings, arrows & dog avatar",
+    blurb: "Flagship widescreen — dry humor, motion, focus rings, arrows & canine screenshot",
     brand: Object.assign({}, DOG_BRAND),
     artboard: { id: "16:9", w: 1920, h: 1080 },
     steps: dogSlackSteps(),
@@ -564,7 +563,7 @@ export const BUILTIN_TEMPLATES = [
     group: "sample",
     name: "Teach the Dog to Use Slack (phone)",
     title: "Teach the Dog to Use Slack — Phone",
-    blurb: "Portrait 9:16 showcase — stacked cards, same dry quest, motion-forward",
+    blurb: "Flagship portrait 9:16 — stacked cards, same dry quest, canine screenshot",
     brand: Object.assign({}, DOG_BRAND),
     artboard: { id: "9:16", w: 1080, h: 1920 },
     steps: dogSlackPhoneSteps(),
@@ -574,6 +573,7 @@ export const BUILTIN_TEMPLATES = [
       { id: "canine-ux-lead", name: "Canine UX Lead", image: CANINE_UX_LEAD }
     ]
   },
+  ...BUILDER_SAMPLES,
   ...PHISH_SAMPLES,
   {
     id: "pitch",

@@ -52,10 +52,10 @@ No accounts. No backend. No data ever leaves the browser.
   size, export, tools, brand kit, shape layering, and more.
 - **Quick bar** — when a shape is selected, a small floating bar offers Duplicate, Front/Back,
   Shadow, Reuse, and Delete.
-- **Templates** — start from satire sample decks (16:9 + phone 9:16):
-  **Onboarding: You Already Know How to Click**, **Teach the Dog to Use Slack**,
-  and **Don’t Click the Phish (Unless It’s Lunch)** — dry humor with real motion,
-  focus rings, arrows, and transitions — or blank starters: Pitch, Product tour,
+- **Templates** — start from satire sample decks (16:9 + phone 9:16). Flagship:
+  **Teach the Dog to Use Slack** (canine screenshot). Also **Onboarding: You Already Know
+  How to Click** and **Don’t Click the Phish (Unless It’s Lunch)** — dry humor with real
+  motion, focus rings, arrows, and transitions — or blank starters: Pitch, Product tour,
   Training, Status. Save your own templates in the browser and export a `.template.json`.
 - **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
   build Heading/Body sizes from one body size and a ratio.
@@ -63,13 +63,15 @@ No accounts. No backend. No data ever leaves the browser.
   for portable `.presentation.json` files. **Close** clears the canvas (keeps a copy under
   **Open → Recent**). **T Type** places free text with size, colour, transparency, and bend (arc).
 - **Welcome** — first visit (empty canvas, no recents) shows a short welcome with
-  **Try a sample** or **Start blank**. Optional **Don’t show again**.
+  **Try Teach the Dog sample** or **Start blank**. Optional **Don’t show again**.
 
 ### Try the sample decks
 
 1. Open the editor (`npx --yes serve .`, then the local URL).
-2. Click **Start from a template…** (empty canvas card, **＋ New slide** menu, welcome CTA, or **Ctrl/⌘ K → template**).
-3. Under **Try a sample**, pick any of the six cards (three themes × desktop/phone).
+2. First visit: **Try Teach the Dog sample**, or click **Start from a template…** (empty
+   canvas card, **＋ New slide** menu, or **Ctrl/⌘ K → template**).
+3. Under **Try a sample**, Dog Slack leads the gallery; also Onboarding and Phish
+   (three themes × desktop/phone).
 4. Preview or Present to walk the demo; tweak anything — it’s regular project JSON in your browser.
 
 ## Use it

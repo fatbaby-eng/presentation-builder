@@ -84,7 +84,7 @@ export function deriveProps(shapes) {
     } else if (sh.type === "frame") {
       props.push({ id: sh.id + ":image", kind: "image", label: "Image holder photo", field: "image", shapeId: sh.id });
       props.push({ id: sh.id + ":fill", kind: "color", label: "Image holder fill", field: "fill", shapeId: sh.id });
-    } else if (sh.type === "box" || sh.type === "ellipse" || sh.type === "highlight") {
+    } else if (sh.type === "box" || sh.type === "ellipse" || sh.type === "focus" || sh.type === "highlight") {
       props.push({ id: sh.id + ":fill", kind: "color", label: (sh.type === "highlight" ? "Highlight" : "Fill"), field: "fill", shapeId: sh.id });
     } else if (sh.type === "arrow") {
       props.push({ id: sh.id + ":stroke", kind: "color", label: "Arrow colour", field: "stroke", shapeId: sh.id });

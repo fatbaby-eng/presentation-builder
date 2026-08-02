@@ -126,7 +126,7 @@ export function resolveShapeColor(sh, which, brand) {
 }
 
 export function cornerRadiusCss(sh) {
-  if (sh.type === "ellipse") return "50%";
+  if (sh.type === "ellipse" || sh.type === "focus") return "50%";
   const fx = sanitizeEffects(sh);
   if (fx.radiiLinked) {
     const r = sh.radius != null ? sh.radius : fx.radiusTL;

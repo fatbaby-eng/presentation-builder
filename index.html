@@ -426,8 +426,18 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .shape.draggable { cursor: move; }
 .shape.passive { pointer-events: none; }
 .shape.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
-.shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.shape .msg-text { width: 100%; height: 100%; overflow: hidden; }
+.shape svg { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.shape .msg-text { width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+.shape.focus-shape { background: transparent; }
+.attn-chip-row, .arrow-style-row { display: flex; flex-wrap: wrap; gap: .3rem; }
+.attn-chip, .arrow-style-chip {
+  border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: .35rem .5rem;
+  font-size: .72rem; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit;
+}
+.attn-chip:hover, .arrow-style-chip:hover { border-color: var(--accent); color: var(--accent); }
+.attn-chip.on, .arrow-style-chip.on { border-color: var(--accent); color: var(--accent); background: #f2f0ff; }
+.inspector-section { margin: .65rem 0 .2rem; font-size: .72rem; font-weight: 700; color: var(--ink);
+  letter-spacing: .02em; text-transform: uppercase; }
 /* Selection resize handles (corners + edges) */
 .rh { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: #fff; border: 2px solid var(--accent);
   border-radius: 2px; z-index: 6; box-sizing: border-box; touch-action: none; }
@@ -637,9 +647,10 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <button class="tool img-tool" data-tool="redact" id="toolRedact" title="Cover private areas">▦ Redact</button>
         <button class="tool" data-tool="box" title="Draw a box">▢ Box</button>
         <button class="tool" data-tool="ellipse" title="Draw an ellipse">⭕ Ellipse</button>
+        <button class="tool" data-tool="focus" title="Focus ring — pulse to show where to click">🎯 Focus ring</button>
         <button class="tool" data-tool="frame" title="Image holder — place a photo &amp; optional auto-layout">🖼️ Image holder</button>
-        <button class="tool" data-tool="arrow" title="Draw an arrow">➤ Arrow</button>
-        <button class="tool" data-tool="highlight" title="Draw a highlight">✨ Highlight</button>
+        <button class="tool" data-tool="arrow" title="Draw an arrow — pick a style in the side panel">➤ Arrow</button>
+        <button class="tool" data-tool="highlight" title="Draw a highlight — can pulse for attention">✨ Highlight</button>
         <button class="tool" data-tool="message" title="Draw a message callout">💬 Message</button>
         <button class="tool" data-tool="text" title="Click or drag to add text — bend, colour, size…">🔤 Type</button>
         <div class="view-tools" title="Hold Alt while dragging to disable snap">
@@ -892,6 +903,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       <div id="shapeFields" style="display:none">
         <div class="divider"></div>
         <h2 id="shapeTitle">Shape style</h2>
+        <p class="hint" id="shapeHint" style="margin:-.15rem 0 .55rem">Edit the selected item here. Use ↖ Select to click any shape or text.</p>
         <div class="field" id="sfTextWrap">
           <label for="sfText" id="sfTextLbl">Message text</label>
           <textarea id="sfText" maxlength="800" placeholder="Type here…"></textarea>
@@ -923,6 +935,12 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <div class="look-grid" id="sfFrameLookGrid"></div>
           </div>
         </div>
+        <div class="inspector-section" id="sfArrowSec" style="display:none">Arrow style</div>
+        <div class="field" id="sfArrowWrap" style="display:none">
+          <div class="arrow-style-row" id="sfArrowStyles"></div>
+          <div class="hint" id="sfArrowHint" style="margin-top:.35rem">Solid, dashed, double head, thick chevrons, curved, or block</div>
+        </div>
+        <div class="inspector-section">Appearance</div>
         <div class="field">
           <div class="color-grid">
             <label class="color-cell" for="sfFill" id="sfFillCell"><input type="color" id="sfFill"><span class="cl">Fill</span></label>
@@ -1092,8 +1110,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
             <div><label class="hint">BR</label><input type="range" id="sfRBR" min="0" max="80" step="1"></div>
           </div>
         </div>
+        <div class="inspector-section">Position &amp; size</div>
         <div class="field" id="sfSizeWrap">
-          <label>Position &amp; size <span class="hint" style="font-weight:400">% of slide · Shift+drag locks proportions</span></label>
+          <label><span class="hint" style="font-weight:400">% of slide · Shift+drag locks proportions</span></label>
           <div class="size-grid">
             <label>X <input type="number" id="sfX" step="0.5"></label>
             <label>Y <input type="number" id="sfY" step="0.5"></label>
@@ -1104,6 +1123,16 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
         <div class="field">
           <label for="sfRotate">Rotation <span id="sfRotateVal" class="hint" style="font-weight:400"></span></label>
           <input type="range" id="sfRotate" min="-180" max="180" step="1" style="width:100%">
+        </div>
+
+        <div class="inspector-section" id="sfAttnSec">Attention</div>
+        <div class="field" id="sfAttnWrap">
+          <div class="attn-chip-row" id="sfAttnChips"></div>
+          <div class="hint" id="sfAttnHint" style="margin-top:.35rem">Pulse or focus rings draw the eye in demos. Full timing lives in Motion below the slide.</div>
+          <div class="field" style="margin:.45rem 0 0" id="sfAttnDelayWrap">
+            <label for="sfAttnDelay">Starts after <span id="sfAttnDelayVal" class="hint" style="font-weight:400"></span></label>
+            <input type="range" id="sfAttnDelay" min="0" max="80" step="1" style="width:100%">
+          </div>
         </div>
 
         <details class="pro-fold" id="sfEffectsFold">
@@ -1492,13 +1521,16 @@ import {
   dataUrlSizeLabel, defaultImageLook
 } from "./js/canvas/images.js";
 import {
-  APPEAR_PRESETS, ATTENTION_PRESETS, DISAPPEAR_PRESETS, MOVE_PRESETS, EASINGS,
+  APPEAR_PRESETS, ATTENTION_PRESETS, ATTENTION_SHORTCUTS, DISAPPEAR_PRESETS, MOVE_PRESETS, EASINGS,
   sanitizeMotion, readMotion, buildMotionItems, timelineDuration,
   motionStylesheet, playMotionOnElement, clearMotionPlayback,
   defaultMotion, MOTION_FPS, formatMotionTime, formatMotionFrame,
   scrubSlideAtTime, clearSlideMotion, hasActiveMotion, seedMoveFromShape,
-  clampTimingClip, MIN_CLIP_DURATION
+  clampTimingClip, MIN_CLIP_DURATION, ensureFocusRingOverlay
 } from "./js/canvas/motion.js";
+import {
+  ARROW_STYLES, sanitizeArrowStyle, buildArrowSVG, recolorArrowSVG
+} from "./js/canvas/arrows.js";
 import {
   TRANSITION_PRESETS, sanitizeTransition, defaultTransition, transitionStylesheet,
   transitionClasses, HOTSPOT_ACTIONS, sanitizeHotspotAction
@@ -1560,7 +1592,7 @@ const LAYOUT_LABELS = { title: "Title", section: "Section", bullets: "Bullets", 
 const CONTENT_ICON = { title: "🏷️", section: "§", bullets: "≣", statement: "❝" };
 
 // Vector annotation / drawing tools (work on every slide type)
-const SHAPE_TOOLS = ["box", "ellipse", "frame", "arrow", "highlight", "message", "text"];
+const SHAPE_TOOLS = ["box", "ellipse", "focus", "frame", "arrow", "highlight", "message", "text"];
 const SHAPE_TYPES = SHAPE_TOOLS.concat(["symbol"]);
 function newShape(type, x, y, w, h) {
   if (type === "frame") {
@@ -1571,8 +1603,14 @@ function newShape(type, x, y, w, h) {
   let sh = b;
   if (type === "box")       sh = Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 6, text: "", textColor: "#1b1f2a" });
   else if (type === "ellipse")   sh = Object.assign(b, { fill: "#6c5ce7", stroke: "#6c5ce7", strokeWidth: 2, opacity: 0.15, radius: 0, text: "", textColor: "#1b1f2a" });
+  else if (type === "focus") {
+    sh = Object.assign(b, {
+      fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 0.08, radius: 0, text: "", textColor: "#1b1f2a"
+    });
+    sh.motion = sanitizeMotion({ attention: "focus-rings", attentionDelay: 0.15 });
+  }
   else if (type === "highlight") sh = Object.assign(b, { fill: "#ffd34d", stroke: "#ffd34d", strokeWidth: 0, opacity: 0.40, radius: 3, text: "", textColor: "#1b1f2a" });
-  else if (type === "arrow")     sh = Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a" });
+  else if (type === "arrow")     sh = Object.assign(b, { fill: "#e23d4b", stroke: "#e23d4b", strokeWidth: 3, opacity: 1, radius: 0, text: "", textColor: "#1b1f2a", arrowStyle: "solid" });
   else if (type === "message")   sh = Object.assign(b, { fill: "#ffffff", stroke: "#1b1f2a", strokeWidth: 1, opacity: 1, radius: 8, text: "Your message", textColor: "#1b1f2a" });
   else if (type === "text") {
     sh = Object.assign(b, defaultTypeShape(project && project.brand));
@@ -1584,6 +1622,7 @@ function newShape(type, x, y, w, h) {
     mergeTypeFields(sh, { textStyle: "h2", textArcOn: false, textArc: 35, textOpacity: 1 });
     Object.assign(sh, sanitizeTextArc(sh));
   }
+  if (!sh.motion) sh.motion = defaultMotion();
   return sh;
 }
 function hexA(hex, a) { const n = parseInt(safeColor(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + clamp(a, 0, 1) + ")"; }
@@ -1733,6 +1772,7 @@ function sanitizeShapes(raw) {
     mergeTypeFields(item, sh);
     if (sh.type === "text" || sh.type === "message") Object.assign(item, sanitizeTextArc(sh));
     item.motion = sanitizeMotion(sh.motion);
+    if (sh.type === "arrow") item.arrowStyle = sanitizeArrowStyle(sh.arrowStyle);
     if (sh.type === "frame") {
       item.image = safeImage(sh.image);
       item.imageFit = ["cover", "contain", "fill"].includes(sh.imageFit) ? sh.imageFit : "cover";
@@ -2114,8 +2154,9 @@ function renderCanvas() {
     : tool === "text"     ? "Drag to place text — then set size, colour, bend…"
     : tool === "box"      ? "Drag to draw a box"
     : tool === "ellipse"  ? "Drag to draw an ellipse"
-    : tool === "arrow"    ? "Drag to draw an arrow"
-    : tool === "highlight"? "Drag to draw a highlight"
+    : tool === "focus"    ? "Drag a focus ring — shows where to click (pulses)"
+    : tool === "arrow"    ? "Drag to draw an arrow — pick style in the side panel"
+    : tool === "highlight"? "Drag a highlight — add Pulse in Attention for demos"
     : SHAPE_TOOLS.includes(tool) ? "Drag to draw"
     : "Select tool — drag to move, handles to resize (Shift locks proportions, Alt free-moves)";
 
@@ -2325,35 +2366,23 @@ function buildShapeEl(sh) {
     const fim = el.querySelector(".frame-img");
     if (fim) fim.style.filter = imageLookCss(sh);
   } else if (sh.type === "arrow") {
-    el.appendChild(arrowSVG(sh));
+    el.appendChild(buildArrowSVG(sh));
+  } else if (sh.type === "focus") {
+    el.classList.add("focus-shape");
   } else if (sh.type === "message" || sh.type === "text") {
     paintTextualContent(el, sh, project.brand, FONTS, resolveColorVar);
   }
   applyShapePaint(el, sh, project.brand, hexA);
   if (sh.type === "arrow") {
     const stroke = resolveShapeColor(sh, "stroke", project.brand);
-    el.querySelectorAll("line, polyline").forEach(n => n.setAttribute("stroke", stroke));
+    recolorArrowSVG(el.querySelector("svg"), stroke);
+  }
+  const mot = readMotion(sh);
+  if (mot.attention === "focus-rings" || sh.type === "focus") {
+    const ringColor = resolveShapeColor(sh, "stroke", project.brand);
+    ensureFocusRingOverlay(el, ringColor);
   }
   return el;
-}
-function arrowSVG(sh) {
-  const NS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(NS, "svg");
-  svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
-  const x1 = sh.flipX ? 92 : 8, x2 = sh.flipX ? 8 : 92, y1 = sh.flipY ? 92 : 8, y2 = sh.flipY ? 8 : 92;
-  const sw = sh.strokeWidth || 3;
-  const line = document.createElementNS(NS, "line");
-  line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-  line.setAttribute("stroke", sh.stroke); line.setAttribute("stroke-width", sw);
-  line.setAttribute("vector-effect", "non-scaling-stroke"); line.setAttribute("stroke-linecap", "round");
-  svg.appendChild(line);
-  const ang = Math.atan2(y2 - y1, x2 - x1), len = 16, a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82;
-  const head = document.createElementNS(NS, "polyline");
-  head.setAttribute("points", (x2 + len * Math.cos(a1)) + "," + (y2 + len * Math.sin(a1)) + " " + x2 + "," + y2 + " " + (x2 + len * Math.cos(a2)) + "," + (y2 + len * Math.sin(a2)));
-  head.setAttribute("fill", "none"); head.setAttribute("stroke", sh.stroke); head.setAttribute("stroke-width", sw);
-  head.setAttribute("vector-effect", "non-scaling-stroke"); head.setAttribute("stroke-linecap", "round"); head.setAttribute("stroke-linejoin", "round");
-  svg.appendChild(head);
-  return svg;
 }
 
 // Drag-to-rotate knob; writes degrees (-180..180, snapped near 45°s) onto obj.rot.
@@ -2399,7 +2428,7 @@ function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
     const el = buildShapeEl(sh);
     el.dataset.pbMot = sh.id;
-    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
+    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "focus" ? " focus-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
     if (sel) {
       el.addEventListener("click", e => e.stopPropagation());
       if (isTextualShape(sh)) {
@@ -2581,7 +2610,7 @@ function renderInspector() {
   scheduleSave();
 }
 
-const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", frame: "Image holder", arrow: "Arrow", highlight: "Highlight", message: "Message box", text: "Text", symbol: "Saved piece" };
+const SHAPE_LABEL = { box: "Box", ellipse: "Ellipse", focus: "Focus ring", frame: "Image holder", arrow: "Arrow", highlight: "Highlight", message: "Message box", text: "Text", symbol: "Saved piece" };
 let selGradStop = 0;
 let fillFmt = "hex";
 let assetFilter = "all";
@@ -2731,11 +2760,14 @@ function renderGradUI(sh) {
 }
 
 function renderShapeFields(sh) {
-  const isMsg = isTextualShape(sh), isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse", isFrame = sh.type === "frame";
+  const isMsg = isTextualShape(sh), isArrow = sh.type === "arrow", isEllipse = sh.type === "ellipse" || sh.type === "focus", isFrame = sh.type === "frame";
   const isType = sh.type === "text";
   const isSym = sh.type === "symbol";
+  const isFocus = sh.type === "focus";
   if (!isSym) mergeEffectFields(sh, sh);
   if (isMsg) Object.assign(sh, sanitizeTextArc(sh));
+  if (isArrow) sh.arrowStyle = sanitizeArrowStyle(sh.arrowStyle);
+  sh.motion = sanitizeMotion(sh.motion);
   $("shapeTitle").textContent = (SHAPE_LABEL[sh.type] || "Shape") + " style";
   $("sfTextWrap").style.display = isMsg ? "" : "none";
   $("sfTextLbl").textContent = isType ? "Text" : "Message text";
@@ -2744,7 +2776,7 @@ function renderShapeFields(sh) {
   $("sfTypeWrap").style.display = isMsg ? "" : "none";
   $("sfFillCell").style.display = (isArrow || isSym) ? "none" : "";
   $("sfFillFmtRow").style.display = (isArrow || isSym) ? "none" : "";
-  $("sfFillModeWrap").style.display = (isArrow || isSym || isType) ? "none" : "";
+  $("sfFillModeWrap").style.display = (isArrow || isSym || isType || isFocus) ? "none" : "";
   $("sfOpacityWrap").style.display = (isArrow || isSym) ? "none" : "";
   $("sfRadiusWrap").style.display = (isArrow || isEllipse || isSym || isType) ? "none" : "";
   $("sfEffectsFold").style.display = isSym ? "none" : "";
@@ -2756,14 +2788,18 @@ function renderShapeFields(sh) {
   if ($("sfTextOpacityWrap")) $("sfTextOpacityWrap").style.display = isMsg ? "" : "none";
   if ($("sfArcFields")) $("sfArcFields").style.display = (isMsg && sh.textArcOn) ? "" : "none";
   $("sfSizeWrap").style.display = "";
+  $("sfArrowSec").style.display = isArrow ? "" : "none";
+  $("sfArrowWrap").style.display = isArrow ? "" : "none";
+  $("sfAttnSec").style.display = isSym ? "none" : "";
+  $("sfAttnWrap").style.display = isSym ? "none" : "";
   $("sfX").value = roundSize(sh.x);
   $("sfY").value = roundSize(sh.y);
   $("sfW").value = roundSize(sh.w);
   $("sfH").value = roundSize(sh.h);
   $("sfRotate").value = sh.rot || 0; $("sfRotateVal").textContent = (sh.rot || 0) + "°";
   if (isSym) { renderSymbolProps(sh); return; }
-  $("sfStrokeLbl").textContent = isArrow ? "Line" : "Border";
-  $("sfStrokeWLbl").firstChild.textContent = (isArrow ? "Line width " : "Border width ");
+  $("sfStrokeLbl").textContent = isArrow ? "Line" : (isFocus ? "Ring" : "Border");
+  $("sfStrokeWLbl").firstChild.textContent = (isArrow ? "Line width " : isFocus ? "Ring width " : "Border width ");
   if (isMsg) $("sfText").value = sh.text || "";
   if (isMsg && $("sfArcOn")) {
     $("sfArcOn").checked = !!sh.textArcOn;
@@ -2784,6 +2820,49 @@ function renderShapeFields(sh) {
         renderCanvas(); scheduleSave(); renderShapeFields(sh);
       });
     }
+  }
+  if (isArrow) {
+    const row = $("sfArrowStyles"); row.innerHTML = "";
+    ARROW_STYLES.forEach(st => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "arrow-style-chip" + (sh.arrowStyle === st.id ? " on" : "");
+      btn.textContent = st.label;
+      btn.title = st.hint || st.label;
+      btn.onclick = () => {
+        sh.arrowStyle = st.id;
+        renderCanvas(); scheduleSave(); renderShapeFields(sh);
+      };
+      row.appendChild(btn);
+    });
+    const meta = ARROW_STYLES.find(s => s.id === sh.arrowStyle);
+    $("sfArrowHint").textContent = meta ? meta.hint : "Pick a look for this arrow";
+  }
+  {
+    const row = $("sfAttnChips"); row.innerHTML = "";
+    const attn = sh.motion.attention || "none";
+    ATTENTION_SHORTCUTS.forEach(st => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "attn-chip" + (attn === st.id ? " on" : "");
+      btn.textContent = st.label;
+      btn.title = st.tip || st.label;
+      btn.onclick = () => {
+        sh.motion = sanitizeMotion(Object.assign({}, sh.motion, { attention: st.id }));
+        if (st.id === "focus-rings" && sh.motion.attentionDelay < 0.05) sh.motion.attentionDelay = 0.15;
+        renderCanvas(); scheduleSave(); renderShapeFields(sh);
+        if (typeof renderMotionPanel === "function") renderMotionPanel();
+      };
+      row.appendChild(btn);
+    });
+    const tip = ATTENTION_SHORTCUTS.find(s => s.id === attn);
+    $("sfAttnHint").textContent = tip && tip.tip
+      ? tip.tip
+      : "Pulse or focus rings draw the eye in demos. Full timing lives in Motion below the slide.";
+    const dly = sh.motion.attentionDelay == null ? 0.6 : sh.motion.attentionDelay;
+    $("sfAttnDelay").value = Math.round(dly * 10);
+    $("sfAttnDelayVal").textContent = dly.toFixed(1) + "s";
+    $("sfAttnDelayWrap").style.display = attn === "none" ? "none" : "";
   }
   const fillHex = resolveShapeColor(sh, "fill", project.brand);
   $("sfFill").value = fillHex;
@@ -4575,6 +4654,47 @@ ${presenterStylesheet()}
     }
   })();
 
+  function chainAttentionAfterAppear(root) {
+    if (!root || !root.querySelectorAll) return;
+    var nodes = root.querySelectorAll("[data-pb-attn]");
+    for (var ni = 0; ni < nodes.length; ni++) {
+      (function (node) {
+        var attn = node.getAttribute("data-pb-attn");
+        if (!attn || attn === "none") return;
+        var cycle = parseFloat(node.getAttribute("data-pb-attn-cycle") || "0.7") || 0.7;
+        var extraDelay = parseFloat(node.getAttribute("data-pb-attn-delay") || "0") || 0;
+        var appearDelay = parseFloat(node.style.animationDelay) || 0;
+        var appearDur = parseFloat(node.style.animationDuration) || 0.55;
+        var waitMs = Math.max(0, (extraDelay - (appearDelay + appearDur)) * 1000);
+        var started = false;
+        function startAttn() {
+          if (started) return;
+          started = true;
+          var kill = [];
+          for (var ci = 0; ci < node.classList.length; ci++) {
+            var c = node.classList[ci];
+            if (c.indexOf("pb-appear-") === 0) kill.push(c);
+          }
+          kill.forEach(function (c) { node.classList.remove(c); });
+          node.style.opacity = "";
+          node.classList.add("pb-attn-" + attn);
+          node.style.animationDuration = cycle + "s";
+          node.style.animationDelay = "0s";
+          node.style.animationTimingFunction = "ease-in-out";
+        }
+        var onEnd = function (ev) {
+          if (ev && ev.target !== node) return;
+          node.removeEventListener("animationend", onEnd);
+          setTimeout(startAttn, waitMs);
+        };
+        node.addEventListener("animationend", onEnd);
+        setTimeout(function () {
+          if (!started) { node.removeEventListener("animationend", onEnd); startAttn(); }
+        }, (appearDelay + appearDur) * 1000 + 80);
+      })(nodes[ni]);
+    }
+  }
+
   function fillPane(pane, idx) {
     var n = DATA.steps.length;
     if (idx >= n) { drawEnd(pane); return; }
@@ -4582,6 +4702,7 @@ ${presenterStylesheet()}
     if (step.type === "text") drawText(step, pane);
     else if (step.type === "content") drawContent(step, pane);
     else drawImage(step, pane);
+    chainAttentionAfterAppear(pane);
   }
 
   function slideTx(idx) {
@@ -4640,17 +4761,74 @@ ${presenterStylesheet()}
   function vHexA(hex, a) { var n = parseInt(String(hex).slice(1), 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
   function vArrow(sh) {
     var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
-    var x1 = sh.flipX ? 92 : 8, x2 = sh.flipX ? 8 : 92, y1 = sh.flipY ? 92 : 8, y2 = sh.flipY ? 8 : 92, sw = sh.strokeWidth || 3;
+    svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("overflow", "visible");
+    var style = sh.arrowStyle || "solid";
+    var x1 = sh.flipX ? 92 : 8, x2 = sh.flipX ? 8 : 92, y1 = sh.flipY ? 92 : 8, y2 = sh.flipY ? 8 : 92;
+    var sw = Math.max(1, sh.strokeWidth || 3), color = sh.stroke || "#e23d4b";
+    var ang = Math.atan2(y2 - y1, x2 - x1), angBack = ang + Math.PI, headLen = style === "thick" ? 20 : 16;
+    function setSt(n, extras) {
+      n.setAttribute("stroke", color); n.setAttribute("stroke-width", sw); n.setAttribute("vector-effect", "non-scaling-stroke");
+      n.setAttribute("stroke-linecap", "round"); n.setAttribute("stroke-linejoin", "round"); n.setAttribute("fill", "none");
+      if (extras) for (var k in extras) n.setAttribute(k, extras[k]);
+    }
+    function head(x, y, a, len) {
+      var a1 = a + Math.PI * 0.82, a2 = a - Math.PI * 0.82, h = document.createElementNS(NS, "polyline");
+      h.setAttribute("points", (x + len * Math.cos(a1)) + "," + (y + len * Math.sin(a1)) + " " + x + "," + y + " " + (x + len * Math.cos(a2)) + "," + (y + len * Math.sin(a2)));
+      setSt(h); return h;
+    }
+    if (style === "block") {
+      var nx = Math.cos(ang + Math.PI / 2), ny = Math.sin(ang + Math.PI / 2), half = 10, shaft = 0.72;
+      var sx = x1 + (x2 - x1) * shaft, sy = y1 + (y2 - y1) * shaft;
+      var pts = [[x1 + nx * half * 0.55, y1 + ny * half * 0.55], [sx + nx * half * 0.55, sy + ny * half * 0.55], [sx + nx * half, sy + ny * half], [x2, y2], [sx - nx * half, sy - ny * half], [sx - nx * half * 0.55, sy - ny * half * 0.55], [x1 - nx * half * 0.55, y1 - ny * half * 0.55]];
+      var poly = document.createElementNS(NS, "polygon");
+      poly.setAttribute("points", pts.map(function (p) { return p[0] + "," + p[1]; }).join(" "));
+      poly.setAttribute("fill", color); poly.setAttribute("stroke", "none"); svg.appendChild(poly); return svg;
+    }
+    if (style === "curved") {
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2, nx2 = Math.cos(ang + Math.PI / 2), ny2 = Math.sin(ang + Math.PI / 2);
+      var cx = mx + nx2 * 18, cy = my + ny2 * 18;
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", "M " + x1 + " " + y1 + " Q " + cx + " " + cy + " " + x2 + " " + y2);
+      setSt(path); svg.appendChild(path);
+      svg.appendChild(head(x2, y2, Math.atan2(y2 - cy, x2 - cx), headLen)); return svg;
+    }
+    if (style === "thick") {
+      var lineT = document.createElementNS(NS, "line");
+      lineT.setAttribute("x1", x1); lineT.setAttribute("y1", y1); lineT.setAttribute("x2", x2); lineT.setAttribute("y2", y2);
+      setSt(lineT); lineT.setAttribute("stroke-width", Math.max(sw, 5)); svg.appendChild(lineT);
+      for (var mi = 1; mi <= 3; mi++) {
+        var t = mi / 4.2, px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t, mlen = 9;
+        var ma1 = ang + Math.PI * 0.78, ma2 = ang - Math.PI * 0.78;
+        var mark = document.createElementNS(NS, "polyline");
+        mark.setAttribute("points", (px - mlen * Math.cos(ma1)) + "," + (py - mlen * Math.sin(ma1)) + " " + px + "," + py + " " + (px - mlen * Math.cos(ma2)) + "," + (py - mlen * Math.sin(ma2)));
+        setSt(mark); mark.setAttribute("stroke-width", Math.max(2, sw - 1)); svg.appendChild(mark);
+      }
+      svg.appendChild(head(x2, y2, ang, headLen)); return svg;
+    }
     var line = document.createElementNS(NS, "line");
     line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-    line.setAttribute("stroke", sh.stroke); line.setAttribute("stroke-width", sw); line.setAttribute("vector-effect", "non-scaling-stroke"); line.setAttribute("stroke-linecap", "round");
+    setSt(line, style === "dashed" ? { "stroke-dasharray": "8 6" } : null);
     svg.appendChild(line);
-    var ang = Math.atan2(y2 - y1, x2 - x1), len = 16, a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82, head = document.createElementNS(NS, "polyline");
-    head.setAttribute("points", (x2 + len * Math.cos(a1)) + "," + (y2 + len * Math.sin(a1)) + " " + x2 + "," + y2 + " " + (x2 + len * Math.cos(a2)) + "," + (y2 + len * Math.sin(a2)));
-    head.setAttribute("fill", "none"); head.setAttribute("stroke", sh.stroke); head.setAttribute("stroke-width", sw);
-    head.setAttribute("vector-effect", "non-scaling-stroke"); head.setAttribute("stroke-linecap", "round"); head.setAttribute("stroke-linejoin", "round");
-    svg.appendChild(head); return svg;
+    svg.appendChild(head(x2, y2, ang, headLen));
+    if (style === "double") svg.appendChild(head(x1, y1, angBack, headLen));
+    return svg;
+  }
+  function vFocusRings(el, color) {
+    var wrap = document.createElement("div"); wrap.className = "pb-focus-rings";
+    for (var ri = 0; ri < 3; ri++) {
+      var r = document.createElement("div"); r.className = "pb-focus-ring";
+      if (color) {
+        var a = ri === 0 ? 0.85 : ri === 1 ? 0.55 : 0.35;
+        var h = String(color || "#e23d4b").replace("#", "");
+        if (/^[0-9a-fA-F]{6}$/.test(h)) {
+          var n = parseInt(h, 16);
+          r.style.borderColor = "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+        }
+      }
+      wrap.appendChild(r);
+    }
+    el.appendChild(wrap);
+    if (el.className.indexOf("frame") < 0) el.style.overflow = "visible";
   }
   function drawShapes(box, step) {
     var brand = DATA.brand || {};
@@ -4681,7 +4859,7 @@ ${presenterStylesheet()}
       return solid;
     }
     function vRadius(sh) {
-      if (sh.type === "ellipse") return "50%";
+      if (sh.type === "ellipse" || sh.type === "focus") return "50%";
       if (sh.radiiLinked === false) return (sh.radiusTL || 0) + "px " + (sh.radiusTR || 0) + "px " + (sh.radiusBR || 0) + "px " + (sh.radiusBL || 0) + "px";
       return (sh.radius || 0) + "px";
     }
@@ -4761,6 +4939,12 @@ ${presenterStylesheet()}
       var mode = sh.fillMode || "solid";
       var stroke = vResolve(sh, "stroke");
       if (sh.type === "arrow") { el.appendChild(vArrow(Object.assign({}, sh, { stroke: stroke }))); }
+      else if (sh.type === "focus") {
+        el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
+        el.style.border = sh.strokeWidth > 0 ? sh.strokeWidth + "px solid " + stroke : "none";
+        el.style.borderRadius = "50%";
+        el.style.overflow = "visible";
+      }
       else if (sh.type === "frame") {
         el.style.overflow = "hidden";
         if (mode === "solid" || !sh.image) el.style.background = vHexA(vResolve(sh, "fill"), fillOp);
@@ -4873,8 +5057,10 @@ ${presenterStylesheet()}
           mot = mot || {};
           var appear = mot.appear || "none", attn = mot.attention || "none";
           var move = mot.move || "none";
+          var attnCycle = { pulse: 0.7, "focus-rings": 1.1, shake: 0.35, wiggle: 0.4, glow: 0.7, heartbeat: 0.8 };
           if (appear === "none" && attn === "none" && move === "none") return;
           node.classList.add("pb-mot");
+          if (attn === "focus-rings" || (sh.type === "focus" && attn !== "none")) vFocusRings(node, stroke);
           if (move === "from-to" && node.animate) {
             node.style.left = (mot.moveFromX != null ? mot.moveFromX : 0) + "%";
             node.style.top = (mot.moveFromY != null ? mot.moveFromY : 0) + "%";
@@ -4899,12 +5085,23 @@ ${presenterStylesheet()}
             node.style.animationDelay = (mot.appearDelay || 0) + "s";
             node.style.animationTimingFunction = mot.easing || "ease-out";
             node.style.opacity = "0";
+            if (attn !== "none") {
+              node.dataset.pbAttn = attn;
+              node.dataset.pbAttnDelay = String(mot.attentionDelay || 0);
+              node.dataset.pbAttnCycle = String(attnCycle[attn] || 0.7);
+            }
           } else if (attn !== "none") {
             node.classList.add("pb-attn-" + attn);
-            node.style.animationDuration = "0.7s";
+            node.style.animationDuration = (attnCycle[attn] || 0.7) + "s";
             node.style.animationDelay = (mot.attentionDelay || 0) + "s";
+            node.style.animationTimingFunction = "ease-in-out";
           }
         })(el, sh.motion);
+      } else if (sh.type === "focus") {
+        vFocusRings(el, stroke);
+        el.classList.add("pb-mot", "pb-attn-focus-rings");
+        el.style.animationDuration = "1.1s";
+        el.style.animationDelay = "0.15s";
       }
       box.appendChild(el);
     });
@@ -5508,6 +5705,13 @@ $("sfEyeDrop").onclick = async () => {
   renderInspector();
 };
 $("sfStroke").addEventListener("input", e => { touchShape(sh => { sh.stroke = safeColor(e.target.value, sh.stroke); sh.strokeVar = null; }); });
+$("sfAttnDelay").addEventListener("input", e => {
+  touchShape(sh => {
+    sh.motion = sanitizeMotion(Object.assign({}, sh.motion || {}, { attentionDelay: Number(e.target.value) / 10 }));
+    $("sfAttnDelayVal").textContent = sh.motion.attentionDelay.toFixed(1) + "s";
+  });
+  if (typeof renderMotionPanel === "function") renderMotionPanel();
+});
 $("sfTextColor").addEventListener("input", e => { touchShape(sh => { sh.textColor = safeColor(e.target.value, sh.textColor); }); });
 $("sfFontSize").addEventListener("input", e => {
   touchShape(sh => { sh.fontSize = clamp(e.target.value, 8, 120); $("sfFontSizeVal").textContent = sh.fontSize + "px"; });
@@ -5645,7 +5849,11 @@ $("sfDetachSymbol").onclick = detachSelectedSymbol;
 $("motionToggle").onclick = () => { motionPanelOpen = !motionPanelOpen; renderMotionPanel(); };
 $("motionPlay").onclick = playSlideMotion;
 $("motAppear").addEventListener("change", e => touchMotion(m => { m.appear = e.target.value; }));
-$("motAttention").addEventListener("change", e => touchMotion(m => { m.attention = e.target.value; }));
+$("motAttention").addEventListener("change", e => {
+  touchMotion(m => { m.attention = e.target.value; });
+  const sh = curShape();
+  if (sh) renderShapeFields(sh);
+});
 $("motDisappear").addEventListener("change", e => touchMotion(m => { m.disappear = e.target.value; }));
 $("motEasing").addEventListener("change", e => touchMotion(m => { m.easing = e.target.value; }));
 $("motAppearDelay").addEventListener("input", e => {
@@ -5868,11 +6076,12 @@ function editorCommands() {
     { id: "tool-select", label: "↖ Select tool", keywords: "cursor", run: () => { tool = "select"; render(); } },
     { id: "tool-box", label: "▢ Draw a box", keywords: "shape rectangle", run: () => { tool = "box"; render(); } },
     { id: "tool-ellipse", label: "⭕ Draw an ellipse", keywords: "shape circle oval", run: () => { tool = "ellipse"; render(); } },
-    { id: "tool-arrow", label: "➤ Draw an arrow", keywords: "shape", run: () => { tool = "arrow"; render(); } },
+    { id: "tool-focus", label: "🎯 Focus ring", keywords: "attention pulse click here demo rings", run: () => { tool = "focus"; render(); } },
+    { id: "tool-arrow", label: "➤ Draw an arrow", keywords: "shape dashed block curved", run: () => { tool = "arrow"; render(); } },
     { id: "tool-type", label: "🔤 Type tool", keywords: "text font arc bend", run: () => { tool = "text"; render(); } },
     { id: "tool-message", label: "💬 Draw a message", keywords: "text shape callout", run: () => { tool = "message"; render(); } },
     { id: "tool-frame", label: "🖼️ Image holder", keywords: "frame image container photo holder", run: () => { tool = "frame"; render(); } },
-    { id: "tool-highlight", label: "✨ Draw a highlight", keywords: "shape", run: () => { tool = "highlight"; render(); } },
+    { id: "tool-highlight", label: "✨ Draw a highlight", keywords: "shape pulse attention", run: () => { tool = "highlight"; render(); } },
     { id: "tool-hotspot", label: "＋ Hotspot tool", keywords: "click tip", run: () => { tool = "hotspot"; render(); } },
     { id: "tool-redact", label: "▦ Redact tool", keywords: "blur blackout", run: () => { tool = "redact"; render(); } },
     { id: "bg-color", label: "Background color…", keywords: "brand slide fill", run: () => {

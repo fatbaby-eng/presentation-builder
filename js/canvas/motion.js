@@ -18,10 +18,20 @@ export const APPEAR_PRESETS = [
 export const ATTENTION_PRESETS = [
   { id: "none", label: "None" },
   { id: "pulse", label: "Pulse" },
+  { id: "focus-rings", label: "Focus rings" },
   { id: "shake", label: "Shake" },
   { id: "wiggle", label: "Wiggle" },
   { id: "glow", label: "Glow" },
   { id: "heartbeat", label: "Heartbeat" }
+];
+
+/** Quick Attention shortcuts shown in the shape inspector (plain labels). */
+export const ATTENTION_SHORTCUTS = [
+  { id: "none", label: "None", tip: "No attention motion" },
+  { id: "pulse", label: "Pulse", tip: "Breathe scale — good for arrows, boxes, highlights" },
+  { id: "focus-rings", label: "Focus rings", tip: "Expanding rings — classic demo “click here”" },
+  { id: "glow", label: "Glow", tip: "Soft glow pulse" },
+  { id: "heartbeat", label: "Heartbeat", tip: "Double beat to draw the eye" }
 ];
 
 export const DISAPPEAR_PRESETS = [
@@ -49,6 +59,7 @@ export const EASINGS = [
 export const MOTION_SHAPE_LABEL = {
   box: "Box",
   ellipse: "Ellipse",
+  focus: "Focus ring",
   frame: "Image holder",
   arrow: "Arrow",
   highlight: "Highlight",
@@ -224,11 +235,15 @@ export function motionStylesheet() {
 @keyframes pbPop { 0% { opacity: 0; transform: scale(.4); } 80% { transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
 @keyframes pbFlyOutUp { to { opacity: 0; transform: translateY(-28px); } }
 @keyframes pbFlyOutDown { to { opacity: 0; transform: translateY(28px); } }
-@keyframes pbPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes pbPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: .88; } }
 @keyframes pbShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @keyframes pbWiggle { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
 @keyframes pbGlow { 0%,100% { filter: drop-shadow(0 0 0 transparent); } 50% { filter: drop-shadow(0 0 10px rgba(255,220,80,.85)); } }
 @keyframes pbHeart { 0%,100% { transform: scale(1); } 15% { transform: scale(1.12); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+@keyframes pbFocusRing {
+  0% { transform: translate(-50%, -50%) scale(.45); opacity: .72; }
+  100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
+}
 .pb-appear-fade { animation-name: pbFadeIn; }
 .pb-appear-fly-up { animation-name: pbFlyUp; }
 .pb-appear-fly-down { animation-name: pbFlyDown; }
@@ -242,11 +257,82 @@ export function motionStylesheet() {
 .pb-attn-wiggle { animation-name: pbWiggle; animation-iteration-count: 4; animation-duration: .4s !important; }
 .pb-attn-glow { animation-name: pbGlow; animation-iteration-count: 3; }
 .pb-attn-heartbeat { animation-name: pbHeart; animation-iteration-count: 3; animation-duration: .8s !important; }
+.pb-attn-focus-rings { animation-name: none; }
+.pb-focus-rings { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 1; }
+.pb-focus-ring {
+  position: absolute; left: 50%; top: 50%; width: 100%; height: 100%;
+  border: 2.5px solid rgba(226, 61, 75, .85); border-radius: 50%;
+  box-sizing: border-box; pointer-events: none;
+  transform: translate(-50%, -50%) scale(.45); opacity: 0;
+}
+.pb-attn-focus-rings .pb-focus-ring {
+  animation-name: pbFocusRing; animation-duration: 1.1s; animation-iteration-count: 3;
+  animation-timing-function: ease-out; animation-fill-mode: both;
+}
+.pb-attn-focus-rings .pb-focus-ring:nth-child(2) { animation-delay: .28s; border-color: rgba(226, 61, 75, .55); }
+.pb-attn-focus-rings .pb-focus-ring:nth-child(3) { animation-delay: .56s; border-color: rgba(226, 61, 75, .35); }
 .pb-disappear-fade { animation-name: pbFadeOut; }
 .pb-disappear-fly-up { animation-name: pbFlyOutUp; }
 .pb-disappear-fly-down { animation-name: pbFlyOutDown; }
 .pb-disappear-zoom { animation-name: pbZoomOut; }
 `.replace(/\n\s+/g, "\n").trim();
+}
+
+/** Ensure focus-ring overlay children exist for CSS / scrub. */
+export function ensureFocusRingOverlay(el, color) {
+  if (!el) return null;
+  let wrap = el.querySelector(":scope > .pb-focus-rings");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.className = "pb-focus-rings";
+    for (let i = 0; i < 3; i++) {
+      const r = document.createElement("div");
+      r.className = "pb-focus-ring";
+      wrap.appendChild(r);
+    }
+    el.appendChild(wrap);
+  }
+  if (color) {
+    wrap.querySelectorAll(".pb-focus-ring").forEach((r, i) => {
+      const a = i === 0 ? 0.85 : i === 1 ? 0.55 : 0.35;
+      r.style.borderColor = hexToRgba(color, a);
+    });
+  }
+  if (!el.classList.contains("frame-shape")) el.style.overflow = "visible";
+  return wrap;
+}
+
+function hexToRgba(hex, a) {
+  const h = String(hex || "#e23d4b").replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return "rgba(226,61,75," + a + ")";
+  const n = parseInt(h, 16);
+  return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+}
+
+/** Apply ring scale/opacity for scrubbing focus-rings attention. */
+export function scrubFocusRings(el, progress) {
+  const wrap = ensureFocusRingOverlay(el);
+  if (!wrap) return;
+  const rings = wrap.querySelectorAll(".pb-focus-ring");
+  rings.forEach((r, i) => {
+    const phase = (progress + i * 0.28) % 1;
+    const scale = 0.45 + phase * 1.1;
+    const opacity = Math.max(0, 0.72 * (1 - phase));
+    r.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+    r.style.opacity = String(opacity);
+    r.style.animation = "none";
+  });
+}
+
+export function clearFocusRingScrub(el) {
+  if (!el) return;
+  const wrap = el.querySelector(":scope > .pb-focus-rings");
+  if (!wrap) return;
+  wrap.querySelectorAll(".pb-focus-ring").forEach(r => {
+    r.style.transform = "";
+    r.style.opacity = "";
+    r.style.animation = "";
+  });
 }
 
 /**
@@ -280,9 +366,11 @@ export function playMotionOnElement(el, motion, opts) {
     if (m.attention !== "none") {
       chain = chain.then(() => {
         const wait = Math.max(0, m.attentionDelay - (m.appear !== "none" ? m.appearDelay + m.appearDuration : 0));
-        return delay(wait).then(() =>
-          animateCss(el, "pb-attn-" + m.attention, 0.7, 0, "ease-in-out", preview)
-        );
+        return delay(wait).then(() => {
+          if (m.attention === "focus-rings") ensureFocusRingOverlay(el);
+          const dur = ATTN_CYCLE[m.attention] || 0.7;
+          return animateCss(el, "pb-attn-" + m.attention, dur, 0, "ease-in-out", preview);
+        });
       });
     }
     if (m.disappear !== "none") {
@@ -396,6 +484,7 @@ export const MOTION_FPS = 30;
 /** Attention loop length (seconds) — matches CSS preset durations × iterations. */
 const ATTN_CYCLE = {
   pulse: 0.7,
+  "focus-rings": 1.1,
   shake: 0.35,
   wiggle: 0.4,
   glow: 0.7,
@@ -403,6 +492,7 @@ const ATTN_CYCLE = {
 };
 const ATTN_ITERS = {
   pulse: 3,
+  "focus-rings": 3,
   shake: 4,
   wiggle: 4,
   glow: 3,
@@ -510,26 +600,30 @@ function attentionSample(id, localT) {
   const p = clamp(localT, 0, 1);
   switch (id) {
     case "pulse": {
-      const s = p < 0.5 ? lerp(1, 1.06, p * 2) : lerp(1.06, 1, (p - 0.5) * 2);
-      return { opacity: 1, tx: 0, ty: 0, scale: s, rot: 0, glow: 0 };
+      const s = p < 0.5 ? lerp(1, 1.08, p * 2) : lerp(1.08, 1, (p - 0.5) * 2);
+      const o = p < 0.5 ? lerp(1, 0.88, p * 2) : lerp(0.88, 1, (p - 0.5) * 2);
+      return { opacity: o, tx: 0, ty: 0, scale: s, rot: 0, glow: 0, ring: 0 };
+    }
+    case "focus-rings": {
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0, ring: p };
     }
     case "shake": {
       let x = 0;
       if (p < 0.25) x = lerp(0, -5, p / 0.25);
       else if (p < 0.75) x = lerp(-5, 5, (p - 0.25) / 0.5);
       else x = lerp(5, 0, (p - 0.75) / 0.25);
-      return { opacity: 1, tx: x, ty: 0, scale: 1, rot: 0, glow: 0 };
+      return { opacity: 1, tx: x, ty: 0, scale: 1, rot: 0, glow: 0, ring: 0 };
     }
     case "wiggle": {
       let r = 0;
       if (p < 0.25) r = lerp(0, -3, p / 0.25);
       else if (p < 0.75) r = lerp(-3, 3, (p - 0.25) / 0.5);
       else r = lerp(3, 0, (p - 0.75) / 0.25);
-      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: r, glow: 0 };
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: r, glow: 0, ring: 0 };
     }
     case "glow": {
       const g = p < 0.5 ? lerp(0, 1, p * 2) : lerp(1, 0, (p - 0.5) * 2);
-      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: g };
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: g, ring: 0 };
     }
     case "heartbeat": {
       let s = 1;
@@ -537,10 +631,10 @@ function attentionSample(id, localT) {
       else if (p < 0.3) s = lerp(1.12, 1, (p - 0.15) / 0.15);
       else if (p < 0.45) s = lerp(1, 1.1, (p - 0.3) / 0.15);
       else if (p < 0.6) s = lerp(1.1, 1, (p - 0.45) / 0.15);
-      return { opacity: 1, tx: 0, ty: 0, scale: s, rot: 0, glow: 0 };
+      return { opacity: 1, tx: 0, ty: 0, scale: s, rot: 0, glow: 0, ring: 0 };
     }
     default:
-      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0 };
+      return { opacity: 1, tx: 0, ty: 0, scale: 1, rot: 0, glow: 0, ring: 0 };
   }
 }
 
@@ -615,15 +709,18 @@ export function sampleMotionAtTime(motion, timeSec) {
       const local = ((t - attnStart) % cycle) / cycle;
       const attn = attentionSample(m.attention, local);
       pose = {
-        opacity: pose.opacity,
+        opacity: pose.opacity == null ? 1 : pose.opacity * (attn.opacity == null ? 1 : attn.opacity),
         tx: (pose.tx || 0) + (attn.tx || 0),
         ty: (pose.ty || 0) + (attn.ty || 0),
         scale: (pose.scale == null ? 1 : pose.scale) * (attn.scale == null ? 1 : attn.scale),
         rot: (pose.rot || 0) + (attn.rot || 0),
         glow: attn.glow || 0,
+        ring: attn.ring || 0,
         leftPct: pose.leftPct,
         topPct: pose.topPct
       };
+    } else {
+      pose.ring = 0;
     }
   }
 
@@ -675,6 +772,7 @@ export function scrubMotionOnElement(el, motion, timeSec) {
   if (!el) return;
   stripMotionAnimation(el);
   rememberBaseStyles(el);
+  const m = sanitizeMotion(motion);
   const pose = sampleMotionAtTime(motion, timeSec);
   const css = poseToCss(pose, el._pbMotBaseTransform || "");
   el.style.opacity = css.opacity;
@@ -685,6 +783,13 @@ export function scrubMotionOnElement(el, motion, timeSec) {
   else if (el._pbMotBaseLeft != null) el.style.left = el._pbMotBaseLeft;
   if (css.top != null) el.style.top = css.top;
   else if (el._pbMotBaseTop != null) el.style.top = el._pbMotBaseTop;
+  if (m.attention === "focus-rings") {
+    ensureFocusRingOverlay(el);
+    if (pose.ring > 0) scrubFocusRings(el, pose.ring);
+    else clearFocusRingScrub(el);
+  } else {
+    clearFocusRingScrub(el);
+  }
 }
 
 /**
@@ -715,7 +820,7 @@ export function clearSlideMotion(stage, items) {
 
 /**
  * For export: set inline animation styles so objects play when the slide is shown.
- * Appear + optional move (left/top WAAPI-like CSS via custom properties / dual animation).
+ * Appear + attention can both run (attention chains after appear via data attrs).
  */
 export function applyExportMotion(el, motion) {
   const m = sanitizeMotion(motion);
@@ -724,7 +829,6 @@ export function applyExportMotion(el, motion) {
   if (m.move !== "none") {
     el.style.left = m.moveFromX + "%";
     el.style.top = m.moveFromY + "%";
-    // Use WAAPI when available in the viewer; also set CSS transition fallback via data attrs
     el.dataset.pbMove = "1";
     el.dataset.pbMoveFromX = String(m.moveFromX);
     el.dataset.pbMoveFromY = String(m.moveFromY);
@@ -734,6 +838,7 @@ export function applyExportMotion(el, motion) {
     el.dataset.pbMoveDur = String(m.moveDuration);
     el.dataset.pbMoveEase = m.easing || "ease-out";
   }
+  if (m.attention === "focus-rings") ensureFocusRingOverlay(el);
   if (m.appear !== "none") {
     el.classList.add("pb-appear-" + m.appear);
     el.style.animationDuration = m.appearDuration + "s";
@@ -743,10 +848,12 @@ export function applyExportMotion(el, motion) {
     if (m.attention !== "none") {
       el.dataset.pbAttn = m.attention;
       el.dataset.pbAttnDelay = String(m.attentionDelay);
+      el.dataset.pbAttnCycle = String(ATTN_CYCLE[m.attention] || 0.7);
     }
   } else if (m.attention !== "none") {
     el.classList.add("pb-attn-" + m.attention);
-    el.style.animationDuration = "0.7s";
+    el.style.animationDuration = (ATTN_CYCLE[m.attention] || 0.7) + "s";
     el.style.animationDelay = m.attentionDelay + "s";
+    el.style.animationTimingFunction = "ease-in-out";
   }
 }

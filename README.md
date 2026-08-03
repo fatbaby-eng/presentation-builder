@@ -38,10 +38,10 @@ No accounts. No backend. No data ever leaves the browser.
   spacing on one message box without breaking the rest.
 - **Saved pieces** — save a shape or Frame to reuse on other slides. Tweak text or
   colours on one copy, or unlink it to edit freely.
-- **Board size** — in the top bar next to Brand kit, pick Landscape (16:9, 16:10, 4:3, 21:9), Portrait (phone 9:16 and
-  others), Square, or a custom width × height. When you change the board, type and
- shapes reflow to fit. Exports use the same board size. You can also use **Page size**
- next to Grid/Rulers/Safe, or ⌘K → “Board size…”.
+- **Page size** — in the canvas toolbar next to Grid/Rulers/Safe, pick Landscape
+ (16:9, 16:10, 4:3, 21:9), Portrait (phone 9:16 and others), Square, or a custom
+ width × height. When you change the board, type and shapes reflow to fit. Exports
+ use the same board size. You can also use ⌘K → “Page size…”.
 - **Smart guides** — while dragging, red lines help you line things up (hold **Alt**
   to move freely). Toggle **Grid**, **Rulers**, and **Safe** area from the toolbar.
 - **Frames** — draw a Frame, add a photo, and optionally stack children inside it.
@@ -67,19 +67,19 @@ No accounts. No backend. No data ever leaves the browser.
   **Teach the Dog to Use Slack** (canine screenshot). Also **Backyard Pizza Oven — Phase 2**
   (firebrick quest + project-map screenshot), **Onboarding: You Already Know How to Click**,
   and **Don’t Click the Phish (Unless It’s Lunch)** — dry humor with real motion, focus rings,
-  arrows, and transitions — or blank starters: Pitch, Product tour, Training, Status. Save
-  your own templates in the browser and export a `.template.json`.
+ arrows, and transitions — or blank starters: Pitch deck, Product tour, Training outline,
+ and Status update. Save your own templates in the browser and export a `.template.json`.
 - **Brand colour ideas & type scale** — in Brand kit, try harmony palettes from your primary, or
   build Heading/Body sizes from one body size and a ratio.
 - **Autosave** — work is saved in your browser automatically. Use **Save**/**Open**
   for portable `.presentation.json` files. **Close** clears the canvas (keeps a copy under
-  **Open → Recent**). **T Type** places free text with size, colour, transparency, and bend (arc).
+ **Open → Recent**).
 - **Welcome** — first visit (empty canvas, no recents) shows a short welcome with
   **Try Teach the Dog sample** or **Start blank**. Optional **Don’t show again**.
 
 ### Try the sample decks
 
-1. Open the editor (`npx --yes serve .`, then the local URL).
+1. Open the editor (`npm start`, then the local URL).
 2. First visit: **Try Teach the Dog sample**, or click **Start from a template…** (empty
    canvas card, **＋ New slide** menu, or **Ctrl/⌘ K → template**).
 3. Under **Try a sample**, Dog Slack leads; also Pizza Oven, Onboarding, and Phish
@@ -98,6 +98,9 @@ npm start
 (Same thing: `npx --yes serve .`.) Then visit the URL it prints (usually
 `http://localhost:3000`). If you opened the file directly, you’ll get an on-page
 message with these steps.
+
+There is no install or build step: this is a static ES-module app with no project
+dependencies.
 
 Exported presentations remain a **single offline `.html` file** — no server needed to view or share them.
 
@@ -178,11 +181,13 @@ slides.
 | **↖ Select** | Click any item to select it, then drag to move, use the corner handle to resize, and restyle it in the inspector. `Delete`/`Backspace` removes it; `Esc` deselects. |
 | **＋ Hotspot** *(image)* | Click the image to add a clickable hotspot. Customize colour, size, animation, and **When clicked** (show tip / next slide / jump to a slide). |
 | **▦ Redact** *(image)* | Drag to cover an area (blur or black out). |
-| **▭ Box / ◯ Ellipse** | Drag to draw a shape with fill colour, border colour/width, opacity (and corner radius for boxes). |
-| **➶ Arrow** | Drag to draw an arrow in any direction; set its colour and thickness. |
-| **▨ Highlight** | Drag to draw a translucent highlight that emphasizes part of the slide. |
+| **🎯 Focus ring** | Click to place expanding rings that draw attention to a UI target. |
+| **🖼️ Image holder** | Drag to add a resizable photo container; optionally arrange its child shapes automatically. |
+| **▢ Box / ⭕ Ellipse** | Drag to draw a shape with fill colour, border colour/width, opacity (and corner radius for boxes). |
+| **➤ Arrow** | Drag to draw an arrow in any direction; set its colour, style, and thickness. |
+| **✨ Highlight** | Drag to draw a translucent highlight that emphasizes part of the slide. |
 | **💬 Message** | Drag to draw a text callout box with its own background, border and text colour. |
-| **T Type** | Drag to place free text. Set size, weight, colour, transparency, and **Bend text (arc)**. Double-click to edit (straight text). |
+| **🔤 Type** | Drag to place free text. Set size, weight, colour, transparency, and **Bend text (arc)**. Double-click to edit (straight text). |
 
 Selecting a shape opens a **Shape style** panel in the inspector for fill/border
 colours, opacity, border width, corner radius and (for message boxes) the text.

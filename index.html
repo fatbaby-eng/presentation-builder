@@ -291,6 +291,15 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .slide-canvas.layout-statement h1 { font-size: 2.3rem; line-height: 1.3; max-width: 92%; }
 .slide-canvas .logo-mini { position: absolute; top: 1.4rem; left: 3.4rem; height: 26px; max-width: 130px; }
 .slide-canvas.center .logo-mini { left: 50%; transform: translateX(-50%); }
+/* Layout title/subtitle/bullets/body — promoted to absolute selectable targets */
+.slide-canvas.layout-free, .text-preview.layout-free {
+  display: block; justify-content: flex-start; align-items: stretch; text-align: left; }
+.slide-canvas.layout-free.center .layout-text { text-align: center; }
+.layout-text { position: absolute; z-index: 3; cursor: move; touch-action: none; box-sizing: border-box;
+  overflow: hidden; pointer-events: auto; margin: 0 !important; max-width: none !important; }
+.layout-text.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.layout-text.layout-chrome { pointer-events: none; z-index: 2; }
+.layout-text .rh { z-index: 6; }
 
 /* ── Smart guides / grid / rulers / frames (Phase 1.1) ── */
 .smart-guides { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
@@ -907,7 +916,7 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
       <div id="shapeFields" style="display:none">
         <div class="divider"></div>
         <h2 id="shapeTitle">Shape style</h2>
-        <p class="hint" id="shapeHint" style="margin:-.15rem 0 .55rem">Edit the selected item here. Use ↖ Select to click any shape or text.</p>
+        <p class="hint" id="shapeHint" style="margin:-.15rem 0 .55rem">Click any text or graphic to select — drag to move, corner handles to resize. Double-click text to edit.</p>
         <div class="field" id="sfTextWrap">
           <label for="sfText" id="sfTextLbl">Message text</label>
           <textarea id="sfText" maxlength="800" placeholder="Type here…"></textarea>
@@ -1516,6 +1525,9 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 <script type="module">
 import { beginPercentDrag } from "./js/canvas/dragTransform.js";
 import { attachResizeHandles, isResizeHandleTarget } from "./js/canvas/resizeHandles.js";
+import {
+  sanitizeLayoutBoxes, promoteLayoutText, isSelectableLayoutRole
+} from "./js/canvas/layoutText.js";
 import { renderChromeOverlays, sanitizeSlideChrome, mountRulers } from "./js/canvas/slideChrome.js";
 import { newFrameShape, applyFrameVisual, reflowFrameChildren, FRAME_LAYOUTS } from "./js/canvas/frame.js";
 import {
@@ -1668,8 +1680,17 @@ let selected = 0;        // selected slide index
 let selHotspot = -1;     // selected hotspot index within the slide
 let selAsset = -1;       // selected placed-asset (overlay) index within the slide
 let selShape = -1;       // selected annotation shape index within the slide
+let selLayout = null;    // selected layout-text role: heading|subhead|bullets|body
 let editing = false;     // true while typing directly into an on-canvas text box
 let tool = "select";     // select | hotspot | redact | box | ellipse | arrow | highlight | message
+
+function clearCanvasSelection() {
+  selHotspot = -1; selAsset = -1; selShape = -1; selLayout = null;
+}
+/** Clicking an object arms Select so drag-to-move works immediately after. */
+function armSelectTool() {
+  if (tool !== "select") tool = "select";
+}
 
 function newProject() {
   return { v: 4, id: uid(), title: "Untitled Presentation", accent: "#6c5ce7", logo: null,
@@ -1690,7 +1711,7 @@ function newContentSlide(layout) {
   layout = LAYOUTS.includes(layout) ? layout : "bullets";
   const pr = presets[layout];
   return { id: uid(), type: "content", layout, name: "",
-    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice(), overlays: [], shapes: [] };
+    heading: pr.heading, subhead: pr.subhead, body: "", bullets: pr.bullets.slice(), overlays: [], shapes: [], layoutBoxes: {} };
 }
 
 /* ───────────────────────── Security helpers ─────────────────────────
@@ -1844,15 +1865,17 @@ function sanitizeStep(s) {
   if (!s || typeof s !== "object") return null;
   const overlays = sanitizeOverlays(s.overlays);
   const shapes = sanitizeShapes(s.shapes);
+  const layoutBoxes = sanitizeLayoutBoxes(s.layoutBoxes);
   if (s.type === "text") {
-    return withChrome({ id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000), overlays, shapes }, s);
+    return withChrome({ id: uid(), type: "text", name: str(s.name, 80), heading: str(s.heading, 120), body: str(s.body, 2000),
+      overlays, shapes, layoutBoxes }, s);
   }
   if (s.type === "content") {
     const bullets = Array.isArray(s.bullets) ? s.bullets.map(b => str(b, 200)).filter(x => x.trim()).slice(0, 12) : [];
     return withChrome({ id: uid(), type: "content",
       layout: LAYOUTS.includes(s.layout) ? s.layout : "bullets",
       name: str(s.name, 80), heading: str(s.heading, 160), subhead: str(s.subhead, 200),
-      body: str(s.body, 1200), bullets, overlays, shapes }, s);
+      body: str(s.body, 1200), bullets, overlays, shapes, layoutBoxes }, s);
   }
   const img = safeImage(s.image);
   if (!img) return null; // image slide with no valid image is meaningless
@@ -2052,27 +2075,30 @@ function buildContentSlideEl(step) {
   return d;
 }
 
-// Render placed assets onto a stage element; drag-to-move / handle-to-scale (Select tool only).
+// Render placed assets onto a stage element; drag-to-move / handle-to-scale.
 // stageEl must be position:relative; overlay coords are % of the stage box.
 function attachOverlays(stageEl, step, sel) {
   (step.overlays || []).forEach((o, oi) => {
     const a = assetById(o.assetId); if (!a) return;
     const ov = document.createElement("div");
-    ov.className = "ov" + (sel ? "" : " passive") + (sel && oi === selAsset ? " sel" : "");
+    // Always hittable so click can switch to Select; drag only when Select is active.
+    ov.className = "ov" + (sel && oi === selAsset ? " sel" : "");
     ov.dataset.pbMot = o.id;
     ov.style.left = o.x + "%"; ov.style.top = o.y + "%"; ov.style.width = o.w + "%";
     if (o.rot) ov.style.transform = "rotate(" + o.rot + "deg)";
     const img = document.createElement("img"); img.src = a.image; img.alt = a.name || ""; img.draggable = false;
     img.style.filter = imageLookCss(o);
     ov.appendChild(img);
-    if (!sel) { stageEl.appendChild(ov); return; }
     ov.addEventListener("click", e => e.stopPropagation());
 
-    // drag to move (smart guides + Alt to disable snap)
     ov.addEventListener("pointerdown", e => {
       if (e.target.classList.contains("ox") || isResizeHandleTarget(e.target) || e.target.classList.contains("rot")) return;
       e.stopPropagation(); e.preventDefault();
-      if (selAsset !== oi) { selAsset = oi; selHotspot = -1; selShape = -1; render(); return; }
+      const needArm = tool !== "select";
+      armSelectTool();
+      if (selAsset !== oi || needArm) {
+        selAsset = oi; selHotspot = -1; selShape = -1; selLayout = null; render(); return;
+      }
       beginPercentDrag(e, {
         stage: stageEl, el: ov, obj: o, anchor: "corner",
         guides: step.guides || [],
@@ -2080,7 +2106,7 @@ function attachOverlays(stageEl, step, sel) {
       });
     });
 
-    if (oi === selAsset) {
+    if (sel && oi === selAsset) {
       attachResizeHandles(ov, {
         stage: stageEl, obj: o, widthOnly: true,
         handles: ["nw", "ne", "se", "sw", "e", "w"],
@@ -2103,7 +2129,7 @@ function renderSteps() {
     const row = document.createElement("div");
     row.className = "step-item" + (i === selected ? " active" : "");
     row.draggable = true;
-    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; selHotspot = -1; selAsset = -1; selShape = -1; render(); } };
+    row.onclick = (e) => { if (!e.target.closest(".step-tools") && !e.target.closest(".grip")) { selected = i; clearCanvasSelection(); render(); } };
     // drag-to-reorder
     row.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", i); row.style.opacity = ".4"; });
     row.addEventListener("dragend", () => { row.style.opacity = "1"; });
@@ -2229,10 +2255,11 @@ function renderCanvas() {
   // ── tool behaviour ──
   if (isImage && tool === "hotspot") {
     stage.onclick = (e) => {
+      if (e.target.closest(".shape, .ov, .marker, .rd, .layout-text")) return;
       const r = stage.getBoundingClientRect();
       step.hotspots.push({ x: clamp((e.clientX - r.left) / r.width * 100, 0, 100), y: clamp((e.clientY - r.top) / r.height * 100, 0, 100),
         text: "", pos: "bottom", color: project.brand.primary, size: 30, anim: "pulse", action: "next", goto: 0 });
-      selHotspot = step.hotspots.length - 1; selShape = -1; selAsset = -1; render();
+      selHotspot = step.hotspots.length - 1; selShape = -1; selAsset = -1; selLayout = null; render();
     };
   } else if (isImage && tool === "redact") {
     setupBoxDraw(stage, (x, y, w, h) => { step.redactions.push({ x, y, w, h, mode: "block" }); render(); });
@@ -2251,7 +2278,7 @@ function renderCanvas() {
           }
         }
       }
-      step.shapes.push(sh); selShape = step.shapes.length - 1; selHotspot = -1; selAsset = -1; tool = "select"; render();
+      step.shapes.push(sh); selShape = step.shapes.length - 1; selHotspot = -1; selAsset = -1; selLayout = null; tool = "select"; render();
     }, tool === "arrow");
   }
 
@@ -2260,6 +2287,19 @@ function renderCanvas() {
   shell.className = "stage-shell";
   shell.appendChild(stage);
   canvasWrap.appendChild(shell);
+
+  // Promote content/text layout copy to selectable absolute boxes (needs layout in DOM)
+  if (step.type === "content" || step.type === "text") {
+    if (!step.layoutBoxes) step.layoutBoxes = {};
+    const finishLayout = () => {
+      if (curSlide() !== step) return;
+      const selectable = promoteLayoutText(stage, step);
+      attachLayoutTextTargets(stage, step, selectable, sel);
+      scheduleSave();
+    };
+    if (Object.keys(step.layoutBoxes).length) finishLayout();
+    else requestAnimationFrame(finishLayout);
+  }
   if (step.showRulers) {
     const rulers = mountRulers(shell, stage, {
       setGuide(axis, pos) {
@@ -2283,6 +2323,15 @@ function renderCanvas() {
     e.preventDefault(); e.stopPropagation();
     setFrameImageFromFile(fr, file);
   });
+
+  // Click empty stage → clear selection (Select tool)
+  if (sel) {
+    stage.addEventListener("pointerdown", e => {
+      if (e.target !== stage && !e.target.classList.contains("accent-bar") && !e.target.classList.contains("logo-mini")) return;
+      if (selHotspot === -1 && selAsset === -1 && selShape === -1 && !selLayout) return;
+      clearCanvasSelection(); render();
+    });
+  }
 
   // CTA preview — the CTA shows on the end screen (after the last slide), so preview it there.
   if (selected === project.steps.length - 1 && project.cta.enabled) {
@@ -2308,7 +2357,7 @@ function renderCanvas() {
 function setupBoxDraw(stage, onDone, allowThin) {
   let ds = null;
   stage.addEventListener("pointerdown", e => {
-    if (e.target.closest(".shape, .ov, .marker, .rd")) return; // don't start over an existing item
+    if (e.target.closest(".shape, .ov, .marker, .rd, .layout-text")) return; // don't start over an existing item
     e.preventDefault();
     const r = stage.getBoundingClientRect();
     ds = { r, x0: clamp((e.clientX - r.left) / r.width * 100, 0, 100), y0: clamp((e.clientY - r.top) / r.height * 100, 0, 100), el: null, fx: false, fy: false };
@@ -2332,28 +2381,28 @@ function setupBoxDraw(stage, onDone, allowThin) {
   });
 }
 
-// One hotspot marker (customizable colour, size & animation; draggable in Select).
+// One hotspot marker (customizable colour, size & animation; always hittable for Select).
 function attachHotspot(stage, step, h, hi, sel) {
   const m = document.createElement("div");
   const anim = safeAnim(h.anim);
-  m.className = "marker anim-" + anim + (sel ? " draggable" : " passive") + (hi === selHotspot ? " sel" : "");
+  m.className = "marker anim-" + anim + (sel ? " draggable" : "") + (hi === selHotspot ? " sel" : "");
   m.style.left = h.x + "%"; m.style.top = h.y + "%";
   m.style.width = m.style.height = (h.size || 30) + "px";
   m.style.background = h.color || project.brand.primary;
   m.textContent = (hi + 1);
-  if (sel) {
-    m.addEventListener("click", e => e.stopPropagation());
-    m.addEventListener("pointerdown", e => {
-      e.stopPropagation(); e.preventDefault();
-      if (selHotspot !== hi) { selHotspot = hi; selShape = -1; selAsset = -1; render(); return; }
-      beginPercentDrag(e, {
-        stage, el: m, obj: h, anchor: "center",
-        minX: 0, maxX: 100, minY: 0, maxY: 100,
-        guides: step.guides || [],
-        onEnd: () => scheduleSave()
-      });
+  m.addEventListener("click", e => e.stopPropagation());
+  m.addEventListener("pointerdown", e => {
+    e.stopPropagation(); e.preventDefault();
+    const needArm = tool !== "select";
+    armSelectTool();
+    if (selHotspot !== hi || needArm) { selHotspot = hi; selShape = -1; selAsset = -1; selLayout = null; render(); return; }
+    beginPercentDrag(e, {
+      stage, el: m, obj: h, anchor: "center",
+      minX: 0, maxX: 100, minY: 0, maxY: 100,
+      guides: step.guides || [],
+      onEnd: () => scheduleSave()
     });
-  }
+  });
   stage.appendChild(m);
 }
 
@@ -2429,6 +2478,7 @@ function startEditMessage(t, sh) {
   if (!t) return;
   editing = true;
   t.setAttribute("contenteditable", "true"); t.style.cursor = "text"; t.style.outline = "none";
+  t.style.pointerEvents = "auto";
   t.focus();
   try { const range = document.createRange(); range.selectNodeContents(t); range.collapse(false);
     const selN = window.getSelection(); selN.removeAllRanges(); selN.addRange(range); } catch (err) {}
@@ -2437,91 +2487,182 @@ function startEditMessage(t, sh) {
   const onKey = e => { e.stopPropagation(); if (e.key === "Escape") t.blur(); };
   const onBlur = () => {
     sh.text = readText(); t.removeAttribute("contenteditable"); editing = false;
+    t.style.pointerEvents = "";
     t.removeEventListener("input", onInput); t.removeEventListener("keydown", onKey); t.removeEventListener("blur", onBlur);
     render();
   };
   t.addEventListener("input", onInput); t.addEventListener("keydown", onKey); t.addEventListener("blur", onBlur);
 }
 
-// Render shapes onto a stage; interactive (select / move / resize / delete) only in Select.
+/** Sync layout-text edits back onto step heading / subhead / bullets / body. */
+function startEditLayoutText(el, step, role) {
+  if (!el || !step || !isSelectableLayoutRole(role)) return;
+  if (role === "bullets") {
+    renderInspector();
+    const field = $("cfBullets");
+    if (field) { field.focus(); try { field.select(); } catch (err) {} }
+    return;
+  }
+  // Prefer inspector fields when present (avoids editing handle DOM into the text)
+  const fieldId = step.type === "text"
+    ? (role === "heading" ? "txtHeading" : role === "body" ? "txtBody" : null)
+    : (role === "heading" ? "cfHeading" : role === "subhead" ? "cfSub" : role === "body" ? null : null);
+  if (fieldId && $(fieldId)) {
+    renderInspector();
+    const field = $(fieldId);
+    field.focus();
+    try { field.select(); } catch (err) {}
+    return;
+  }
+  editing = true;
+  el.querySelectorAll(".rh, .rot").forEach(n => n.remove());
+  el.setAttribute("contenteditable", "true");
+  el.style.cursor = "text";
+  el.style.outline = "none";
+  el.focus();
+  try {
+    const range = document.createRange(); range.selectNodeContents(el); range.collapse(false);
+    const selN = window.getSelection(); selN.removeAllRanges(); selN.addRange(range);
+  } catch (err) {}
+  const readText = () => (el.innerText != null ? el.innerText : el.textContent) || "";
+  const write = (v) => {
+    if (role === "heading") step.heading = v;
+    else if (role === "subhead") step.subhead = v;
+    else if (role === "body") step.body = v;
+  };
+  const onInput = () => { write(readText()); scheduleSave(); };
+  const onKey = e => { e.stopPropagation(); if (e.key === "Escape") el.blur(); };
+  const onBlur = () => {
+    write(readText());
+    el.removeAttribute("contenteditable");
+    editing = false;
+    el.removeEventListener("input", onInput); el.removeEventListener("keydown", onKey); el.removeEventListener("blur", onBlur);
+    render();
+  };
+  el.addEventListener("input", onInput); el.addEventListener("keydown", onKey); el.addEventListener("blur", onBlur);
+}
+
+/** Select / move / resize layout title·subtitle·bullets·body blocks. */
+function attachLayoutTextTargets(stage, step, items, sel) {
+  (items || []).forEach(({ role, el }) => {
+    if (!step.layoutBoxes) step.layoutBoxes = {};
+    if (!step.layoutBoxes[role]) return;
+    const box = step.layoutBoxes[role];
+    const isSel = sel && selLayout === role;
+    if (isSel) el.classList.add("sel");
+    el.addEventListener("click", e => e.stopPropagation());
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation(); e.preventDefault();
+      armSelectTool();
+      selLayout = role; selShape = -1; selHotspot = -1; selAsset = -1;
+      startEditLayoutText(el, step, role);
+    });
+    el.addEventListener("pointerdown", e => {
+      if (editing || isResizeHandleTarget(e.target) || e.target.classList.contains("rot")) return;
+      e.stopPropagation(); e.preventDefault();
+      const needArm = tool !== "select";
+      armSelectTool();
+      if (selLayout !== role || needArm) {
+        selLayout = role; selShape = -1; selHotspot = -1; selAsset = -1; render(); return;
+      }
+      beginPercentDrag(e, {
+        stage, el, obj: box, anchor: "corner",
+        guides: step.guides || [],
+        onEnd: () => scheduleSave()
+      });
+    });
+    if (isSel) {
+      attachResizeHandles(el, {
+        stage, obj: box,
+        onEnd: () => { scheduleSave(); renderInspector(); }
+      });
+      addRotateHandle(el, box);
+    }
+  });
+}
+
+// Render shapes onto a stage; always hittable — click arms Select, then drag/resize.
 function attachShapes(stage, step, sel) {
   (step.shapes || []).forEach((sh, si) => {
     const el = buildShapeEl(sh);
     el.dataset.pbMot = sh.id;
-    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "focus" ? " focus-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "") + (sel ? " draggable" : " passive") + (sel && si === selShape ? " sel" : "");
-    if (sel) {
-      el.addEventListener("click", e => e.stopPropagation());
-      if (isTextualShape(sh)) {
-        el.style.cursor = "text";
-        el.addEventListener("dblclick", e => {
-          e.stopPropagation();
-          if (sh.textArcOn) { renderInspector(); $("sfText").focus(); return; }
-          const node = el.querySelector(".msg-text");
-          if (node) startEditMessage(node, sh);
-        });
-      }
-      el.addEventListener("pointerdown", e => {
-        if (editing || isResizeHandleTarget(e.target) || e.target.classList.contains("shx") || e.target.classList.contains("rot") || e.target.closest(".frame-upload-btn")) return;
-        e.stopPropagation(); e.preventDefault();
-        if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; render(); return; }
-        beginPercentDrag(e, {
-          stage, el, obj: sh, anchor: "corner",
-          guides: step.guides || [],
-          onEnd: () => {
-            // Smart resize: reflow frame children when a frame moves
-            if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
-              const kids = (step.shapes || []).filter(c => c.parentId === sh.id);
-              reflowFrameChildren(sh, kids);
-            }
-            scheduleSave();
-          }
-        });
+    el.className = "shape" + (sh.type === "frame" ? " frame-shape" : "") + (sh.type === "focus" ? " focus-shape" : "") + (sh.type === "symbol" ? " symbol-shape" : "")
+      + (sel ? " draggable" : "") + (sel && si === selShape ? " sel" : "");
+    el.addEventListener("click", e => e.stopPropagation());
+    if (isTextualShape(sh)) {
+      el.style.cursor = "move";
+      el.addEventListener("dblclick", e => {
+        e.stopPropagation();
+        armSelectTool();
+        if (selShape !== si) { selShape = si; selHotspot = -1; selAsset = -1; selLayout = null; }
+        if (sh.textArcOn) { render(); setTimeout(() => { const f = $("sfText"); if (f) f.focus(); }, 0); return; }
+        const node = el.querySelector(".msg-text");
+        if (node) startEditMessage(node, sh);
       });
-      if (sh.type === "frame" && (!sh.image || si === selShape)) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "frame-upload-btn" + (sh.image ? " frame-upload-btn--replace" : "");
-        btn.textContent = sh.image ? "Replace" : "Add image";
-        btn.title = sh.image ? "Replace image from file" : "Upload image from file";
-        btn.addEventListener("pointerdown", e => e.stopPropagation());
-        btn.addEventListener("click", e => {
-          e.stopPropagation(); e.preventDefault();
-          selShape = si; selHotspot = -1; selAsset = -1;
-          pickFrameImageFile(sh);
-        });
-        if (!sh.image) {
-          const ph = el.querySelector(".frame-ph");
-          if (ph) {
-            ph.textContent = "";
-            const label = document.createElement("span");
-            label.textContent = "Image holder";
-            ph.appendChild(label);
-            ph.appendChild(btn);
-          } else {
-            el.appendChild(btn);
+    }
+    el.addEventListener("pointerdown", e => {
+      if (editing || isResizeHandleTarget(e.target) || e.target.classList.contains("shx") || e.target.classList.contains("rot") || e.target.closest(".frame-upload-btn")) return;
+      e.stopPropagation(); e.preventDefault();
+      const needArm = tool !== "select";
+      armSelectTool();
+      if (selShape !== si || needArm) { selShape = si; selHotspot = -1; selAsset = -1; selLayout = null; render(); return; }
+      beginPercentDrag(e, {
+        stage, el, obj: sh, anchor: "corner",
+        guides: step.guides || [],
+        onEnd: () => {
+          if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
+            const kids = (step.shapes || []).filter(c => c.parentId === sh.id);
+            reflowFrameChildren(sh, kids);
           }
+          scheduleSave();
+        }
+      });
+    });
+    if (sh.type === "frame" && (!sh.image || (sel && si === selShape))) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "frame-upload-btn" + (sh.image ? " frame-upload-btn--replace" : "");
+      btn.textContent = sh.image ? "Replace" : "Add image";
+      btn.title = sh.image ? "Replace image from file" : "Upload image from file";
+      btn.addEventListener("pointerdown", e => e.stopPropagation());
+      btn.addEventListener("click", e => {
+        e.stopPropagation(); e.preventDefault();
+        armSelectTool();
+        selShape = si; selHotspot = -1; selAsset = -1; selLayout = null;
+        pickFrameImageFile(sh);
+      });
+      if (!sh.image) {
+        const ph = el.querySelector(".frame-ph");
+        if (ph) {
+          ph.textContent = "";
+          const label = document.createElement("span");
+          label.textContent = "Image holder";
+          ph.appendChild(label);
+          ph.appendChild(btn);
         } else {
           el.appendChild(btn);
         }
+      } else {
+        el.appendChild(btn);
       }
-      if (si === selShape) {
-        attachResizeHandles(el, {
-          stage, obj: sh,
-          onEnd: () => {
-            if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
-              reflowFrameChildren(sh, (step.shapes || []).filter(c => c.parentId === sh.id));
-              renderCanvas();
-            }
-            scheduleSave();
-            renderInspector();
+    }
+    if (sel && si === selShape) {
+      attachResizeHandles(el, {
+        stage, obj: sh,
+        onEnd: () => {
+          if (sh.type === "frame" && sh.layout && sh.layout !== "none") {
+            reflowFrameChildren(sh, (step.shapes || []).filter(c => c.parentId === sh.id));
+            renderCanvas();
           }
-        });
-        addRotateHandle(el, sh);
-        const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
-        x.addEventListener("pointerdown", e => e.stopPropagation());
-        x.onclick = e => { e.stopPropagation(); step.shapes.splice(si, 1); selShape = -1; render(); };
-        el.appendChild(x);
-      }
+          scheduleSave();
+          renderInspector();
+        }
+      });
+      addRotateHandle(el, sh);
+      const x = document.createElement("div"); x.className = "shx"; x.textContent = "×"; x.title = "Delete shape";
+      x.addEventListener("pointerdown", e => e.stopPropagation());
+      x.onclick = e => { e.stopPropagation(); step.shapes.splice(si, 1); selShape = -1; render(); };
+      el.appendChild(x);
     }
     stage.appendChild(el);
   });
@@ -2971,7 +3112,7 @@ function renderContentFields(step) {
   LAYOUTS.forEach(l => {
     const c = document.createElement("button"); c.className = "chip" + (step.layout === l ? " on" : "");
     c.textContent = (CONTENT_ICON[l] || "") + " " + LAYOUT_LABELS[l];
-    c.onclick = () => { step.layout = l; render(); }; lc.appendChild(c);
+    c.onclick = () => { step.layout = l; step.layoutBoxes = {}; selLayout = null; render(); }; lc.appendChild(c);
   });
   $("cfHeadingLbl").textContent = step.layout === "statement" ? "Statement" : step.layout === "title" ? "Title" : "Heading";
   $("cfSubLbl").textContent = step.layout === "statement" ? "Attribution"
@@ -2999,15 +3140,15 @@ function render() {
 function reorder(from, to) {
   if (from === to || isNaN(from)) return;
   const [m] = project.steps.splice(from, 1); project.steps.splice(to, 0, m);
-  selected = to; selHotspot = -1; selAsset = -1; selShape = -1; render();
+  selected = to; clearCanvasSelection(); render();
 }
 function moveStep(i, d) {
   const j = i + d; if (j < 0 || j >= project.steps.length) return;
   [project.steps[i], project.steps[j]] = [project.steps[j], project.steps[i]];
   if (selected === i) selected = j; else if (selected === j) selected = i; render();
 }
-function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
-function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function dupStep(i) { const c = JSON.parse(JSON.stringify(project.steps[i])); c.id = uid(); project.steps.splice(i + 1, 0, c); selected = i + 1; clearCanvasSelection(); render(); }
+function delStep(i) { if (!confirm("Delete this slide?")) return; project.steps.splice(i, 1); clearCanvasSelection(); render(); }
 function bringShapeFront() {
   const s = curSlide(); if (!s || !s.shapes || selShape < 0) return;
   const [sh] = s.shapes.splice(selShape, 1); s.shapes.push(sh); selShape = s.shapes.length - 1; render();
@@ -3050,8 +3191,8 @@ function updateFloatBar() {
   left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
   bar.style.left = left + "px"; bar.style.top = top + "px";
 }
-function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [], shapes: [] }); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
-function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+function addTextSlide() { project.steps.push({ id: uid(), type: "text", name: "", heading: "Heading", body: "", overlays: [], shapes: [], layoutBoxes: {} }); selected = project.steps.length - 1; clearCanvasSelection(); render(); }
+function addContentSlide(layout) { project.steps.push(newContentSlide(layout)); selected = project.steps.length - 1; clearCanvasSelection(); render(); }
 // "+ New slide" menu entries: layout keys add content slides, "text" adds a plain text slide.
 function addSlideByKind(kind) {
   if (kind === "outline") { openOutline(); return; }
@@ -4442,6 +4583,9 @@ body { background: #0c0e14; color: #fff; font-family: 'Segoe UI', -apple-system,
 .content-slide.layout-section h1 { color: var(--accent); }
 .content-slide .logo-mini { position: absolute; top: 1.5rem; left: clamp(1.5rem, 4vw, 3.4rem); height: 26px; max-width: 130px; }
 .content-slide.center .logo-mini { left: 50%; transform: translateX(-50%); }
+.content-slide.layout-free, .text-slide.layout-free { display: block; justify-content: flex-start; align-items: stretch; }
+.content-slide.layout-free.center .layout-text { text-align: center; }
+.layout-text { position: absolute; z-index: 1; box-sizing: border-box; overflow: hidden; margin: 0 !important; max-width: none !important; }
 .ov { position: absolute; z-index: 3; pointer-events: none; }
 .ov img { display: block; width: 100%; height: auto; }
 .shape { position: absolute; z-index: 2; box-sizing: border-box; pointer-events: none; overflow: hidden; }
@@ -5190,12 +5334,38 @@ ${presenterStylesheet()}
     });
   }
 
+  function applyViewerLayoutBoxes(root, step) {
+    var boxes = step && step.layoutBoxes;
+    if (!boxes || typeof boxes !== "object") return;
+    var map = [
+      ["accent", root.querySelector(".accent-bar")],
+      ["heading", root.querySelector("h1")],
+      ["subhead", root.querySelector(".sub")],
+      ["bullets", root.querySelector("ul")],
+      ["body", root.querySelector(".body") || root.querySelector("p")]
+    ];
+    var any = false;
+    for (var i = 0; i < map.length; i++) {
+      var role = map[i][0], el = map[i][1], box = boxes[role];
+      if (!el || !box) continue;
+      any = true;
+      el.className = (el.className ? el.className + " " : "") + "layout-text";
+      el.style.position = "absolute";
+      el.style.left = box.x + "%"; el.style.top = box.y + "%";
+      el.style.width = box.w + "%"; el.style.height = box.h + "%";
+      el.style.margin = "0"; el.style.maxWidth = "none"; el.style.boxSizing = "border-box"; el.style.overflow = "hidden";
+      if (box.rot) el.style.transform = "rotate(" + box.rot + "deg)";
+    }
+    if (any) root.className += " layout-free";
+  }
+
   function drawText(step, parent) {
     var d = document.createElement("div"); d.className = "text-slide";
     var h = document.createElement("h1"); h.textContent = step.heading || ""; d.appendChild(h);
     if (step.body) { var p = document.createElement("p"); p.textContent = step.body; d.appendChild(p); }
     drawShapes(d, step); drawOverlays(d, step);
     (parent || stage).appendChild(d);
+    applyViewerLayoutBoxes(d, step);
   }
 
   function applyBg(el, b) {
@@ -5261,6 +5431,7 @@ ${presenterStylesheet()}
     })(d, layout);
     drawShapes(d, step); drawOverlays(d, step);
     (parent || stage).appendChild(d);
+    applyViewerLayoutBoxes(d, step);
   }
 
   function drawImage(step, parent) {
@@ -6047,7 +6218,7 @@ document.addEventListener("keydown", e => {
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   if (e.key === "Escape") {
-    if (!typing && (selHotspot !== -1 || selAsset !== -1 || selShape !== -1)) { selHotspot = -1; selAsset = -1; selShape = -1; render(); }
+    if (!typing && (selHotspot !== -1 || selAsset !== -1 || selShape !== -1 || selLayout)) { clearCanvasSelection(); render(); }
     return;
   }
   if ((e.key !== "Delete" && e.key !== "Backspace") || typing) return;

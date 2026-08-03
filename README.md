@@ -8,6 +8,8 @@ standalone HTML file you can share with anyone.
 
 No accounts. No backend. No data ever leaves the browser.
 
+[Try the live demo](https://fatbaby-eng.github.io/presentation-builder/) · [View source](https://github.com/fatbaby-eng/presentation-builder)
+
 ## What you can build
 
 - **From-scratch content slides** — Title, Section divider, Bulleted list, and
@@ -27,20 +29,29 @@ No accounts. No backend. No data ever leaves the browser.
   slide. Search or filter to “On this slide.” Large photos shrink automatically.
   Select a placed image to try Looks (black & white, warm, vivid…) and brightness.
 - **Drawing tools** — boxes, circles, frames, arrows, highlights, and message boxes.
-  Move, resize, and rotate them. Fills can be solid or gradient, with shadow and glow.
+ Move, resize, rotate, and layer them. Fills can be solid or gradient, with shadow,
+ glow, blur, and blend effects.
+- **Focus rings and image holders** — call attention to a UI target with expanding
+ focus rings, or use an image holder as a resizable photo container with optional
+ child shapes that reflow with it.
 - **Text styles** — pick Heading or Body styles from your Brand kit. Change size and
   spacing on one message box without breaking the rest.
 - **Saved pieces** — save a shape or Frame to reuse on other slides. Tweak text or
   colours on one copy, or unlink it to edit freely.
 - **Board size** — in the top bar next to Brand kit, pick Landscape (16:9, 16:10, 4:3, 21:9), Portrait (phone 9:16 and
   others), Square, or a custom width × height. When you change the board, type and
-  shapes reflow to fit. Exports use the same board size. You can also use **Board** next to Grid/Rulers/Safe, or ⌘K → “Board size…”.
+ shapes reflow to fit. Exports use the same board size. You can also use **Page size**
+ next to Grid/Rulers/Safe, or ⌘K → “Board size…”.
 - **Smart guides** — while dragging, red lines help you line things up (hold **Alt**
   to move freely). Toggle **Grid**, **Rulers**, and **Safe** area from the toolbar.
 - **Frames** — draw a Frame, add a photo, and optionally stack children inside it.
-- **Type on the slide** — double-click a message box to edit text in place.
-- **Motion** — make shapes and images fade in, fly in, pulse, or leave. Open the Motion
-  bar under the slide, pick an object, choose how it appears, then hit **Play this slide**.
+- **Type on the slide** — double-click text to edit it in place. Every canvas text
+ and graphic object can be selected, moved, and resized.
+- **Motion timeline** — animate shapes and image holders with appear, attention,
+ move, and leave effects. Drag timing clips, scrub the playhead, and set a
+ point-to-point move path before using **Play this slide**.
+- **Smart layout** — automatically arrange child shapes in a frame vertically,
+ horizontally, or in a grid.
 - **When this slide opens** — pick how a slide appears (fade, push, wipe, zoom…). Set it in
   Slide settings; the exported viewer plays the effect when that slide opens.
 - **When clicked** (hotspots) — show a tip, go to the next slide, or jump to a specific slide.
